@@ -10,6 +10,12 @@
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#ffffff">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="멘야마쯔리">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
 <script>
 // Supabase 연결 정보 (공개키는 드러나도 되는 키, 실제 보호는 RLS)
@@ -178,7 +184,7 @@ body #login{display:block}
 #login .mlg-card{padding-bottom:34px}
 </style>
 </head>
-<body class="booting"><div id="login"><div class="mlg-bg" aria-hidden="true"></div><div class="mlg-wrap"><section class="mlg-copy" aria-label="멘야마쯔리 비전"><span class="mlg-rule" aria-hidden="true"></span><p class="mlg-eyebrow">MENYAMATSURI COMPANY</p><p class="mlg-intro">한 그릇에서 시작해, 다양한 외식 사업으로 나아갑니다.</p><h2 class="mlg-head">기준은 높게,<br>시선은 멀리.</h2><span class="mlg-rule mlg-rule2" aria-hidden="true"></span><p class="mlg-close">각자의 오늘이, 멘야마쯔리의 내일을 만듭니다.</p></section><section class="mlg-panel"><form class="mlg-card" id="loginbox" onsubmit="event.preventDefault();doLogin()"><img class="mlg-logo" src="logo_light.png" alt="멘야마쯔리"><h1 class="mlg-title">워크스페이스</h1><div class="mlg-fields"><div class="mlg-field"><label class="mlg-sr" for="uid">아이디</label><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 21a8 8 0 0 0-16 0 M12 13a4 4 0 1 0 0-8 4 4 0 0 0 0 8"/></svg><input id="uid" placeholder="아이디" autocomplete="username" required></div><div class="mlg-field"><label class="mlg-sr" for="upw">비밀번호</label><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 11h14v10H5z M8 11V7a4 4 0 0 1 8 0v4"/></svg><input id="upw" type="password" placeholder="비밀번호" autocomplete="current-password" required></div></div><label class="mlg-check"><input type="checkbox" id="mlg-remember"><span>아이디 저장</span></label><button class="mlg-btn" type="submit"><span>로그인</span></button><div class="login-err" id="lerr" role="alert"></div></form><form class="mlg-card" id="pwbox" hidden onsubmit="event.preventDefault();doChangePw()"><img class="mlg-logo" src="logo_light.png" alt="멘야마쯔리"><h1 class="mlg-title">새 비밀번호를 정해 주세요</h1><p class="mlg-sub"><b id="pw-who"></b>님, 처음 로그인하셨어요.<br>앞으로 쓸 비밀번호로 바꾸면 바로 시작할 수 있어요.</p><input id="pw-uid" type="text" autocomplete="username" hidden><div class="mlg-fields"><div class="mlg-field"><label class="mlg-sr" for="npw">새 비밀번호</label><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 11h14v10H5z M8 11V7a4 4 0 0 1 8 0v4"/></svg><input id="npw" type="password" placeholder="새 비밀번호 (8자 이상)" autocomplete="new-password" required></div><div class="mlg-field"><label class="mlg-sr" for="npw2">새 비밀번호 확인</label><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 11h14v10H5z M8 11V7a4 4 0 0 1 8 0v4"/></svg><input id="npw2" type="password" placeholder="새 비밀번호 확인" autocomplete="new-password" required></div></div><button class="mlg-btn" type="submit"><span>비밀번호 변경</span></button><div class="login-err" id="pwerr" role="alert"></div><div class="mlg-note"><b>비밀번호 규칙</b><br>8자 이상, 지금 쓰는 비밀번호와 다르게 정해 주세요.</div><button class="mlg-ghost" type="button" onclick="logout()">다른 계정으로 로그인</button></form></section></div></div><div id="app"><header class="top"><button class="ham" onclick="toggleSide()" aria-label="전체 메뉴 열기" aria-expanded="false"><svg class="icon" viewBox="0 0 24 24"><path d="M4 6h16 M4 12h16 M4 18h16"/></svg></button><div class="top-title"><strong>멘야마쯔리 매장관리</strong><i class="divide"></i><span>본사 워크스페이스</span></div><div class="user"><span class="demo-chip">TEST</span><div class="av">김</div><div class="user-text">김영환 팀장<small>브랜드 관리 · 본사</small></div><button class="logout-btn" aria-label="로그아웃" title="로그아웃" onclick="logout()"><svg class="icon" viewBox="0 0 24 24"><path d="M9 4H3v16h6 M9 12h13 m-4-4 4 4-4 4"/></svg></button></div></header><div class="wrap"><nav class="side" id="side" aria-label="주요 메뉴"></nav><div class="sidebar-overlay" onclick="closeSide()"></div><main class="main" id="main"></main></div></div><script>
+<body class="booting"><div id="login"><div class="mlg-bg" aria-hidden="true"></div><div class="mlg-wrap"><section class="mlg-copy" aria-label="멘야마쯔리 비전"><span class="mlg-rule" aria-hidden="true"></span><p class="mlg-eyebrow">MENYAMATSURI COMPANY</p><p class="mlg-intro">한 그릇에서 시작해, 다양한 외식 사업으로 나아갑니다.</p><h2 class="mlg-head">기준은 높게,<br>시선은 멀리.</h2><span class="mlg-rule mlg-rule2" aria-hidden="true"></span><p class="mlg-close">각자의 오늘이, 멘야마쯔리의 내일을 만듭니다.</p></section><section class="mlg-panel"><form class="mlg-card" id="loginbox" onsubmit="event.preventDefault();doLogin()"><img class="mlg-logo" src="logo_light.png" alt="멘야마쯔리"><h1 class="mlg-title">워크스페이스</h1><div class="mlg-fields"><div class="mlg-field"><label class="mlg-sr" for="uid">아이디</label><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 21a8 8 0 0 0-16 0 M12 13a4 4 0 1 0 0-8 4 4 0 0 0 0 8"/></svg><input id="uid" placeholder="아이디" autocomplete="username" required></div><div class="mlg-field"><label class="mlg-sr" for="upw">비밀번호</label><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 11h14v10H5z M8 11V7a4 4 0 0 1 8 0v4"/></svg><input id="upw" type="password" placeholder="비밀번호" autocomplete="current-password" required></div></div><label class="mlg-check"><input type="checkbox" id="mlg-remember"><span>아이디 저장</span></label><button class="mlg-btn" type="submit"><span>로그인</span></button><div class="login-err" id="lerr" role="alert"></div></form><form class="mlg-card" id="pwbox" hidden onsubmit="event.preventDefault();doChangePw()"><img class="mlg-logo" src="logo_light.png" alt="멘야마쯔리"><h1 class="mlg-title">새 비밀번호를 정해 주세요</h1><p class="mlg-sub"><b id="pw-who"></b>님, 처음 로그인하셨어요.<br>앞으로 쓸 비밀번호로 바꾸면 바로 시작할 수 있어요.</p><input id="pw-uid" type="text" autocomplete="username" hidden><div class="mlg-fields"><div class="mlg-field"><label class="mlg-sr" for="npw">새 비밀번호</label><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 11h14v10H5z M8 11V7a4 4 0 0 1 8 0v4"/></svg><input id="npw" type="password" placeholder="새 비밀번호 (8자 이상)" autocomplete="new-password" required></div><div class="mlg-field"><label class="mlg-sr" for="npw2">새 비밀번호 확인</label><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 11h14v10H5z M8 11V7a4 4 0 0 1 8 0v4"/></svg><input id="npw2" type="password" placeholder="새 비밀번호 확인" autocomplete="new-password" required></div></div><button class="mlg-btn" type="submit"><span>비밀번호 변경</span></button><div class="login-err" id="pwerr" role="alert"></div><div class="mlg-note"><b>비밀번호 규칙</b><br>8자 이상, 지금 쓰는 비밀번호와 다르게 정해 주세요.</div><button class="mlg-ghost" type="button" onclick="logout()">다른 계정으로 로그인</button></form></section></div></div><div id="app"><header class="top"><button class="ham" onclick="toggleSide()" aria-label="전체 메뉴 열기" aria-expanded="false"><svg class="icon" viewBox="0 0 24 24"><path d="M4 6h16 M4 12h16 M4 18h16"/></svg></button><div class="top-title"><strong>멘야마쯔리 매장관리</strong><i class="divide"></i><span>본사 워크스페이스</span></div><div class="user"><button class="app-install" id="app-install" type="button" hidden onclick="mmInstall()"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11 m-4-4 4 4 4-4 M5 19h14"/></svg><span>앱 설치</span></button><span class="demo-chip">TEST</span><div class="av">김</div><div class="user-text">김영환 팀장<small>브랜드 관리 · 본사</small></div><button class="logout-btn" aria-label="로그아웃" title="로그아웃" onclick="logout()"><svg class="icon" viewBox="0 0 24 24"><path d="M9 4H3v16h6 M9 12h13 m-4-4 4 4-4 4"/></svg></button></div></header><div class="wrap"><nav class="side" id="side" aria-label="주요 메뉴"></nav><div class="sidebar-overlay" onclick="closeSide()"></div><main class="main" id="main"></main></div></div><script>
 // ===== 데이터 자리 (2~6회차에서 메뉴별로 Supabase에서 채움) =====
 let META = {jetteFrom:'',jetteTo:'',jetteUpdated:'',dashMonth:'',dashLabel:'',curFrom:'',prevFrom:'',prevTo:'',q3From:'',fcSynced:'',salesUpdated:'',fcVer:'',attSrc:''};
 let MASTER = {};
@@ -5211,5 +5217,46 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
 })();
 </script>
 
+<style>
+.app-install{display:inline-flex;align-items:center;gap:5px;border:1px solid #e9c8c9;background:#fef6f6;color:#b7232b;border-radius:6px;padding:6px 10px;font-size:11px;font-weight:600;white-space:nowrap}
+.app-install .icon{width:14px;height:14px}.app-install:hover{background:#fbeaea}
+.app-install[hidden]{display:none}
+.ios-guide{position:fixed;inset:0;z-index:200;background:#0006;display:flex;align-items:flex-end;justify-content:center;padding:16px}
+.ios-guide-box{background:#fff;border-radius:14px;max-width:360px;width:100%;padding:22px 22px 18px;color:#232621;font-size:13px;line-height:1.75}
+.ios-guide-box b{display:block;font-size:15px;margin-bottom:10px}
+.ios-guide-box ol{margin:0 0 16px;padding-left:20px;color:#4c5741}
+.ios-guide-box button{width:100%;border:0;background:#c62429;color:#fff;border-radius:8px;padding:11px;font-size:13px}
+</style>
+<script>
+/* ── 앱 설치(PWA) ── */
+(function(){
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function(){ navigator.serviceWorker.register('/sw.js').catch(function(){}); });
+  }
+  var standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+  var ua = navigator.userAgent;
+  var isIOS = /iPhone|iPad|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  var btn = document.getElementById('app-install');
+  var deferred = null;
+  if (standalone || !btn) return;
+  if (isIOS) btn.hidden = false;
+  window.addEventListener('beforeinstallprompt', function(e){ e.preventDefault(); deferred = e; btn.hidden = false; });
+  window.addEventListener('appinstalled', function(){ btn.hidden = true; deferred = null; try{ toast('앱이 설치되었어요.'); }catch(err){} });
+  window.mmInstall = function(){
+    if (deferred) {
+      deferred.prompt();
+      deferred.userChoice.finally(function(){ deferred = null; btn.hidden = true; });
+      return;
+    }
+    if (isIOS) {
+      var d = document.createElement('div');
+      d.className = 'ios-guide';
+      d.innerHTML = '<div class="ios-guide-box" role="dialog" aria-label="아이폰 앱 설치 방법"><b>아이폰에 앱 설치하기</b><ol><li>사파리 하단의 <strong>공유</strong> 버튼을 누르세요.</li><li><strong>홈 화면에 추가</strong>를 고르세요.</li><li>오른쪽 위 <strong>추가</strong>를 누르면 완료돼요.</li></ol><button type="button">확인</button></div>';
+      d.addEventListener('click', function(ev){ if (ev.target === d || ev.target.tagName === 'BUTTON') d.remove(); });
+      document.body.appendChild(d);
+    }
+  };
+})();
+</script>
 </body>
 </html>
