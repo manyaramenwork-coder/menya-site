@@ -4859,7 +4859,8 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
   .cp-box{background:#f6f7f3;border-radius:9px;padding:10px 12px;font-size:12px;color:#4a5244;line-height:1.7;margin-bottom:10px}
   .cp-help{font-size:11px;color:#8b9381;line-height:1.6;margin-top:4px}
   .cp-foot{font-size:11px;color:#8b9381;margin-top:10px;line-height:1.7}
-  .cp-how{margin:-4px 0 12px;font-size:12px;color:#4a5244}
+  .cp-how{margin:-4px 0 2px;font-size:12px;color:#4a5244}
+  .cp-how-sub{font-size:11px;color:var(--sub);margin:0 0 12px;line-height:1.6}
   .cp-how summary{cursor:pointer;color:#5f6858;display:inline-flex;align-items:center;gap:4px;list-style:none;padding:2px 0}
   .cp-how summary::-webkit-details-marker{display:none}
   .cp-how summary::after{content:'';width:6px;height:6px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:rotate(45deg) translateY(-2px);margin-left:4px;transition:transform .15s}
@@ -4932,7 +4933,7 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
       <div class="cp-top"><strong>경쟁 브랜드 ${brands.length}</strong><span class="cp-r"><button class="bi-b" onclick="cpBrand(0)">${ic('plus')}브랜드 추가</button></span></div>
       <div class="cp-run"><i class="cp-dot ${run && !run.closed && run.total ? 'bad' : ''}"></i><span>${runTxt}</span></div>
       <details class="cp-how" ${CP.how ? 'open' : ''} ontoggle="cpHow(this.open)"><summary>수집은 이렇게 해요</summary><dl>
-        <dt>처음 등록하면</dt><dd>전국 시·군·구 260곳을 하나씩 검색해 지금 있는 매장을 모두 찾아요. 브랜드 하나에 1시간 정도 걸려요.</dd>
+        <dt>처음 등록하면</dt><dd>전국 시·군·구 260곳을 하나씩 검색해 지금 있는 매장을 모두 찾아요. 브랜드 하나에 15분 정도 걸려요.</dd>
         <dt>매일 새벽 3시</dt><dd>찾아 둔 매장이 아직 있는지 하나씩 확인하고, 시·도 단위로 새 매장을 찾아요.</dd>
         <dt>일주일에 한 번</dt><dd>브랜드마다 정해진 요일에 시·군·구까지 다시 훑어 새 출점을 꼼꼼히 찾아요.</dd>
         <dt>폐점 판정</dt><dd>3일 연속 안 보이면 폐점 의심, 7일이면 폐점으로 바뀌어요.</dd>
@@ -4940,6 +4941,7 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
         <dt>왜 10개까지인가요?</dt><dd>브랜드가 늘수록 매일 검색할 양이 늘어나요. 막히지 않고 하루 안에 끝낼 수 있는 양이 브랜드 10개, 매장 700곳 정도예요.</dd>
         <dt>빠진 매장이 있다면</dt><dd>네이버에 다른 이름으로 등록된 매장은 못 찾을 수 있어요. '매장 직접 추가'로 넣어 주세요.</dd>
       </dl></details>
+      <div class="cp-how-sub">처음 등록 15분 정도 소요 · 매일 새벽 3시 업데이트 · 주 1회 새 출점 확인</div>
       ${brands.length ? `<div class="cp-brands">${brands.map(b => `<button class="cp-bc ${CP.brand === b.id ? 'on' : ''} ${b.active ? '' : 'off'}" onclick="cpPick(${b.id})">
           <b>${h(b.name)} ${brandState(b)}<i onclick="event.stopPropagation();cpBrand(${b.id})" title="수정">✎</i></b>
           <small>운영 ${b.open}곳${b.closed ? ` · <em>폐점 ${b.closed}곳</em>` : ''}</small></button>`).join('')}</div>`
