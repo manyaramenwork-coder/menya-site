@@ -64,6 +64,19 @@ window.MM_CONFIG = { url: 'https://bauaychmvbfmtqototvt.supabase.co', key: 'sb_p
 @media(max-width:580px){.ns-row{grid-template-columns:38px 1fr}.ns-meta{display:none}}
 
 .page-hero.compact{min-height:96px;padding:18px 26px;margin-bottom:26px}.page-hero.compact h1{font-size:22px;margin:6px 0 4px}.page-hero.compact .hero-image{width:30%}
+/* 화면 안내(자동화·제한이 있는 메뉴) — 제목 설명 바로 아래 */
+.pg-guide{margin:-12px 0 20px;padding:0 2px;font-size:12px;color:#4a5244}
+.pg-guide-sub{font-size:11px;color:#7a836f;line-height:1.6;margin-bottom:4px}
+.pg-guide summary{cursor:pointer;color:#5f6858;display:inline-flex;align-items:center;gap:4px;list-style:none;padding:2px 0}
+.pg-guide summary::-webkit-details-marker{display:none}
+.pg-guide summary::after{content:'';width:6px;height:6px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:rotate(45deg) translateY(-2px);margin-left:4px;transition:transform .15s}
+.pg-guide details[open] summary::after{transform:rotate(225deg) translateY(-1px)}
+.pg-guide summary:focus-visible{outline:2px solid #22311f;outline-offset:2px;border-radius:4px}
+.pg-guide dl{margin:8px 0 0;background:#fff;border:1px solid var(--line);border-radius:9px;padding:12px 14px;display:grid;grid-template-columns:104px minmax(0,1fr);gap:7px 12px;line-height:1.6}
+.pg-guide dt{font-weight:600;color:#2d3726}
+.pg-guide dd{margin:0}
+@media(max-width:640px){.pg-guide{margin-top:-8px}.pg-guide dl{grid-template-columns:1fr;gap:2px}.pg-guide dd{margin-bottom:8px}.pg-guide dd:last-child{margin-bottom:0}}
+@media(prefers-reduced-motion:reduce){.pg-guide summary::after{transition:none}}
 .dash-sec{margin-bottom:30px}.sec-head{display:flex;align-items:center;gap:10px;margin:0 0 12px;padding-bottom:10px;border-bottom:2px solid #e3e6dd}.sec-n{width:24px;height:24px;border-radius:50%;background:#1c211e;color:#fff;display:grid;place-items:center;font-size:11px;font-weight:700;flex-shrink:0}.sec-head h2{font-size:17px;margin:0;letter-spacing:-.6px}.sec-head small{margin-left:auto;font-size:10px;color:#9aa38d}
 .src{font-size:9px;font-weight:700;border-radius:4px;padding:3px 7px;letter-spacing:.2px}.src.fc{background:#ffe45c;color:#3b3200}.src.jt{background:#d9f2e3;color:#1c6b3f}
 .today-grid{display:grid;grid-template-columns:1.5fr 1fr;gap:16px;align-items:stretch}.today-grid .card{margin:0}.todo-card{border:1px solid #efc9c7;box-shadow:0 2px 10px #c6242910}
@@ -371,7 +384,7 @@ function ic(name){return `<svg class="icon" viewBox="0 0 24 24" aria-hidden="tru
 function toast(message){document.querySelector('.toast')?.remove();const t=document.createElement('div');t.className='toast';t.setAttribute('role','status');t.textContent=message;document.body.append(t);setTimeout(()=>t.remove(),3000)}
 function closeSide(){document.querySelector('.side').classList.remove('show');document.querySelector('.ham').setAttribute('aria-expanded','false')}
 function toggleSide(){const on=document.querySelector('.side').classList.toggle('show');document.querySelector('.ham').setAttribute('aria-expanded',String(on))}
-const brandMenus=[['dash','grid','대시보드'],['jette','truck','제때 관리'],['supply','coin','공급가 · 원가'],['po','box','발주 관리'],['manual','book','매뉴얼 관리'],['store','store','매장 관리']];
+const brandMenus=[['dash','grid','대시보드'],['jette','truck','제때 관리'],['supply','coin','공급가 · 원가'],['po','box','발주 관리']];
 renderSide=function(active){
  document.getElementById('side').innerHTML=`<div class="side-brand"><a class="side-home" href="http://xn--oy2b1b9w518abwh.com/index.php" target="_blank" rel="noopener" title="멘야마쯔리 홈페이지 열기" aria-label="멘야마쯔리 홈페이지 열기 (새 창)"><img src="${BRAND.light}" alt="멘야마쯔리 브랜드 로고"></a><button class="side-close" onclick="closeSide()" aria-label="메뉴 닫기">${ic('close')}</button></div><div class="workspace"><div class="box">HQ</div><div>멘야마쯔리 본사<small>STORE MANAGEMENT</small></div></div><div class="nav-label">WORKSPACE</div><div class="nav-items">${brandMenus.map(([id,icon,title])=>id==='jette'?`<button class="cat open" aria-expanded="true" onclick="const on=this.classList.toggle('open');this.nextElementSibling.classList.toggle('open',on);this.setAttribute('aria-expanded',on)">${ic(icon)}${title}${ic('chevron').replace('class="icon"','class="icon ar"')}</button><div class="sub open"><a role="button" tabindex="0" class="${active==='store-orders'?'on':''}" onclick="go('store-orders')">매장별 주문내역 조회</a><a role="button" tabindex="0" class="${active==='period-sales'?'on':''}" onclick="go('period-sales')">기간별 공급가 조회</a></div>`:`<button class="cat" onclick="go('soon','${title}')">${ic(icon)}${title}<span class="soon">준비중</span></button>`).join('')}</div><div class="side-bottom"><div class="brand-mini"><strong>한 그릇의 정성, 매장의 기준.</strong><small>MENYAMATSURI COMPANY</small></div><div class="side-copyright">MENYAMATSURI · INTERNAL WORKSPACE<br>© MENYAMATSURI COMPANY</div></div>`;
 };
@@ -709,6 +722,13 @@ go = function(p, t){
 function simpleHero(path2, eyebrow, title, desc){
   return `<div class="crumb">${ic('home')}<span>워크스페이스</span>${path2.map(x=>`<span>/</span><span>${x}</span>`).join('')}</div>
   <header class="page-hero compact"><div class="hero-copy"><div class="eyebrow">${eyebrow}</div><h1>${title}</h1><p>${desc}</p></div><div class="hero-image"><span>MENYAMATSURI</span></div></header>`;
+}
+
+/* 화면 안내: pageGuide('키', '요약 한 줄', [['제목','내용'], ...], '펼침 버튼 문구')
+   simpleHero(...) 바로 뒤에 붙여 쓰기. 펼침 상태는 화면이 다시 그려져도 유지 */
+const PG_OPEN = {};
+function pageGuide(key, sub, items, label){
+  return `<div class="pg-guide">${sub ? `<div class="pg-guide-sub">${sub}</div>` : ''}<details ${PG_OPEN[key] ? 'open' : ''} ontoggle="PG_OPEN['${key}']=this.open"><summary>${label || '이렇게 돌아가요'}</summary><dl>${items.map(([t, d]) => `<dt>${t}</dt><dd>${d}</dd>`).join('')}</dl></details></div>`;
 }
 
 /* ---------- 3. 사용자 저장소 (시안: 브라우저 저장) ---------- */
@@ -1423,24 +1443,13 @@ function greetName(){ var u=SESSION.user||{}; var n=(u.name||'').trim(), t=(u.ti
   document.addEventListener('visibilitychange', function(){ if (!document.hidden) check(); });
 })();
 </script><script>
-// v4.1: 메뉴 추가 - 경쟁사 분석, 거래처 (준비중)
+// v4.1: 메뉴 아이콘 (경쟁사 분석·거래처)
 PATHS.chart = 'M3 21h18 M6 17v-6 M11 17V6 M16 17v-9 M21 17v-4';
 PATHS.partner = 'M3 21h18 M5 21V8l7-5 7 5v13 M9 12h2 M13 12h2 M9 16h2 M13 16h2';
-(function(){
-  const renderSideV41 = renderSide;
-  renderSide = function(active){
-    renderSideV41(active);
-    const nav = document.querySelector('#side .nav-items'); if (!nav) return;
-    const soon = (icon, title) => '<button class="cat" onclick="go(\'soon\',\'' + title + '\')">' + ic(icon) + title + '<span class="soon">준비중</span></button>';
-    const html = soon('chart', '경쟁사 분석') + soon('partner', '거래처');
-    const userBtn = [...nav.querySelectorAll('.cat')].find(b => b.textContent.includes('사용자 관리'));
-    if (userBtn) userBtn.insertAdjacentHTML('beforebegin', html); else nav.insertAdjacentHTML('beforeend', html);
-  };
-})();
 </script><script>
 // v4.3: 메뉴 정리 - 발주 관리 + 본사 창고 관리 → "본사 발주·재고", 메뉴 순서 정리 (준비중은 아래로)
 (function(){
-  const NAV_ORDER = ['대시보드','매출 관리','제때 관리','본사 발주·재고','인사관리','공급가 · 원가','매장 관리','거래처','경쟁사 분석','매뉴얼 관리','사용자 관리'];
+  const NAV_ORDER = ['대시보드','매출 관리','제때 관리','본사 발주·재고','인사관리','공급가 · 원가','사용자 관리'];
   const PO_ITEMS = [['fc-orders','매장 발주 (FC다움)'],['inv-stock','재고 현황'],['inv-io','입·출고 등록'],['inv-log','입·출고 내역'],['inv-count','월말 재고조사']];
   const label = b => (b.childNodes ? [...b.childNodes].filter(n => n.nodeType === 3).map(n => n.textContent).join('') : '').trim();
   const renderSideV43 = renderSide;
@@ -1500,63 +1509,6 @@ PATHS.partner = 'M3 21h18 M5 21V8l7-5 7 5v13 M9 12h2 M13 12h2 M9 16h2 M13 16h2';
     }
     return r;
   };
-  try { renderSide(window.__curPage || 'dash'); } catch(e) {}
-})();
-
-</script><script>
-// v4.4: 자동 연동 설정 (구글 서버 자동 수집: N오더·제때·오션 / FC다움은 PC)
-(function(){
-  const run = (fn, ...args) => new Promise((ok, no) => { if (!(window.google && google.script && google.script.run)) return no(new Error('미리보기에서는 동작하지 않아요')); google.script.run.withSuccessHandler(ok).withFailureHandler(no)[fn](...args, SESSION.token); });
-  const esc2 = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  const SITE = {vd: ['N오더 파트너 어드민', 'vd-partner.vdcompany.co.kr', '아이디 (이메일)'], jette: ['제때 고객지원시스템', 'ebiz.jette.co.kr', '아이디'], otion: ['오션 관리자', 'web.otion.co.kr', '아이디']};
-  let INFO = null;
-  function pill(s){ if (!s) return '<span class="as-pill wait">아직 안 돌았어요</span>'; if (s.ok === true) return '<span class="as-pill ok">정상</span>'; if (s.ok === false) return '<span class="as-pill bad">실패</span>'; return '<span class="as-pill wait">설정 필요</span>'; }
-  function card(k){
-    const x = INFO.src[k], s = x.status;
-    return `<div class="as-card" id="as-${k}"><div class="as-top"><div><b>${esc2(x.name)}</b> ${pill(s)}<small>${esc2(SITE[k][0])} · ${esc2(SITE[k][1])}</small></div><div class="as-time">자동 시각: ${x.hours.map(h => h + '시').join(', ')}</div></div>
-      <div class="as-st">${s ? `마지막 실행 ${esc2(s.at)}${s.lastOk ? ' · 마지막 성공 ' + esc2(s.lastOk) : ''}<br><span class="${s.ok === false ? 'bad' : ''}">${esc2(s.msg)}</span>` : '아직 자동 수집 기록이 없어요.'}</div>
-      <div class="as-form"><label>${SITE[k][2]}<input id="as-id-${k}" value="${esc2(x.id)}" autocomplete="off"></label>
-        <label>비밀번호<input id="as-pw-${k}" type="password" placeholder="${x.hasPw ? '저장됨 · 바꿀 때만 입력' : '입력해주세요'}" autocomplete="new-password"></label>
-        <button class="btn ghost" onclick="asSave('${k}')">저장</button><button class="btn primary" onclick="asRun('${k}')">지금 가져오기</button></div></div>`;
-  }
-  function draw(){
-    const el = document.getElementById('as-list'); if (!el) return;
-    el.innerHTML = ['vd','jette','otion'].map(card).join('') + `<div class="as-card muted"><div class="as-top"><div><b>FC다움 발주</b> <span class="as-pill wait">PC 수집</span><small>fcdaum.com</small></div></div>
-      <div class="as-st">FC다움은 자동 접속을 막는 보안 화면이 있어서 구글 서버로는 못 가져와요. 사무실 PC의 Aside가 켜져 있을 때만 업데이트돼요.</div></div>`;
-    document.getElementById('as-trig').innerHTML = INFO.trigger ? '<span class="as-pill ok">자동 실행 켜짐</span> 매시간 확인해서 위 시각에 가져와요. 실패하면 소유자 메일로 알려드려요.' : '<span class="as-pill wait">자동 실행 꺼짐</span> 비밀번호를 저장하면 자동으로 켜져요.';
-  }
-  window.asSave = function(k){
-    const id = document.getElementById('as-id-' + k).value.trim(), pw = document.getElementById('as-pw-' + k).value;
-    if (!id) return toast('아이디를 입력해주세요.');
-    if (!pw && !INFO.src[k].hasPw) return toast('비밀번호를 입력해주세요.');
-    run('saveAutoCred', k, id, pw).then(r => { INFO = r; draw(); toast('저장했어요. "지금 가져오기"로 바로 확인해보세요.'); }).catch(e => toast('저장 실패: ' + e.message));
-  };
-  window.asRun = function(k){
-    const c = document.getElementById('as-' + k); c.classList.add('busy'); c.querySelector('.as-st').innerHTML = '가져오는 중이에요... (최대 1분)';
-    run('runAutoNow', k).then(r => { INFO = r; draw(); const s = r.src[k].status; toast(s && s.ok ? '가져왔어요: ' + s.msg : '실패했어요: ' + (s ? s.msg : '')); }).catch(e => { c.classList.remove('busy'); toast('실패: ' + e.message); });
-  };
-  function pageAutoSync(){
-    document.getElementById('main').innerHTML = simpleHero(['사용자 관리','자동 연동 설정'], 'AUTO SYNC', '자동 연동 설정', 'PC가 꺼져 있어도 구글 서버가 정해진 시각에 데이터를 가져와요. 외부 사이트에서는 조회만 해요.') +
-      `<div class="data-note"><span class="status-dot"></span><span id="as-trig">불러오는 중...</span></div>
-       <div id="as-list"><div class="card"><div class="empty">불러오는 중...</div></div></div>
-       <p class="dash-hint">비밀번호는 이 홈페이지의 비공개 저장소에만 저장되고, 화면에 다시 표시되지 않아요. 홈페이지 소유자 구글 계정은 꼭 2단계 인증을 켜주세요.</p>` + pageFoot();
-    run('getAutoInfo').then(r => { INFO = r; draw(); }).catch(e => { document.getElementById('as-list').innerHTML = '<div class="card"><div class="empty">불러오지 못했어요: ' + esc2(e.message) + '</div></div>'; });
-  }
-  const st = document.createElement('style');
-  st.textContent = '#as-list{display:grid;gap:14px}.as-card{background:#fff;border:1px solid #e4e7e0;border-radius:12px;padding:18px 20px}.as-card.busy{opacity:.6;pointer-events:none}.as-card.muted{background:#f7f7f3}.as-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}.as-top b{font-size:15px}.as-top small{display:block;color:#8c9186;font-size:11.5px;margin-top:3px}.as-time{font-size:12px;color:#6c7365}.as-st{font-size:12.5px;color:#4a5244;margin:10px 0 12px;line-height:1.6}.as-st .bad{color:#c8102e}.as-form{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}.as-form label{display:flex;flex-direction:column;font-size:12px;color:#6c7365;gap:5px}.as-form input{border:1px solid #dcdfd6;border-radius:8px;padding:8px 10px;font-size:13px;min-width:200px}.as-pill{display:inline-block;border-radius:999px;padding:2px 9px;font-size:11px;font-weight:700;margin-left:6px;vertical-align:1px}.as-pill.ok{background:#eaf1e4;color:#4b6b35}.as-pill.bad{background:#c8102e;color:#fff}.as-pill.wait{background:#f3eee2;color:#8a6d2b}';
-  document.head.appendChild(st);
-  const renderSideV44 = renderSide;
-  renderSide = function(active){
-    renderSideV44(active);
-    const nav = document.querySelector('#side .nav-items'); if (!nav) return;
-    const btn = [...nav.querySelectorAll(':scope > .cat')].find(b => [...b.childNodes].filter(n => n.nodeType === 3).map(n => n.textContent).join('').trim() === '사용자 관리');
-    const sub = btn && btn.nextElementSibling && btn.nextElementSibling.classList.contains('sub') ? btn.nextElementSibling : null;
-    if (!sub) return;
-    sub.insertAdjacentHTML('beforeend', `<a role="button" tabindex="0" class="${active === 'auto-sync' ? 'on' : ''}" onclick="go('auto-sync')">자동 연동 설정</a>`);
-    if (active === 'auto-sync') { btn.classList.add('open'); sub.classList.add('open'); }
-  };
-  const goV44 = go;
-  go = function(p, t){ if (p === 'auto-sync') { closeSide(); renderSide(p); pageAutoSync(); window.scrollTo(0,0); return; } return goV44(p, t); };
   try { renderSide(window.__curPage || 'dash'); } catch(e) {}
 })();
 
@@ -1898,7 +1850,7 @@ PATHS.partner = 'M3 21h18 M5 21V8l7-5 7 5v13 M9 12h2 M13 12h2 M9 16h2 M13 16h2';
   cst.textContent = '.inv-x{margin-left:6px;border:1px solid #dcdfd6;background:#fff;border-radius:6px;padding:2px 7px;font-size:11px;color:#7b8174;cursor:pointer}.inv-x:hover{border-color:#c8102e;color:#c8102e}';
   document.head.appendChild(cst);
 
-  const LOAD_TITLE = { 'fc-orders': ['매장 발주 (FC다움)', ['본사 발주·재고', '매장 발주 (FC다움)']], 'inv-stock': ['재고 현황', ['본사 발주·재고', '재고 현황']], 'inv-io': ['입·출고 등록', ['본사 발주·재고', '입·출고 등록']], 'inv-log': ['입·출고 내역', ['본사 발주·재고', '입·출고 내역']], 'inv-count': ['월말 재고조사', ['본사 발주·재고', '월말 재고조사']], 'user-list': ['사용자 관리', ['사용자 관리', '사용자 관리']], 'auto-sync': ['자동 연동 설정', ['사용자 관리', '자동 연동 설정']], 'sales-report': ['매장별 매출 조회', ['매출 관리', '매장별 매출 조회']], 'hr-att': ['쌍용본점 출결관리', ['인사관리', '쌍용본점 출결관리']], dash: ['대시보드', []], 'store-orders': ['매장별 주문내역 조회', ['제때 관리', '매장별 주문내역 조회']], 'period-sales': ['기간별 공급가 조회', ['제때 관리', '기간별 공급가 조회']] };
+  const LOAD_TITLE = { 'fc-orders': ['매장 발주 (FC다움)', ['본사 발주·재고', '매장 발주 (FC다움)']], 'inv-stock': ['재고 현황', ['본사 발주·재고', '재고 현황']], 'inv-io': ['입·출고 등록', ['본사 발주·재고', '입·출고 등록']], 'inv-log': ['입·출고 내역', ['본사 발주·재고', '입·출고 내역']], 'inv-count': ['월말 재고조사', ['본사 발주·재고', '월말 재고조사']], 'user-list': ['사용자 관리', ['사용자 관리', '사용자 관리']], 'sales-report': ['매장별 매출 조회', ['매출 관리', '매장별 매출 조회']], 'hr-att': ['쌍용본점 출결관리', ['인사관리', '쌍용본점 출결관리']], dash: ['대시보드', []], 'store-orders': ['매장별 주문내역 조회', ['제때 관리', '매장별 주문내역 조회']], 'period-sales': ['기간별 공급가 조회', ['제때 관리', '기간별 공급가 조회']] };
   let loadSeq = 0;
   function loadingPage(p, msg, retry){
     const [title, path] = LOAD_TITLE[p] || [p, []];
@@ -1906,11 +1858,10 @@ PATHS.partner = 'M3 21h18 M5 21V8l7-5 7 5v13 M9 12h2 M13 12h2 M9 16h2 M13 16h2';
       `<div class="card"><div class="empty">${msg}${retry ? `<br><button class="btn ghost" style="margin-top:14px" onclick="go('${p}')">${ic('reset')}다시 불러오기</button>` : ''}</div></div>` + pageFoot();
   }
 
-  // ===== 6회차: 사용자 관리 · 자동 연동(수집 상태) =====
-  const GAS_URL = 'https://script.google.com/macros/s/AKfycbzAtkf_on2NCnnLjqbky5DxU7sHKPrO2hLfWQ5vi9bDaYqTgJ5eAR8aDPV-aOkuBEYk/exec';
+  // ===== 6회차: 사용자 관리 =====
   const isAdmin = () => !!(SESSION.user && SESSION.user.role === 'admin');
   window.isAdmin = isAdmin;
-  const ADMIN_PAGES = ['user-new', 'user-list', 'auto-sync'];
+  const ADMIN_PAGES = ['user-new', 'user-list'];
   let USERS = [], USERS_AT = 0;
   async function loadUsersSB(){
     const { data, error } = await SB.rpc('users_data'); if (error) throw error;
@@ -2003,53 +1954,20 @@ PATHS.partner = 'M3 21h18 M5 21V8l7-5 7 5v13 M9 12h2 M13 12h2 M9 16h2 M13 16h2';
   };
   deleteUser = uid => setUserActive(uid, false);
 
-  // 자동 연동 · 수집 상태
-  let STATUS = null;
-  async function loadStatus(){ const { data, error } = await SB.rpc('collect_status'); if (error) throw error; STATUS = data; }
-  LOADERS['auto-sync'] = loadStatus;
-  const SRC = [
-    ['제때_제품별', '제때 주문', 'truck', 14 * 60, '매일 7·13·18시 자동 수집 (최근 2주 배송분 교체)'],
-    ['VD_일매출', 'N오더 매출', 'chart', 9 * 60, '하루 4번 자동 수집'],
-    ['EP_일매출', '이지포스 매출', 'chart', 9 * 60, '하루 4번 자동 수집 (7·12·18·23시, 최근 3일 교체)'],
-    ['오션_월근태', '오션 출결 (월근태)', 'cal', 9 * 60, '하루 4번 자동 수집'],
-    ['오션_타각', '오션 출결 (타각 기록)', 'cal', 9 * 60, '하루 4번 자동 수집'],
-    ['FC_발주', 'FC다움 발주', 'box', 60, '사무실 PC 어사이드가 5분마다 보냄 — PC가 꺼져 있으면 멈춰요'],
-    ['FC_공지', 'FC다움 공지', 'file', 24 * 60, '사무실 PC 어사이드가 보냄']
-  ];
-  const ago = m => m < 60 ? `${m}분 전` : m < 48 * 60 ? `${Math.floor(m / 60)}시간 전` : `${Math.floor(m / 1440)}일 전`;
-  function pageCollect(){
-    const rows = (STATUS && STATUS.rows) || [], by = {}; rows.forEach(r => by[r.sheet] = r);
-    const known = SRC.map(s => s[0]), extra = rows.filter(r => known.indexOf(r.sheet) < 0).map(r => [r.sheet, r.sheet, 'info', 24 * 60, r.source]);
-    const cards = SRC.concat(extra).map(([sheet, label, icon, lim, how]) => {
-      const r = by[sheet];
-      if (!r) return `<div class="cs-card"><div class="cs-h">${ic(icon)}<b>${label}</b><span class="cs-st none">기록 없음</span></div><p class="cs-how">${esc(how)}</p></div>`;
-      const late = r.mins > lim;
-      return `<div class="cs-card ${late ? 'late' : ''}"><div class="cs-h">${ic(icon)}<b>${label}</b><span class="cs-st ${late ? 'late' : 'ok'}">${late ? '지연' : '정상'}</span></div>
-        <div class="cs-at"><b>${esc(r.at)}</b><span>${ago(r.mins)}</span></div>
-        <p class="cs-how">${esc(how)}</p>${r.note ? `<p class="cs-note">${esc(r.note)}${r.count != null ? ` · ${fmt(r.count)}건` : ''}</p>` : ''}</div>`;
-    }).join('');
-    document.getElementById('main').innerHTML = simpleHero(['사용자 관리','자동 연동 설정'], 'DATA · COLLECTION', '자동 연동 · 수집 상태', '각 데이터가 마지막으로 언제 새 사이트에 들어왔는지 확인하세요.') +
-      `<div class="data-note"><span class="status-dot"></span><span>${esc((STATUS && STATUS.now) || '')} 기준 · 정해진 수집 간격보다 오래 안 들어오면 "지연"으로 표시해요</span><button class="btn ghost cs-re" onclick="go('auto-sync')">${ic('reset')}새로고침</button></div>
-      <div class="cs-grid">${cards}</div>
-      <section class="card cs-more"><div class="section-title"><strong>${ic('info')}아이디·비밀번호 변경 · 지금 바로 가져오기</strong></div>
-        <p>제때·N오더·오션 로그인 정보 저장과 "지금 가져오기"는 당분간 기존 관리 사이트에서 해요. 거기서 가져온 데이터도 새 사이트에 바로 들어와요.</p>
-        <p>FC다움 서버 자동 수집은 준비 중이에요.</p>
-        <a class="btn primary" href="${GAS_URL}" target="_blank" rel="noopener">${ic('arrow')}기존 관리 사이트 열기</a></section>` + pageFoot();
-  }
   const cs = document.createElement('style');
-  cs.textContent = '.cs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px;margin:14px 0}.cs-card{background:#fff;border:1px solid #e3e5dd;border-radius:14px;padding:16px 18px}.cs-card.late{border-color:#efc3bd;background:#fff8f7}.cs-h{display:flex;align-items:center;gap:8px}.cs-h b{font-size:14px}.cs-st{margin-left:auto;border-radius:999px;padding:2px 9px;font-size:11px;font-weight:700}.cs-st.ok{background:#eaf1e4;color:#4b6b35}.cs-st.late{background:#c8102e;color:#fff}.cs-st.none{background:#eceee8;color:#6c7365}.cs-at{margin:10px 0 4px;display:flex;align-items:baseline;gap:8px}.cs-at b{font-size:16px}.cs-at span{font-size:12px;color:#7b8174}.cs-how{font-size:12px;color:#6c7365;margin:4px 0 0}.cs-note{font-size:11.5px;color:#969c8e;margin:6px 0 0}.cs-more p{font-size:13px;color:#4a5244;margin:6px 0}.cs-more .btn{margin-top:8px;display:inline-flex}.data-note .cs-re{margin-left:auto;padding:4px 10px;font-size:12px}.u-note{font-size:12px;color:#6c7365;margin:10px 0 0;display:flex;gap:6px;align-items:flex-start}.u-first{display:block;color:#8a6d2b;font-size:11px;margin-top:3px}tr.u-off td{color:#9aa093}#u-body td small{display:block;font-size:11px;color:#969c8e}';
+  cs.textContent = '.data-note .cs-re{margin-left:auto;padding:4px 10px;font-size:12px}.u-note{font-size:12px;color:#6c7365;margin:10px 0 0;display:flex;gap:6px;align-items:flex-start}.u-first{display:block;color:#8a6d2b;font-size:11px;margin-top:3px}tr.u-off td{color:#9aa093}#u-body td small{display:block;font-size:11px;color:#969c8e}';
   document.head.appendChild(cs);
 
   // 관리자만: 사용자 관리 메뉴 · 바로가기
   function hideAdminUi(){
     if (isAdmin()) return;
     document.querySelectorAll('#side .cat').forEach(b => { if (b.textContent.includes('사용자 관리')) { const s = b.nextElementSibling; if (s && s.classList.contains('sub')) s.remove(); b.remove(); } });
-    document.querySelectorAll('[onclick*="go(\'user-"],[onclick*="go(\'auto-sync"]').forEach(el => el.remove());
+    document.querySelectorAll('[onclick*="go(\'user-"]').forEach(el => el.remove());
   }
   const renderSideV6 = renderSide;
   renderSide = function(a){ renderSideV6(a); hideAdminUi(); };
   const goV50 = go;
-  const CUSTOM = { 'auto-sync': pageCollect };
+  const CUSTOM = {};
   go = function(p, t){
     if (ADMIN_PAGES.indexOf(p) >= 0 && !isAdmin()) p = 'dash';
     if (PENDING[p]) { closeSide(); renderSide(p); pendingPage(p); window.scrollTo(0, 0); return; }
@@ -3199,8 +3117,6 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
     const nav = document.querySelector('#side .nav-items'); if (!nav) return;
     nav.querySelectorAll('.js-bi-menu').forEach(e => e.remove());
     if (!can()) return;
-    // 준비중이던 '거래처' 메뉴는 거래처 현황으로 대체
-    [...nav.querySelectorAll(':scope > .cat')].forEach(b => { if (b.querySelector('.soon') && [...b.childNodes].filter(n => n.nodeType === 3).map(n => n.textContent).join('').trim() === '거래처') b.remove(); });
     const open = !!PAGES[active];
     const html = `<button class="cat js-bi-menu ${open ? 'open' : ''}" onclick="const on=this.classList.toggle('open');this.nextElementSibling.classList.toggle('open',on)">${ic('book')}거래처·계정 관리${ic('chevron').replace('class="icon"', 'class="icon ar"')}</button><div class="sub js-bi-menu ${open ? 'open' : ''}">${Object.entries(PAGES).map(([k, t]) => `<a role="button" tabindex="0" class="${k === active ? 'on' : ''}" onclick="go('${k}')">${t}</a>`).join('')}</div>`;
     const soon = nav.querySelector('.nav-soon-label');
@@ -3735,7 +3651,7 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
   };
   document.addEventListener('click', e => { const p = document.getElementById('nt-pop'); if (p && !p.contains(e.target)) p.remove(); });
 
-  /* ---------- 메뉴: 대시보드 바로 아래 '공지사항' / '매장 관리' 삭제 ---------- */
+  /* ---------- 메뉴: 대시보드 바로 아래 '공지사항' ---------- */
   function drawSideBadge(){
     const b = document.querySelector('#side .js-nt-menu'); if (!b) return;
     b.querySelector('.nt-badge')?.remove();
@@ -3747,7 +3663,6 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
     renderSideNt(active);
     const nav = document.querySelector('#side .nav-items'); if (!nav) return;
     nav.querySelectorAll('.js-nt-menu').forEach(e => e.remove());
-    [...nav.querySelectorAll(':scope > .cat')].forEach(b => { if (b.querySelector('.soon') && [...b.childNodes].filter(n => n.nodeType === 3).map(n => n.textContent).join('').trim() === '매장 관리') b.remove(); });
     const html = `<button class="cat js-nt-menu ${active === 'notice' ? 'open' : ''}" onclick="go('notice')">${ic('bell')}공지사항</button>`;
     const dash = nav.querySelector(':scope > .cat[onclick*="go(\'dash\')"]');
     if (dash) dash.insertAdjacentHTML('afterend', html); else nav.insertAdjacentHTML('afterbegin', html);
@@ -4004,7 +3919,6 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
     renderSideMn(active);
     const nav = document.querySelector('#side .nav-items'); if (!nav) return;
     nav.querySelectorAll('.js-mn-menu').forEach(e => e.remove());
-    [...nav.querySelectorAll(':scope > .cat')].forEach(b => { if (b.querySelector('.soon') && [...b.childNodes].filter(n => n.nodeType === 3).map(n => n.textContent).join('').trim() === '매뉴얼 관리') b.remove(); });
     const open = !!PAGES[active];
     const html = `<button class="cat js-mn-menu ${open ? 'open' : ''}" onclick="const on=this.classList.toggle('open');this.nextElementSibling.classList.toggle('open',on)">${ic('book')}매뉴얼 관리${ic('chevron').replace('class="icon"', 'class="icon ar"')}</button><div class="sub js-mn-menu ${open ? 'open' : ''}">${Object.entries(PAGES).map(([k, v]) => `<a role="button" tabindex="0" class="${k === active ? 'on' : ''}" onclick="go('${k}')">${v[1]}</a>`).join('')}</div>`;
     const soon = nav.querySelector('.nav-soon-label');
@@ -4802,6 +4716,17 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
   const h = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const PAGE = 'comp';
   const CP = { data: null, uid: '', tab: 'list', brand: 0, st: 'all', q: '' };
+  const CP_GUIDE = [
+    ['처음 등록하면', '전국 시·군·구 260곳을 하나씩 검색해 지금 있는 매장을 모두 찾아요. 브랜드 하나에 15분 정도 걸려요.'],
+    ['매일 새벽 3시', '찾아 둔 매장이 아직 있는지 하나씩 확인하고, 시·도 단위로 새 매장을 찾아요.'],
+    ['일주일에 한 번', '브랜드마다 정해진 요일에 시·군·구까지 다시 훑어 새 출점을 꼼꼼히 찾아요.'],
+    ['폐점 판정', '3일 연속 안 보이면 폐점 의심, 7일이면 폐점으로 바뀌어요. 문을 닫았는데 네이버에 남아 있는 곳은 매장을 눌러 <b>폐점 처리</b>로 직접 지정해 주세요. 직접 지정한 폐점은 자동 확인이 되돌리지 않아요.'],
+    ['리뷰 정체', '리뷰가 60일 동안 하나도 안 늘면 표시돼요. 네이버에만 남은 폐점 매장일 수 있으니 확인해 보세요.'],
+    ['자동 숨김', '업종이 본사·사무실·물류처럼 음식점이 아닌 곳은 자동으로 숨겨요. 목록 필터의 <b>숨긴 매장</b>에서 다시 보이게 할 수 있어요.'],
+    ['왜 천천히 하나요?', '네이버가 자동 검색을 막지 않도록 검색 사이사이 쉬어 가며 해요.'],
+    ['왜 10개까지인가요?', '브랜드가 늘수록 매일 검색할 양이 늘어나요. 막히지 않고 하루 안에 끝낼 수 있는 양이 브랜드 10개, 매장 700곳 정도예요.'],
+    ['빠진 매장이 있다면', "네이버에 다른 이름으로 등록된 매장은 못 찾을 수 있어요. '매장 직접 추가'로 넣어 주세요."]
+  ];
   const can = () => !!(SESSION.user && (SESSION.user.role === 'admin' || SESSION.user.role === 'hq'));
   const closeM = () => document.getElementById('inv-modal')?.remove();
   const md = s => { if (!s) return ''; const [y, m, d] = String(s).slice(0, 10).split('-'); return `${+m}/${+d}`; };
@@ -4868,17 +4793,6 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
   .cp-box{background:#f6f7f3;border-radius:9px;padding:10px 12px;font-size:12px;color:#4a5244;line-height:1.7;margin-bottom:10px}
   .cp-help{font-size:11px;color:#8b9381;line-height:1.6;margin-top:4px}
   .cp-foot{font-size:11px;color:#8b9381;margin-top:10px;line-height:1.7}
-  .cp-how{margin:-4px 0 2px;font-size:12px;color:#4a5244}
-  .cp-how-sub{font-size:11px;color:var(--sub);margin:0 0 12px;line-height:1.6}
-  .cp-how summary{cursor:pointer;color:#5f6858;display:inline-flex;align-items:center;gap:4px;list-style:none;padding:2px 0}
-  .cp-how summary::-webkit-details-marker{display:none}
-  .cp-how summary::after{content:'';width:6px;height:6px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:rotate(45deg) translateY(-2px);margin-left:4px;transition:transform .15s}
-  .cp-how[open] summary::after{transform:rotate(225deg) translateY(-1px)}
-  .cp-how summary:focus-visible{outline:2px solid #22311f;outline-offset:2px;border-radius:4px}
-  .cp-how dl{margin:8px 0 0;background:#f6f7f3;border-radius:9px;padding:12px 14px;display:grid;grid-template-columns:104px minmax(0,1fr);gap:7px 12px;line-height:1.6}
-  .cp-how dt{font-weight:600;color:#2d3726}
-  .cp-how dd{margin:0}
-  @media(max-width:640px){.cp-how dl{grid-template-columns:1fr;gap:2px}.cp-how dd{margin-bottom:8px}.cp-how dd:last-child{margin-bottom:0}}
   @media(max-width:640px){.cp-row{grid-template-columns:minmax(0,1fr) 64px 58px;padding:9px 10px}.cp-row .ar{display:none}.cp-bc{min-width:0;flex:1 1 44%}.cp-sum b{font-size:17px}}`;
   document.head.appendChild(st);
 
@@ -4896,8 +4810,6 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
   renderSide = function(active){
     renderSideCp(active);
     const nav = document.querySelector('#side .nav-items'); if (!nav) return;
-    // 준비중 '경쟁사 분석' 버튼 삭제
-    [...nav.querySelectorAll(':scope > .cat')].forEach(b => { if (b.querySelector('.soon') && b.textContent.includes('경쟁사 분석')) b.remove(); });
     if (!nav.querySelector(':scope > .cat .soon')) nav.querySelector('.nav-soon-label')?.remove();
     if (!can()) return;
     const sub = nav.querySelector('.sub.js-tr-menu'); if (!sub) return;
@@ -4919,6 +4831,7 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
   function pageCp(){
     document.getElementById('main').innerHTML = simpleHero(['분석 시스템', '경쟁사 분석'], 'COMPETITOR · NAVER PLACE', '경쟁사 분석',
       '경쟁 브랜드를 등록하면 네이버 플레이스 매장을 자동으로 찾고, 매일 새벽 다시 확인해 새로오픈·폐점을 쌓아요.') +
+      pageGuide('cp', '처음 등록 15분 정도 소요 · 매일 새벽 3시 업데이트 · 주 1회 새 출점 확인', CP_GUIDE, '수집은 이렇게 해요') +
       `<section class="card" id="cp-brands"><div class="bi-empty">불러오는 중...</div></section>
        <section class="card" id="cp-main" style="display:none"></section>` + pageFoot();
     if (CP.data) draw();
@@ -4941,18 +4854,6 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
     document.getElementById('cp-brands').innerHTML = `
       <div class="cp-top"><strong>경쟁 브랜드 ${brands.length}</strong><span class="cp-r"><button class="bi-b" onclick="cpBrand(0)">${ic('plus')}브랜드 추가</button></span></div>
       <div class="cp-run"><i class="cp-dot ${run && !run.closed && run.total ? 'bad' : ''}"></i><span>${runTxt}</span></div>
-      <details class="cp-how" ${CP.how ? 'open' : ''} ontoggle="cpHow(this.open)"><summary>수집은 이렇게 해요</summary><dl>
-        <dt>처음 등록하면</dt><dd>전국 시·군·구 260곳을 하나씩 검색해 지금 있는 매장을 모두 찾아요. 브랜드 하나에 15분 정도 걸려요.</dd>
-        <dt>매일 새벽 3시</dt><dd>찾아 둔 매장이 아직 있는지 하나씩 확인하고, 시·도 단위로 새 매장을 찾아요.</dd>
-        <dt>일주일에 한 번</dt><dd>브랜드마다 정해진 요일에 시·군·구까지 다시 훑어 새 출점을 꼼꼼히 찾아요.</dd>
-        <dt>폐점 판정</dt><dd>3일 연속 안 보이면 폐점 의심, 7일이면 폐점으로 바뀌어요. 문을 닫았는데 네이버에 남아 있는 곳은 매장을 눌러 <b>폐점 처리</b>로 직접 지정해 주세요. 직접 지정한 폐점은 자동 확인이 되돌리지 않아요.</dd>
-        <dt>리뷰 정체</dt><dd>리뷰가 60일 동안 하나도 안 늘면 표시돼요. 네이버에만 남은 폐점 매장일 수 있으니 확인해 보세요.</dd>
-        <dt>자동 숨김</dt><dd>업종이 본사·사무실·물류처럼 음식점이 아닌 곳은 자동으로 숨겨요. 목록 필터의 <b>숨긴 매장</b>에서 다시 보이게 할 수 있어요.</dd>
-        <dt>왜 천천히 하나요?</dt><dd>네이버가 자동 검색을 막지 않도록 검색 사이사이 쉬어 가며 해요.</dd>
-        <dt>왜 10개까지인가요?</dt><dd>브랜드가 늘수록 매일 검색할 양이 늘어나요. 막히지 않고 하루 안에 끝낼 수 있는 양이 브랜드 10개, 매장 700곳 정도예요.</dd>
-        <dt>빠진 매장이 있다면</dt><dd>네이버에 다른 이름으로 등록된 매장은 못 찾을 수 있어요. '매장 직접 추가'로 넣어 주세요.</dd>
-      </dl></details>
-      <div class="cp-how-sub">처음 등록 15분 정도 소요 · 매일 새벽 3시 업데이트 · 주 1회 새 출점 확인</div>
       ${brands.length ? `<div class="cp-brands">${brands.map(b => `<button class="cp-bc ${CP.brand === b.id ? 'on' : ''} ${b.active ? '' : 'off'}" onclick="cpPick(${b.id})">
           <b>${h(b.name)} ${brandState(b)}<i onclick="event.stopPropagation();cpBrand(${b.id})" title="수정">✎</i></b>
           <small>운영 ${b.open}곳${b.closed ? ` · <em>폐점 ${b.closed}곳</em>` : ''}${b.hid ? ` · 숨김 ${b.hid}` : ''}</small></button>`).join('')}</div>`
@@ -5039,7 +4940,6 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
   window.cpTab = t => { CP.tab = t; draw(); };
   window.cpPick = id => { CP.brand = CP.brand === id ? 0 : id; draw(); };
   window.cpSt = v => { CP.st = v; drawList(); };
-  window.cpHow = v => { CP.how = v; };
   window.cpQ = v => { CP.q = v; clearTimeout(CP.qt); CP.qt = setTimeout(() => { drawList(); const i = document.querySelector('.cp-filter input'); if (i) { i.focus(); i.setSelectionRange(i.value.length, i.value.length); } }, 250); };
 
   /* ---------- 매장 상세 ---------- */
@@ -5326,6 +5226,67 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
       '안 보이면 <strong>⋮</strong> 메뉴 → <strong>저장 및 공유</strong> → <strong>페이지를 앱으로 설치</strong>를 고르세요.',
       '이미 설치했다면 바탕화면·시작 메뉴의 멘야마쯔리로 여시면 돼요.']);
   };
+})();
+</script>
+<script>
+/* ==========================================================
+   화면 안내 (2026-11-04) — 자동 수집·제한이 있는 메뉴에 제목 설명 바로 아래 안내
+   - 제목(h1)으로 화면을 찾아 붙임. 화면이 다시 그려져도 자동으로 다시 붙음
+   - 경쟁사 분석은 자기 화면 코드에서 직접 붙임(문구: 수집은 이렇게 해요)
+   ========================================================== */
+(function(){
+  const JETTE = ['제때 매일 7·13·18시 · 최근 6개월 조회 · 배송일 기준', [
+    ['수집 시각', '제때 주문을 매일 7·13·18시에 가져와요.'],
+    ['최근 2주', '최근 2주 배송분은 매번 다시 받아 주문 수정이 반영돼요.'],
+    ['조회 범위', '최근 6개월까지 볼 수 있고, 날짜는 배송일 기준이에요.']]];
+  const FC = ['FC다움 10분마다 업데이트 · 확인용 화면', [
+    ['수집', 'FC다움에서 10분마다 새 발주를 가져와요.'],
+    ['처리', '이 화면은 확인용이에요. 확인·완료 처리는 FC다움에서 해 주세요.']]];
+  const STOCK = ['FC다움 본사 택배 발주 완료 시 자동 출고', [
+    ['자동 출고', 'FC다움 본사 택배 발주가 완료되면 해당 수량이 창고 재고에서 자동으로 빠져요.'],
+    ['직접 등록', '그 밖의 입고·출고와 실제 센 수량은 입·출고 등록, 월말 재고조사에서 넣어 주세요.']]];
+  const GUIDES = {
+    '매장별 매출 조회': ['sales', '이지포스 매일 7·12·18·23시 · N오더 하루 4번 · 순매출 기준', [
+      ['수집 시각', '이지포스는 매일 7·12·18·23시, N오더는 하루 4번 자동으로 가져와요.'],
+      ['최근 3일', '이지포스는 최근 3일치를 매번 다시 받아, 늦게 잡힌 취소·환불도 반영돼요.'],
+      ['금액 기준', '할인을 뺀 순매출이에요. 포스 화면의 총매출과 다를 수 있어요.']]],
+    '매장별 주문내역 조회': ['jette', ...JETTE],
+    '기간별 공급가 조회': ['jette', ...JETTE],
+    '매장 발주 (FC다움)': ['fc', ...FC],
+    'FC다움 본사 발주': ['fc', ...FC],
+    '본사 창고 재고 현황': ['stock', ...STOCK],
+    '재고 현황': ['stock', ...STOCK],
+    '가맹점 현황': ['fran', '네이버 휴무 매일 7·18시 확인', [
+      ['수집 시각', '네이버 스마트플레이스에 등록된 휴무를 매일 7시·18시에 확인해요.'],
+      ['휴무 구분', '요일로 표시되면 정기휴무, 날짜가 붙으면 임시휴무예요.'],
+      ['주의', '점주가 네이버에 휴무를 안 올리면 여기에도 나오지 않아요.']]],
+    '쌍용본점 출결관리': ['att', '오션 출결 하루 3번 업데이트', [
+      ['수집', '오션의 출퇴근 기록과 월근태를 하루 3번 가져와요. 방금 찍은 출근은 다음 수집 때 보여요.']]],
+    '트렌드 분석': ['trend', '열 때마다 네이버 데이터랩에서 바로 조회 · 키워드 5개까지', [
+      ['조회 방식', '따로 저장하지 않고, 화면을 열 때마다 네이버에서 바로 가져와요.'],
+      ['숫자의 뜻', '실제 검색 횟수가 아니라, 기간 중 가장 많이 검색된 날을 100으로 둔 상대값이에요.'],
+      ['개별 추이', '키워드마다 기준이 달라 값끼리 비교하면 안 되고, 변화율만 비교할 수 있어요.']]],
+    '상권 분석': ['area', '매일 새벽 3시 기록(반경 500m) · 기록 시작일부터 누적', [
+      ['기록', '매장 반경 500m 안 업소를 매일 새벽 3시에 기록해요.'],
+      ['반경 선택', '300m·1km를 골라도 추이와 개업·폐업은 500m 기록 기준이에요.'],
+      ['개업·폐업', '기록을 시작한 날부터 쌓여서, 그 이전 변화는 볼 수 없어요.'],
+      ['후보지 조회', '신규 후보지 주소는 기록 없이 오늘 기준으로만 보여줘요.']]],
+    '식자재 분석': ['cost', 'aT 도·소매 가격 · 조회할 때마다 바로 가져옴', [
+      ['자료', '한국농수산식품유통공사(aT)가 조사한 지역별 도·소매 가격이에요.'],
+      ['빈 기간', '지역·기간에 따라 조사된 가격이 없을 수 있어요. 이때는 서울처럼 큰 지역으로 바꿔 보세요.']]]
+  };
+  function attach(){
+    const main = document.getElementById('main'); if (!main) return;
+    const hero = main.querySelector(':scope > .page-hero'); if (!hero || main.querySelector('.pg-guide')) return;
+    const g = GUIDES[(hero.querySelector('h1')?.textContent || '').trim()]; if (!g) return;
+    hero.insertAdjacentHTML('afterend', pageGuide(g[0], g[1], g[2]));
+  }
+  function start(){
+    const main = document.getElementById('main'); if (!main) return;
+    new MutationObserver(attach).observe(main, { childList: true });
+    attach();
+  }
+  document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', start) : start();
 })();
 </script>
 </body>
