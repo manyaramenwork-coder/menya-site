@@ -4793,6 +4793,7 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
    - 브랜드 등록: 이 화면에서 (관리자·본사)
    - 수집: Apps Script CompetitorScan.gs (10분마다 새 브랜드 확인, 매일 4시 전체 확인)
    - 판정: 처음 보는 매장 = 새로오픈 / 3일 미확인 = 폐점 의심 / 7일 = 폐점
+   - 11/04 보완: 비음식점 자동 숨김·숨긴 매장 되돌리기 / 폐점 직접 지정(자동 확인이 안 되돌림) / 리뷰 60일 정체 표시
    ========================================================== */
 (function(){
   PATHS.plus = PATHS.plus || 'M12 5v14 M5 12h14';
@@ -4830,7 +4831,7 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
   .cp-bc small em{font-style:normal;color:#c62429}
   .cp-tag{display:inline-block;font-size:10px;font-weight:600;border-radius:5px;padding:1px 6px;white-space:nowrap}
   .cp-tag.new{background:#e3f0dc;color:#2f5a24}.cp-tag.sus{background:#fff1d6;color:#9a6a0b}.cp-tag.cls{background:#ececec;color:#666}
-  .cp-tag.add{background:#e9f1fa;color:#2c5a8a}.cp-tag.wait{background:#f1efe7;color:#7a6f52}.cp-tag.ret{background:#e9f1fa;color:#2c5a8a}
+  .cp-tag.add{background:#e9f1fa;color:#2c5a8a}.cp-tag.stale{background:#f4ece6;color:#8a5a3c}.cp-tag.hid{background:#f1f1ee;color:#7a7f73}.cp-tag.wait{background:#f1efe7;color:#7a6f52}.cp-tag.ret{background:#e9f1fa;color:#2c5a8a}
   .cp-tabs{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
   .cp-tabs button{border:1px solid #dcdfd6;background:#fff;border-radius:999px;padding:8px 16px;color:#5d6656;font-size:13px;cursor:pointer}
   .cp-tabs button.on{background:#22311f;border-color:#22311f;color:#fff}
@@ -4843,6 +4844,8 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
   .cp-row:hover{background:#fafbf7}
   .cp-row.head{background:#f6f7f3;color:#6c7365;font-size:11px;cursor:default;padding:8px 12px}
   .cp-row.cls{color:#a3a89c}
+  .cp-row.hd{grid-template-columns:minmax(0,1fr) 90px;cursor:default}
+  .cp-row.hd .stc .bi-b{font-size:11px;padding:5px 9px;min-height:0}
   .cp-row .nm b{font-size:13px;font-weight:600;color:#222b1e;margin-right:5px}
   .cp-row.cls .nm b{color:#9aa38f;text-decoration:line-through}
   .cp-row .nm small{display:block;color:#8b9381;font-size:11px;margin-top:2px}
@@ -4942,7 +4945,9 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
         <dt>처음 등록하면</dt><dd>전국 시·군·구 260곳을 하나씩 검색해 지금 있는 매장을 모두 찾아요. 브랜드 하나에 15분 정도 걸려요.</dd>
         <dt>매일 새벽 3시</dt><dd>찾아 둔 매장이 아직 있는지 하나씩 확인하고, 시·도 단위로 새 매장을 찾아요.</dd>
         <dt>일주일에 한 번</dt><dd>브랜드마다 정해진 요일에 시·군·구까지 다시 훑어 새 출점을 꼼꼼히 찾아요.</dd>
-        <dt>폐점 판정</dt><dd>3일 연속 안 보이면 폐점 의심, 7일이면 폐점으로 바뀌어요.</dd>
+        <dt>폐점 판정</dt><dd>3일 연속 안 보이면 폐점 의심, 7일이면 폐점으로 바뀌어요. 문을 닫았는데 네이버에 남아 있는 곳은 매장을 눌러 <b>폐점 처리</b>로 직접 지정해 주세요. 직접 지정한 폐점은 자동 확인이 되돌리지 않아요.</dd>
+        <dt>리뷰 정체</dt><dd>리뷰가 60일 동안 하나도 안 늘면 표시돼요. 네이버에만 남은 폐점 매장일 수 있으니 확인해 보세요.</dd>
+        <dt>자동 숨김</dt><dd>업종이 본사·사무실·물류처럼 음식점이 아닌 곳은 자동으로 숨겨요. 목록 필터의 <b>숨긴 매장</b>에서 다시 보이게 할 수 있어요.</dd>
         <dt>왜 천천히 하나요?</dt><dd>네이버가 자동 검색을 막지 않도록 검색 사이사이 쉬어 가며 해요.</dd>
         <dt>왜 10개까지인가요?</dt><dd>브랜드가 늘수록 매일 검색할 양이 늘어나요. 막히지 않고 하루 안에 끝낼 수 있는 양이 브랜드 10개, 매장 700곳 정도예요.</dd>
         <dt>빠진 매장이 있다면</dt><dd>네이버에 다른 이름으로 등록된 매장은 못 찾을 수 있어요. '매장 직접 추가'로 넣어 주세요.</dd>
@@ -4950,7 +4955,7 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
       <div class="cp-how-sub">처음 등록 15분 정도 소요 · 매일 새벽 3시 업데이트 · 주 1회 새 출점 확인</div>
       ${brands.length ? `<div class="cp-brands">${brands.map(b => `<button class="cp-bc ${CP.brand === b.id ? 'on' : ''} ${b.active ? '' : 'off'}" onclick="cpPick(${b.id})">
           <b>${h(b.name)} ${brandState(b)}<i onclick="event.stopPropagation();cpBrand(${b.id})" title="수정">✎</i></b>
-          <small>운영 ${b.open}곳${b.closed ? ` · <em>폐점 ${b.closed}곳</em>` : ''}</small></button>`).join('')}</div>`
+          <small>운영 ${b.open}곳${b.closed ? ` · <em>폐점 ${b.closed}곳</em>` : ''}${b.hid ? ` · 숨김 ${b.hid}` : ''}</small></button>`).join('')}</div>`
         : `<div class="bi-empty">아직 등록된 브랜드가 없어요.<br><b>브랜드 추가</b>를 눌러 경쟁 브랜드 이름을 넣어 주세요. 몇 분 안에 매장 찾기가 시작돼요.</div>`}`;
     const main = document.getElementById('cp-main');
     if (!brands.length) { main.style.display = 'none'; return; }
@@ -4963,18 +4968,20 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
   function stTag(s){
     if (s.status === '폐점') return `<span class="cp-tag cls">폐점 ${md(s.closed_at)}</span>`;
     if (s.status === '폐점의심') return `<span class="cp-tag sus">폐점 의심</span>`;
+    if (s.stale) return `<span class="cp-tag stale">리뷰 정체</span>`;
     if (s.is_new) return `<span class="cp-tag new">새로오픈</span>`;
     return '<span style="color:#9aa38f">운영 중</span>';
   }
 
   function drawList(){
     const d = CP.data, q = CP.q.replace(/\s/g, '');
+    if (CP.st === 'hidden') return drawHidden();
     let list = (d.stores || []).filter(s => !CP.brand || s.brand === CP.brand);
-    list = list.filter(s => CP.st === 'all' ? true : CP.st === 'new' ? s.is_new : CP.st === 'open' ? s.status !== '폐점' : s.status === CP.st);
+    list = list.filter(s => CP.st === 'all' ? true : CP.st === 'new' ? s.is_new : CP.st === 'open' ? s.status !== '폐점' : CP.st === 'stale' ? s.stale : s.status === CP.st);
     if (q) list = list.filter(s => (s.name + s.addr).replace(/\s/g, '').includes(q));
-    const rank = s => s.status === '폐점의심' ? 0 : s.is_new ? 1 : s.status === '폐점' ? 3 : 2;
+    const rank = s => s.status === '폐점의심' ? 0 : s.stale ? 1 : s.is_new ? 2 : s.status === '폐점' ? 4 : 3;
     list.sort((a, b) => rank(a) - rank(b) || a.brand - b.brand || a.addr.localeCompare(b.addr, 'ko'));
-    const opts = [['all', '전체'], ['open', '운영 중'], ['new', '새로오픈'], ['폐점의심', '폐점 의심'], ['폐점', '폐점']];
+    const opts = CP_OPTS();
     document.getElementById('cp-body').innerHTML = `
       <div class="cp-filter"><select onchange="cpSt(this.value)">${opts.map(([v, t]) => `<option value="${v}" ${CP.st === v ? 'selected' : ''}>${t}</option>`).join('')}</select>
         <input type="search" placeholder="매장명·지역 검색" value="${h(CP.q)}" oninput="cpQ(this.value)">
@@ -4986,7 +4993,28 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
           <span class="rv">${num(s.rev)}${s.rev30 > 0 ? `<small>30일 +${num(s.rev30)}</small>` : ''}</span>
           <span class="stc">${stTag(s)}</span></div>`).join('')}</div>`
         : `<div class="bi-empty">${(d.stores || []).length ? '조건에 맞는 매장이 없어요.' : '아직 찾은 매장이 없어요. 브랜드를 등록하면 몇 분 안에 찾기 시작하고, 1시간 정도면 여기에 다 채워져요.'}</div>`}
-      <div class="cp-foot">처음 찾은 매장은 '기존 매장'으로 깔고, 그 뒤 새로 잡히는 매장만 새로오픈으로 기록해요. 리뷰가 50개 넘는 매장이 늦게 잡히면 원래 있던 매장으로 보고 '추가 발견'으로 남겨요. 3일 연속 안 잡히면 폐점 의심, 7일이면 폐점이에요.</div>`;
+      <div class="cp-foot">처음 찾은 매장은 '기존 매장'으로 깔고, 그 뒤 새로 잡히는 매장만 새로오픈으로 기록해요. 리뷰가 50개 넘는 매장이 늦게 잡히면 원래 있던 매장으로 보고 '추가 발견'으로 남겨요. 3일 연속 안 잡히면 폐점 의심, 7일이면 폐점이에요. 네이버에 남아 있는 폐점 매장은 매장을 눌러 직접 폐점 처리해 주세요.</div>`;
+  }
+
+  function CP_OPTS(){
+    const hid = (CP.data.hidden || []).filter(s => !CP.brand || s.brand === CP.brand).length;
+    return [['all', '전체'], ['open', '운영 중'], ['new', '새로오픈'], ['폐점의심', '폐점 의심'], ['stale', '리뷰 정체'], ['폐점', '폐점'], ['hidden', `숨긴 매장 ${hid}`]];
+  }
+
+  function drawHidden(){
+    const d = CP.data, q = CP.q.replace(/\s/g, '');
+    let list = (d.hidden || []).filter(s => !CP.brand || s.brand === CP.brand);
+    if (q) list = list.filter(s => (s.name + s.addr).replace(/\s/g, '').includes(q));
+    const opts = CP_OPTS();
+    document.getElementById('cp-body').innerHTML = `
+      <div class="cp-filter"><select onchange="cpSt(this.value)">${opts.map(([v, t]) => `<option value="${v}" ${CP.st === v ? 'selected' : ''}>${t}</option>`).join('')}</select>
+        <input type="search" placeholder="매장명·지역 검색" value="${h(CP.q)}" oninput="cpQ(this.value)"></div>
+      ${list.length ? `<div class="cp-list"><div class="cp-row head hd"><span>매장</span><span class="stc"></span></div>
+        ${list.map(s => `<div class="cp-row hd">
+          <span class="nm"><b>${h(s.name || '(이름 없음)')}</b><span class="cp-tag hid">${s.why === 'auto' ? '자동 숨김' : '직접 뺌'}</span><small>${CP.brand ? '' : h(bName(s.brand)) + ' · '}${h(s.cat) || '업종 미확인'} · ${h(area(s.addr)) || '주소 미확인'}</small></span>
+          <span class="stc"><button class="bi-b" onclick="cpUnhide('${h(s.id)}')">다시 보이기</button></span></div>`).join('')}</div>`
+        : `<div class="bi-empty">숨긴 매장이 없어요.</div>`}
+      <div class="cp-foot">업종이 본사·사무실·물류처럼 음식점이 아닌 곳은 자동으로 숨겨요. 다시 보이게 한 매장은 이후 자동으로 숨기지 않아요.</div>`;
   }
 
   function drawHist(){
@@ -5029,10 +5057,25 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
         <span>처음 확인</span><span>${ymd(s.first)}${s.base ? ' <span style="color:#9aa38f;font-size:12px">(등록 당시 기존 매장)</span>' : ''}</span>
         <span>마지막 확인</span><span>${ymd(s.last) || '-'}</span>
       </div>
-      <div class="cp-help">다른 가게가 잘못 잡혔다면 <b>목록에서 빼기</b>를 눌러 주세요. 다음 수집에서도 다시 생기지 않아요.</div>`, closeM, '닫기');
+      ${s.stale ? '<div class="cp-box">리뷰가 60일 동안 늘지 않았어요. 네이버에만 남아 있는 폐점 매장일 수 있으니 확인해 보세요.</div>' : ''}
+      ${s.cm ? '<div class="cp-box">직접 폐점으로 지정한 매장이에요. 네이버에 남아 있어도 자동 확인이 운영 중으로 되돌리지 않아요.</div>' : ''}
+      <div class="cp-help">문을 닫았는데 네이버에 남아 있다면 <b>폐점 처리</b>, 다른 가게가 잘못 잡혔다면 <b>목록에서 빼기</b>를 눌러 주세요.</div>`, closeM, '닫기');
     const foot = document.querySelector('#inv-modal .im-foot');
     foot.querySelector('.btn.ghost')?.remove();
-    foot.insertAdjacentHTML('afterbegin', `<div style="margin-right:auto"><button class="btn ghost" onclick="cpHide('${h(s.id)}')">목록에서 빼기</button></div>`);
+    const closeBtn = s.cm ? `<button class="btn ghost" onclick="cpClose('${h(s.id)}', false)">폐점 취소</button>`
+      : s.status === '폐점' ? '' : `<button class="btn ghost" style="color:#a3262c" onclick="cpClose('${h(s.id)}', true)">폐점 처리</button>`;
+    foot.insertAdjacentHTML('afterbegin', `<div style="margin-right:auto;display:flex;gap:6px;flex-wrap:wrap">${closeBtn}<button class="btn ghost" onclick="cpHide('${h(s.id)}')">목록에서 빼기</button></div>`);
+  };
+  window.cpClose = async function(id, on){
+    if (!confirm(on ? '이 매장을 폐점으로 지정할까요? 네이버에 남아 있어도 자동 확인이 되돌리지 않아요.' : '폐점 지정을 취소하고 운영 중으로 되돌릴까요?')) return;
+    const { error } = await SB.rpc('competitor_store_close', { p_id: id, p_close: on });
+    if (error) return toast('처리하지 못했어요: ' + error.message);
+    closeM(); toast(on ? '폐점으로 지정했어요.' : '운영 중으로 되돌렸어요.'); await load(); draw();
+  };
+  window.cpUnhide = async function(id){
+    const { error } = await SB.rpc('competitor_store_unhide', { p_id: id });
+    if (error) return toast('처리하지 못했어요: ' + error.message);
+    toast('다시 보이게 했어요.'); await load(); draw();
   };
   window.cpHide = async function(id){
     if (!confirm('이 매장을 목록에서 뺄까요? 이력도 함께 숨겨져요.')) return;
