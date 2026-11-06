@@ -5956,6 +5956,9 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
 
   /* ---------- 상단 동그라미: 이름 두 글자 ---------- */
   const shortName = n => {
+    // 여러 단어 이름(예: 멘야마쯔리 관리자)은 마지막 단어를 그대로
+    const w = String(n || '').trim().split(/\s+/);
+    if (w.length > 1 && /^[가-힣]{2,3}$/.test(w[w.length - 1])) return w[w.length - 1];
     n = String(n || '').replace(/\s/g, '');
     if (/^[가-힣]{3,}$/.test(n)) return n.slice(-2);
     if (/^[가-힣]{2}$/.test(n)) return n;
@@ -5968,6 +5971,7 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
     const s = shortName(a.dataset.n || (u && u.name)); if (!s) return;
     if (a.textContent !== s) a.textContent = s;
     a.classList.toggle('mm-av-nm', s.length > 1);
+    a.classList.toggle('mm-av-3', s.length > 2);
   }
   const av = document.querySelector('.top .av');
   if (av) { new MutationObserver(avName).observe(av, { childList: true, characterData: true, subtree: true }); avName(); }
@@ -5980,7 +5984,8 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
   .top .av{position:relative;overflow:visible!important;border-radius:8px!important;border:2px solid transparent!important;background-clip:padding-box!important}
   .top .av img{border-radius:6px}
   .top .av::after{content:"";position:absolute;inset:-2px;width:auto;height:auto;border:0;border-radius:9px;padding:2px;background:linear-gradient(135deg,#c62429,#f0a020,#2fa84f,#2f6fd6);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none}
-  .top .av.mm-av-nm{font-size:11px;letter-spacing:-.04em}`;
+  .top .av.mm-av-nm{font-size:11px;letter-spacing:-.04em}
+  .top .av.mm-av-3{font-size:9px;letter-spacing:-.08em}`;
   document.head.appendChild(st);
 })();
 </script>
