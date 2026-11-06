@@ -3584,6 +3584,8 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
   .nt-pop .s{grid-column:2;font-size:11px;color:#8b9381}
   .nt-pop .ft{display:block;width:100%;border:0;background:#f6f7f3;color:#3f4839;font-size:12px;padding:11px;cursor:pointer}
   .nt-pop .em{padding:22px 14px;text-align:center;font-size:12px;color:#909b84}
+  .sub a .mm-sub-badge,.mm-fly-l a .mm-sub-badge{position:absolute;right:10px;top:50%;transform:translateY(-50%);margin:0}
+  .mm-fly-l a{position:relative}
   .nt-badge{margin-left:auto;min-width:18px;height:18px;padding:0 5px;box-sizing:border-box;border-radius:999px;background:#c62429;color:#fff;font-size:10px;font-weight:700;display:grid;place-items:center}
   .nt-row{display:grid;grid-template-columns:10px minmax(0,1fr) auto;gap:4px 10px;align-items:center;border-top:1px solid var(--line);padding:14px 4px;cursor:pointer}
   .nt-row:first-child{border-top:0}
@@ -4154,7 +4156,7 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
   const PAGES = { 'ap-mine': '내 상신함', 'ap-box': '결재함', 'ap-cc': '참조함' };
   const canBox = () => !!(SESSION.user && (SESSION.user.role === 'admin' || SESSION.user.role === 'hq'));
   const MAXL = 5, MAXC = 10;
-  const ST = { wait: ['대기', 'w'], ok: ['승인', 'o'], no: ['반려', 'n'] };
+  const ST = { wait: ['대기', 'w'], ok: ['승인', 'o'], no: ['반려', 'n'], hold: ['보류', 'h'] };
   const BUCKET = 'approval-files', MAXF = 5, MAXB = 20 * 1024 * 1024;
   const MIME = { pdf: 'application/pdf', hwp: 'application/x-hwp', hwpx: 'application/haansofthwpx', doc: 'application/msword',
     docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', xls: 'application/vnd.ms-excel',
@@ -4175,13 +4177,14 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
       return [...done, L[a.step].name + ' 대기'].join(' → ');
     }
     if (a.status === 'no') { const n = L.find(x => x.act === 'no'); return n ? n.name + ' 반려' : ''; }
+    if (a.status === 'hold') { const n = L.find(x => x.act === 'hold'); return (n ? n.name + ' 보류' : '보류') + ' · 수정 후 다시 상신'; }
     return '최종 승인 · ' + L[L.length - 1].name;
   }
 
   const st = document.createElement('style');
   st.textContent = `
   .ap-st{flex:none;font-style:normal;font-size:11px;font-weight:600;padding:2px 8px;border-radius:6px}
-  .ap-st.w{background:#fbf3e2;color:#8a6417}.ap-st.o{background:#e8f1e1;color:#3b6420}.ap-st.n{background:#fbeeee;color:#a3262c}
+  .ap-st.w{background:#fbf3e2;color:#8a6417}.ap-st.o{background:#e8f1e1;color:#3b6420}.ap-st.n{background:#fbeeee;color:#a3262c}.ap-st.h{background:#fdeedd;color:#b25b0e}
   .ap-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:4px 12px;align-items:center;border-top:1px solid var(--line);padding:13px 4px;cursor:pointer}
   .ap-row:first-child{border-top:0}.ap-row:hover{background:#fafbf7}
   .ap-row .t{font-size:14px;font-weight:500;color:#222b1e;display:flex;align-items:center;gap:6px;min-width:0}
@@ -4192,6 +4195,7 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
   .ap-meta{display:grid;grid-template-columns:70px 1fr;gap:7px 10px;font-size:13px;color:#2d3726;margin-bottom:12px}
   .ap-meta>span:nth-child(odd){color:#8b9381;font-size:12px}
   .ap-memo{font-size:14px;line-height:1.7;color:#2d3726;white-space:pre-wrap;word-break:break-word;background:#f8f9f5;border-radius:8px;padding:10px 12px}
+  .ap-reason.hold{background:#fdf1e4;color:#7a3f0a}
   .ap-reason{margin-top:12px;background:#fbeeee;color:#7c1f24;border-radius:8px;padding:10px 12px;font-size:13px;white-space:pre-wrap}
   .ap-reason b{display:block;font-size:12px;margin-bottom:3px}
   .ap-files{display:flex;flex-direction:column;gap:6px;margin-top:12px}
@@ -4223,7 +4227,7 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
   .ap-steps{display:flex;flex-direction:column;gap:6px;margin:0 0 12px}
   .ap-steps>div{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:2px 10px;align-items:center;font-size:13px;color:#2d3726}
   .ap-steps>div>b{width:22px;height:22px;border-radius:50%;background:#eceee8;color:#5f6858;font-size:11px;display:grid;place-items:center}
-  .ap-steps>div.ok>b{background:#3b6420;color:#fff}.ap-steps>div.no>b{background:#a3262c;color:#fff}.ap-steps>div.now>b{background:#c9952b;color:#fff}
+  .ap-steps>div.ok>b{background:#3b6420;color:#fff}.ap-steps>div.no>b{background:#a3262c;color:#fff}.ap-steps>div.now>b{background:#c9952b;color:#fff}.ap-steps>div.hold>b{background:#d9771f;color:#fff}
   .ap-steps em{font-style:normal;font-size:12px;color:#8b9381;text-align:right;white-space:nowrap}
   .ap-steps>div.now em{color:#8a6417;font-weight:600}
   .ap-steps small{grid-column:2/4;font-size:12px;color:#7c1f24}
@@ -4245,7 +4249,7 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
     const wait = D.wait || 0, ccn = D.ccnew || 0;
     const html = (wait ? `<button class="ap-it" type="button" onclick="document.getElementById('nt-pop').remove();go('ap-box')"><span class="dot"></span><span class="t">결재 차례 ${wait}건</span><span class="s">결재함에서 승인·반려해 주세요</span></button>` : '') +
       (ccn ? `<button class="ap-it" type="button" onclick="document.getElementById('nt-pop').remove();go('ap-cc')"><span class="dot" style="background:#3b5ba5"></span><span class="t">새 참조 ${ccn}건</span><span class="s">참조함에서 확인해 주세요</span></button>` : '') +
-      res.map(a => `<button class="ap-it" type="button" onclick="document.getElementById('nt-pop').remove();apOpen(${a.id})"><span class="dot" style="background:${a.status === 'ok' ? '#5d8a3d' : '#c62429'}"></span><span class="t">상신 ${ST[a.status][0]} · ${h(a.title)}</span><span class="s">${a.done}</span></button>`).join('');
+      res.map(a => `<button class="ap-it" type="button" onclick="document.getElementById('nt-pop').remove();apOpen(${a.id})"><span class="dot" style="background:${a.status === 'ok' ? '#5d8a3d' : a.status === 'hold' ? '#d9771f' : '#c62429'}"></span><span class="t">상신 ${ST[a.status][0]} · ${h(a.title)}</span><span class="s">${a.done}</span></button>`).join('');
     return { count: wait + ccn + D.results, html };
   };
   function drawSideBadge(){
@@ -4253,6 +4257,13 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
     b.querySelector('.nt-badge')?.remove();
     const n = AP.data ? (AP.data.wait || 0) + (AP.data.ccnew || 0) + AP.data.results : 0;
     if (n) b.querySelector('.icon.ar')?.insertAdjacentHTML('beforebegin', `<span class="nt-badge">${n > 99 ? '99+' : n}</span>`);
+    // 하위 메뉴별 숫자: 결재함(내 차례) · 참조함(새 참조) · 내 상신함(결과 안 본 것)
+    const per = { 'ap-box': AP.data ? AP.data.wait || 0 : 0, 'ap-cc': AP.data ? AP.data.ccnew || 0 : 0, 'ap-mine': AP.data ? AP.data.results || 0 : 0 };
+    document.querySelectorAll('#side .sub.js-ap-menu a').forEach(a => {
+      a.querySelector('.nt-badge')?.remove();
+      const k = ((a.getAttribute('onclick') || '').match(/go\('([^']+)'\)/) || [])[1], c = per[k] || 0;
+      if (c) a.insertAdjacentHTML('beforeend', `<span class="nt-badge mm-sub-badge">${c > 99 ? '99+' : c}</span>`);
+    });
   }
 
   /* ---------- 메뉴 ---------- */
@@ -4300,7 +4311,7 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
     const box = window.__curPage === 'ap-box', cc = window.__curPage === 'ap-cc';
     const all = (box ? AP.data.box : cc ? AP.data.ccbox : AP.data.mine) || [], q = AP.f.q.toLowerCase();
     const cnt = s => all.filter(a => a.status === s).length;
-    document.getElementById('ap-chips').innerHTML = [...(box ? [['turn', `내 차례 ${all.filter(a => a.turn).length}`]] : []), ['', '전체'], ['wait', `대기 ${cnt('wait')}`], ['ok', '승인'], ['no', '반려']]
+    document.getElementById('ap-chips').innerHTML = [...(box ? [['turn', `내 차례 ${all.filter(a => a.turn).length}`]] : []), ['', '전체'], ['wait', `대기 ${cnt('wait')}`], ['ok', '승인'], ['hold', '보류'], ['no', '반려']]
       .map(([v, t]) => `<button class="bi-c ${AP.f.st === v ? 'on' : ''}" onclick="apSt('${v}')">${t}</button>`).join('');
     const list = all.filter(a => (!AP.f.st || (AP.f.st === 'turn' ? a.turn : a.status === AP.f.st)) && (!q || a.title.toLowerCase().includes(q)));
     document.getElementById('ap-cnt').textContent = `${list.length}건`;
@@ -4333,8 +4344,8 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
     }
     const L = a.line || [];
     const steps = L.length ? `<div class="ap-steps">${L.map((x, i) => {
-        const now = a.status === 'wait' && i === a.step, cls = x.act === 'ok' ? 'ok' : x.act === 'no' ? 'no' : now ? 'now' : '';
-        const tx = x.act === 'ok' ? '승인 ' + x.at.slice(5) : x.act === 'no' ? '반려 ' + x.at.slice(5) : now ? '결재 차례' : a.status === 'wait' ? '예정' : '-';
+        const now = a.status === 'wait' && i === a.step, cls = x.act === 'ok' ? 'ok' : x.act === 'no' ? 'no' : x.act === 'hold' ? 'hold' : now ? 'now' : '';
+        const tx = x.act === 'ok' ? '승인 ' + x.at.slice(5) : x.act === 'no' ? '반려 ' + x.at.slice(5) : x.act === 'hold' ? '보류 ' + x.at.slice(5) : now ? '결재 차례' : a.status === 'wait' ? '예정' : '-';
         return `<div class="${cls}"><b>${i + 1}</b><span>${window.mmAv ? mmAv(x.uid, x.name, 'sm') : ''}${h(pName(x))}</span><em>${h(tx)}</em>${x.reason && x.act === 'ok' ? `<small style="color:#5f6858">${h(x.reason)}</small>` : ''}</div>`;
       }).join('')}</div>` : '';
     iModal(a.title, `<div class="ap-meta">
@@ -4346,6 +4357,7 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
       ${(a.cc || []).length ? `<div class="ap-meta"><span>참조</span><span>${a.cc.map(c => (window.mmAv ? mmAv(c.uid, c.name, 'sm') : '') + h(pName(c))).join(', ')}</span></div>` : ''}
       ${a.memo ? `<div class="ap-memo">${h(a.memo)}</div>` : ''}
       ${a.status === 'no' && a.reason ? `<div class="ap-reason"><b>반려 사유</b>${h(a.reason)}</div>` : ''}
+      ${a.status === 'hold' && a.reason ? `<div class="ap-reason hold"><b>보류 · 고칠 내용</b>${h(a.reason)}</div>` : ''}
       ${a.status === 'ok' && a.reason ? `<div class="ap-memo" style="margin-top:12px"><b style="font-size:12px">결재 메모</b><br>${h(a.reason)}</div>` : ''}
       <div class="ap-files">${a.filelist.map((f, i) => `<button class="bi-b" type="button" onclick="apFile(${i})">${ic('clip')}<span>${h(f.name)}</span><small>${kb(f.size || 0)}</small></button>`).join('')}</div>
       <div class="ap-log"><b>진행 기록</b>${a.log.map(l => `<div><span>${h(l.at)}</span><span>${h(l.by)} · ${h(l.act)}${l.reason ? ` — ${h(l.reason)}` : ''}</span></div>`).join('')}</div>`, closeM, '닫기');
@@ -4354,17 +4366,31 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
     const b = [];
     const started = (a.line || []).some(x => x.act === 'ok');
     if (a.mine && a.status === 'wait' && !started) b.push(`<button class="btn ghost" onclick="apNew(null,${a.id})">수정</button>`, `<button class="btn ghost" style="color:#a3262c" onclick="apDel(${a.id},true)">상신 취소</button>`);
-    if (a.mine && a.status === 'no') b.push(`<button class="btn ghost" onclick="apNew(null,${a.id})">고쳐서 다시 상신</button>`);
+    if (a.mine && a.status === 'hold') b.push(`<button class="btn ghost" onclick="apNew(null,${a.id})">수정해서 다시 상신</button>`, `<button class="btn ghost" style="color:#a3262c" onclick="apDel(${a.id},true)">상신 취소</button>`);
     if (a.admin && a.status !== 'wait' && !a.mine) b.push(`<button class="btn ghost" style="color:#a3262c" onclick="apDel(${a.id})">삭제</button>`);
     if (b.length) foot.insertAdjacentHTML('afterbegin', `<div class="ap-foot-l">${b.join('')}</div>`);
     if (a.turn && a.status === 'wait') {
       const save = document.getElementById('im-save');
       save.textContent = '승인'; save.onclick = () => apDecide(a.id, true);
-      save.insertAdjacentHTML('beforebegin', `<button class="btn ghost" style="color:#a3262c" onclick="apDecide(${a.id},false)">반려</button>`);
+      save.insertAdjacentHTML('beforebegin', `<button class="btn ghost" style="color:#a3262c" onclick="apDecide(${a.id},false)">반려</button><button class="btn ghost" style="color:#b25b0e" onclick="apHold(${a.id})">보류</button>`);
     }
   };
 
   /* ---------- 승인 · 반려 (내 차례인 결재자) ---------- */
+  window.apHold = function(id){
+    const t = AP.cur && AP.cur.title;
+    iModal('보류 · ' + t, `<div class="im-grid"><div class="f wide"><label>보류 사유 <span>고칠 내용을 적어주세요 · 상신한 사람에게 그대로 보여요</span></label>
+      <textarea id="ap-reason" maxlength="500" placeholder="예) 사용 날짜를 적어서 다시 올려주세요"></textarea>
+      <div class="bi-help">상신한 사람이 고쳐서 다시 올리면 내 차례부터 이어서 결재해요. 앞에서 승인한 결재는 그대로 남아요.</div></div></div>`, async () => {
+      const r = document.getElementById('ap-reason').value.trim();
+      if (!r) return toast('보류 사유를 적어주세요.');
+      const btn = document.getElementById('im-save'); btn.disabled = true; btn.textContent = '처리 중...';
+      const { error } = await SB.rpc('appr_hold', { p_id: id, p_reason: r });
+      if (error) { btn.disabled = false; btn.textContent = '보류'; return toast('처리 실패: ' + error.message); }
+      closeM(); toast('보류했어요. 상신한 사람에게 알렸어요.');
+      await load(); draw();
+    }, '보류');
+  };
   window.apDecide = function(id, ok){
     const t = AP.cur && AP.cur.title;
     iModal(ok ? '승인 · ' + t : '반려 · ' + t, `<div class="im-grid"><div class="f wide"><label>${ok ? '결재 메모 <span>선택</span>' : '반려 사유 <span>상신한 사람에게 그대로 보여요</span>'}</label>
@@ -4393,7 +4419,7 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
     forms.forEach(f => (f.brands || []).forEach(b => { if (!brs.includes(b)) brs.push(b); }));
     const f0 = a.formId && forms.find(f => String(f.id) === String(a.formId));
     ED.brs = brs; ED.br = (f0 && (f0.brands || [])[0]) || (brs.includes('본사') ? '본사' : brs[0] || ''); ED.form = a.formId || '';
-    iModal(id ? (a.status === 'no' ? '고쳐서 다시 상신' : '상신 수정') : '새 상신', `<div class="im-grid">
+    iModal(id ? (a.status === 'hold' ? '수정해서 다시 상신' : '상신 수정') : '새 상신', `<div class="im-grid">
       <div class="f wide"><label>양식 <span>서류매뉴얼에 올라온 양식</span></label><div class="ap-brs" id="ap-brs"></div><div class="ap-form"><select id="ap-form" onchange="apFormPick(this.value)"></select>
         <button type="button" class="bi-b" id="ap-dl" onclick="apFormDl()">${ic('download')}양식 받기</button></div></div>
       <div class="f wide"><label>제목</label><input id="ap-title" maxlength="100" value="${h(a.title)}" placeholder="예) 11월 연차 신청 (홍길동)"></div>
@@ -4402,7 +4428,7 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
       <div class="f wide"><label>메모 <span>선택</span></label><textarea id="ap-memo" maxlength="1000" placeholder="결재자에게 전할 내용">${h(a.memo)}</textarea></div>
       <div class="f wide"><label>작성한 파일 <span>최대 ${MAXF}개 · 개당 20MB · PDF·한글·워드·엑셀·사진</span></label>
         <input type="file" id="ap-file" multiple accept="${Object.keys(MIME).map(e => '.' + e).join(',')}" onchange="apAdd(this)"><div class="nt-flist" id="ap-flist"></div></div>
-    </div>`, save, id ? (a.status === 'no' ? '다시 상신' : '수정') : '상신');
+    </div>`, save, id ? (a.status === 'hold' ? '다시 상신' : '수정') : '상신');
     drawForms(); apFormPick(document.getElementById('ap-form').value); drawFiles(); drawPick();
   };
   // 양식: 소속 버튼으로 나눠 보기
