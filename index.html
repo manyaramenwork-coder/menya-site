@@ -393,8 +393,8 @@ function hero(title,en,desc){return `<div class="crumb">${ic('home')}<span>워�
 function dataNote(){return `<div class="data-note"><span class="status-dot"></span><span>제때 ${META.jetteFrom} ~ ${META.jetteTo} · 업데이트 ${META.jetteUpdated}</span><span class="tag">자동 업데이트</span></div>`}
 function pageFoot(){return `<footer class="page-footer"><span>MENYAMATSURI STORE MANAGEMENT</span><span>본사 전용 · 테스트 운영</span></footer>`}
 function queryHeader(){return `<div class="section-title"><strong>${ic('filter')}조회 조건</strong><small>원하는 조건을 선택해 조회하세요</small></div>`}
-function queryActions(fn,reset){return `<div class="actions"><span class="filter-hint">${ic('info')}최근 6개월 (${META.jetteFrom} ~) 데이터를 조회할 수 있어요.</span><button class="btn ghost" onclick="${reset}()">${ic('reset')}초기화</button><button class="btn primary" onclick="${fn}()">${ic('search')}조회</button></div>`}
-dateBlock=function(){return `<div class="f"><label for="d1">조회 기간<span>배송일 기준</span></label><div class="daterow"><input aria-label="시작일" type="date" id="d1" value="${META.curFrom}"><span>~</span><input aria-label="종료일" type="date" id="d2" value="${DMAX}"></div><div class="quick"><button class="active" onclick="setRange('m');markQuick(this)">이번 달</button><button onclick="setRange('w1');markQuick(this)">지난달</button><button onclick="setRange('h2');markQuick(this)">최근 3개월</button></div></div>`};
+function queryActions(fn,reset){return `<div class="actions"><span class="filter-hint">${ic('info')}${META.jetteFrom} 부터 조회할 수 있어요 · 한 번에 최대 3개월</span><button class="btn ghost" onclick="${reset}()">${ic('reset')}초기화</button><button class="btn primary" onclick="${fn}()">${ic('search')}조회</button></div>`}
+dateBlock=function(){return `<div class="f"><label for="d1">조회 기간<span>배송일 기준</span></label><div class="daterow"><input aria-label="시작일" type="date" id="d1" value="${META.curFrom}"><span>~</span><input aria-label="종료일" type="date" id="d2" value="${DMAX}"></div><div class="quick"><button class="active" onclick="setRange('m');markQuick(this)">이번 달</button><button onclick="setRange('w1');markQuick(this)">지난달</button><button onclick="setRange('h2');markQuick(this)">최근 3개월</button><button onclick="setRange('ly');markQuick(this)">작년 같은 달</button></div></div>`};
 function markQuick(el){el.parentElement.querySelectorAll('button').forEach(b=>b.classList.toggle('active',b===el))}
 segHtml=function(id,opts){return `<div class="seg" id="${id}" role="group" aria-label="${id==='basis'?'날짜 기준':id==='grp'?'묶음 단위':'보기 방식'}">${opts.map((o,i)=>`<button class="${i===0?'on':''}" data-v="${o[0]}" aria-pressed="${i===0}" onclick="[...this.parentNode.children].forEach(b=>{b.classList.remove('on');b.setAttribute('aria-pressed','false')});this.classList.add('on');this.setAttribute('aria-pressed','true')">${o[1]}</button>`).join('')}</div>`};
 pageStoreOrders=function(){document.getElementById('main').innerHTML=hero('매장별 주문내역 조회','JETTE · ORDER MANAGEMENT','매장과 기간을 선택하고, 주문 흐름을 한눈에 확인하세요.')+dataNote()+`<section class="card query-card">${queryHeader()}<div class="filters">${dateBlock()}<div class="f"><label for="st">매장 선택</label><select id="st">${storeOptions()}</select></div><div class="f"><label>날짜 기준</label>${segHtml('basis',[['ship','배송일'],['order','주문(발주)일']])}</div><div class="f"><label>보기 방식</label>${segHtml('view',[['order','주문건별'],['product','제품별'],['item','상세(전체)']])}</div><div class="f"><label for="pq">제품 검색<span>선택</span></label><input type="text" id="pq" placeholder="제품명 또는 코드로 검색" onkeydown="if(event.key==='Enter')runStoreOrders()"></div></div>${queryActions('runStoreOrders','pageStoreOrders')}<div id="filter-error" role="alert" style="color:var(--brand);font-size:11px"></div></section><div id="res"></div>`+pageFoot();runStoreOrders();};
@@ -1649,18 +1649,32 @@ PATHS.partner = 'M3 21h18 M5 21V8l7-5 7 5v13 M9 12h2 M13 12h2 M9 16h2 M13 16h2';
       DASH = { jt: data.jt };
     }
   };
-  // 3회차: 제때 관리 — 6개월 원본을 한 번 받아 두 화면이 같이 씀 (30분 지나면 다시 받음)
+  // 3회차 → v6.x: 제때 관리 — 조회할 때 고른 기간만 서버에서 받음 (2020-06부터, 한 번에 최대 3개월)
+  //   처음 열 때는 이번 달(1일~오늘 이후 마지막 배송일)을 받고, 30분 지나면 다시 받음
   let JETTE_AT = 0;
-  async function loadJette(){
-    const { data, error } = await SB.rpc('jette_data'); if (error) throw error;
+  const kstToday = () => new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
+  window.JT_HAS = null;
+  window.jtFetch = async function(from, to, basis){
+    const { data, error } = await SB.rpc('jette_range', { p_from: from, p_to: to, p_basis: basis || 'ship' });
+    if (error) throw error;
+    jtApply(data);
+    window.JT_HAS = [from, to, basis || 'ship'];
+  };
+  function jtApply(data){
     Object.assign(META, data.meta);
     Object.keys(MASTER).forEach(k => delete MASTER[k]); Object.assign(MASTER, data.master || {});
     RAW = data.jette;
     ROWS = RAW.rows.map(r => { const p = RAW.prods[r[3]]; return {ship:r[0],order:r[1],store:RAW.stores[r[2]],code:p[0],name:p[1],cat:p[2],unit:p[3],tax:p[4],qty:r[4],price:r[5],supply:r[6],vat:r[7],total:r[8],no:r[9]}; });
     ALLROWS = ROWS;
-    STORES = [...new Set(ROWS.map(r=>r.store))].sort((a,b)=>a.localeCompare(b,'ko'));
+    STORES = (data.allStores && data.allStores.length ? data.allStores : [...new Set(ROWS.map(r=>r.store))]).slice().sort((a,b)=>a.localeCompare(b,'ko'));
     DMIN = RAW.min; DMAX = RAW.max;
     CATS.length = 0; [...new Set(ROWS.map(r=>r.cat).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ko')).forEach(c => CATS.push(c));
+  }
+  async function loadJette(){
+    const t = kstToday(), from = t.slice(0, 8) + '01';
+    // 다음 날 배송분까지 보이도록 종료일은 넉넉히(+7일), 서버가 3개월 이내인지 확인
+    const end = new Date(Date.parse(t) + 7 * 864e5).toISOString().slice(0, 10);
+    await jtFetch(from, end, 'ship');
     JETTE_AT = Date.now();
   }
   loadJette.ready = () => JETTE_AT && Date.now() - JETTE_AT < 30 * 60e3;
@@ -5324,10 +5338,10 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
    - 경쟁사 분석은 자기 화면 코드에서 직접 붙임(문구: 수집은 이렇게 해요)
    ========================================================== */
 (function(){
-  const JETTE = ['제때 매일 7·13·18시 · 최근 6개월 조회 · 배송일 기준', [
+  const JETTE = ['제때 매일 7·13·18시 · 2020년 6월부터 조회 · 한 번에 최대 3개월', [
     ['수집 시각', '제때 주문을 매일 7·13·18시에 가져와요.'],
     ['최근 2주', '최근 2주 배송분은 매번 다시 받아 주문 수정이 반영돼요.'],
-    ['조회 범위', '최근 6개월까지 볼 수 있고, 날짜는 배송일 기준이에요.']]];
+    ['조회 범위', '2020년 6월 자료부터 볼 수 있어요. 한 번에 3개월까지(예: 6/1~8/31) 조회하고, 날짜는 배송일 기준이에요.']]];
   const FC = ['FC다움 10분마다 업데이트 · 확인용 화면', [
     ['수집', 'FC다움에서 10분마다 새 발주를 가져와요.'],
     ['처리', '이 화면은 확인용이에요. 확인·완료 처리는 FC다움에서 해 주세요.']]];
@@ -5892,6 +5906,66 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
   .top .av::after{content:"";position:absolute;right:-1px;bottom:-1px;width:8px;height:8px;border-radius:50%;background:#2fa84f;border:2px solid #fff;pointer-events:none}
   .top .av.mm-av-nm{font-size:11px;letter-spacing:-.04em}`;
   document.head.appendChild(st);
+})();
+</script>
+<script>
+// v6.x: 제때 조회 — 고른 기간을 서버에서 받아 조회 (달력 기준 3개월: 시작일 3개월 뒤 같은 날의 전날까지)
+(function(){
+  const addM = (d, n) => { const [y, m, dd] = d.split('-').map(Number); const last = new Date(Date.UTC(y, m - 1 + n + 1, 0)).getUTCDate(); return new Date(Date.UTC(y, m - 1 + n, Math.min(dd, last))).toISOString().slice(0, 10); };
+  window.jtMaxTo = from => { const x = addM(from, 3); return new Date(Date.parse(x) - 864e5).toISOString().slice(0, 10); };
+  const setRangeBase = setRange;
+  setRange = function(k){
+    if (k === 'ly') {
+      const t = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
+      const y = Number(t.slice(0, 4)) - 1, m = Number(t.slice(5, 7));
+      const last = new Date(Date.UTC(y, m, 0)).getUTCDate();
+      d1.value = `${y}-${String(m).padStart(2, '0')}-01`; d2.value = `${y}-${String(m).padStart(2, '0')}-${String(last).padStart(2, '0')}`;
+      return;
+    }
+    setRangeBase(k);
+  };
+  const basisNow = () => document.getElementById('adv-order')?.checked ? 'order' : (document.querySelector('#basis .on')?.dataset.v || 'ship');
+  function checkRange(){
+    const a = document.getElementById('d1'), b = document.getElementById('d2'), err = document.getElementById('filter-error');
+    if (!a || !b) return null;
+    const say = m => { if (err) err.textContent = m; return null; };
+    if (!a.value || !b.value || a.value > b.value) return say('시작일과 종료일을 확인해주세요. 시작일은 종료일보다 늦을 수 없어요.');
+    if (META.jetteFrom && b.value < META.jetteFrom) return say(`제때 자료는 ${META.jetteFrom} 부터 있어요.`);
+    const mx = jtMaxTo(a.value);
+    if (b.value > mx) return say(`한 번에 최대 3개월까지 조회할 수 있어요. 시작일이 ${a.value}이면 종료일은 ${mx}까지예요.`);
+    if (err) err.textContent = '';
+    return [a.value, b.value, basisNow()];
+  }
+  function refreshCats(){
+    const sel = document.getElementById('adv-cat'); if (!sel) return;
+    const v = sel.value;
+    sel.innerHTML = '<option value="">전체 품목</option>' + CATS.map(c => `<option>${c}</option>`).join('');
+    if (v && CATS.indexOf(v) < 0) sel.insertAdjacentHTML('beforeend', `<option>${v}</option>`);
+    sel.value = v;
+  }
+  function wrap(base){
+    let seq = 0;
+    return async function(){
+      const r = checkRange(); if (!r) return;
+      const h = window.JT_HAS;
+      if (!(h && h[2] === r[2] && h[0] <= r[0] && r[1] <= h[1])) {
+        const my = ++seq, res = document.getElementById('res');
+        if (res) res.innerHTML = '<div class="card"><div class="empty">선택한 기간의 제때 자료를 불러오는 중이에요…</div></div>';
+        try { await jtFetch(r[0], r[1], r[2]); }
+        catch (e) {
+          if (my !== seq) return;
+          const m = (e && e.message) || '';
+          if (res) res.innerHTML = `<div class="card"><div class="empty">자료를 불러오지 못했어요.<br><small>${m.replace(/[<>&]/g, '')}</small></div></div>`;
+          return;
+        }
+        if (my !== seq) return;
+        refreshCats();
+      }
+      base();
+    };
+  }
+  runStoreOrders = wrap(runStoreOrders);
+  runPeriod = wrap(runPeriod);
 })();
 </script>
 </body>
