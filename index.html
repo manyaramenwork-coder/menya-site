@@ -4201,6 +4201,16 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
   .ap-files{display:flex;flex-direction:column;gap:6px;margin-top:12px}
   .ap-files .bi-b{justify-content:flex-start;padding:9px 12px;font-size:13px;white-space:normal;text-align:left}
   .ap-files .bi-b small{margin-left:auto;color:#8b9381;font-size:11px}
+  .ap-tl{margin:4px 0 14px;padding:12px;background:#f7f8f4;border-radius:10px;display:flex;flex-direction:column;gap:8px;max-height:340px;overflow-y:auto}
+  .ap-tl>b{font-size:13px;color:#2d3726}
+  .ap-tl .bb{max-width:86%;border-radius:10px;padding:8px 11px;font-size:12px;line-height:1.55;background:#fff;border:1px solid #e6e8e0;color:#2d3726}
+  .ap-tl .bb.me{align-self:flex-start;border-top-left-radius:3px}
+  .ap-tl .bb.ap{align-self:flex-end;border-top-right-radius:3px}
+  .ap-tl .bb.ok{background:#eef5e8;border-color:#d5e5c8}.ap-tl .bb.hold{background:#fdf1e4;border-color:#f3d8b8}.ap-tl .bb.no{background:#fbeeee;border-color:#efd1d1}
+  .ap-tl .hd{display:flex;gap:6px;align-items:baseline;flex-wrap:wrap;font-size:11px;color:#7d8574;margin-bottom:2px}
+  .ap-tl .hd b{font-size:12px;color:#2d3726}.ap-tl .hd em{font-style:normal;font-weight:600}
+  .ap-tl .tx{white-space:pre-wrap;word-break:break-word}
+  .ap-tl .fl{font-size:11px;color:#5f6858;margin-top:3px}.ap-tl .fl s{color:#9a8f8f}
   .ap-log{margin-top:16px;padding-top:12px;border-top:1px dashed var(--line);font-size:12px;color:#4a5244}
   .ap-log b{display:block;font-size:13px;color:#2d3726;margin-bottom:6px}
   .ap-log div{display:grid;grid-template-columns:110px 1fr;gap:8px;padding:4px 0}
@@ -4333,6 +4343,18 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
       if (w) w.location.href = data.signedUrl; else location.href = data.signedUrl;
     } catch (e) { w && w.close(); toast('파일을 열지 못했어요: ' + (e.message || e)); }
   };
+  // 진행 기록: 상신자(왼쪽) · 결재자(오른쪽) 말풍선으로 누적
+  function apTimeline(log){
+    if (!log.length) return '';
+    const cls = act => act === '승인' ? 'ap ok' : act === '보류' ? 'ap hold' : act === '반려' ? 'ap no' : /상신|수정/.test(act) ? 'me' : 'ap';
+    const col = act => act === '승인' ? '#3b6420' : act === '보류' ? '#b25b0e' : act === '반려' ? '#a3262c' : '#4a5244';
+    return `<div class="ap-tl"><b>진행 기록</b>${log.map(l => {
+      const txt = l.reason || l.memo || '';
+      const add = (l.add || []).length ? `<div class="fl">📎 ${l.act === '상신' ? '' : '추가 '}${l.add.map(h).join(', ')}</div>` : '';
+      const del = (l.del || []).length ? `<div class="fl">뺀 파일 <s>${l.del.map(h).join(', ')}</s></div>` : '';
+      return `<div class="bb ${cls(l.act)}"><div class="hd"><b>${h(l.by)}</b><em style="color:${col(l.act)}">${h(l.act)}</em><span>${h(l.at)}</span></div>${txt ? `<div class="tx">${h(txt)}</div>` : ''}${add}${del}</div>`;
+    }).join('')}</div>`;
+  }
   window.apOpen = async function(id){
     const { data: a, error } = await SB.rpc('appr_open', { p_id: id });
     if (error) { toast(error.message); await load(); draw(); return; }
@@ -4353,14 +4375,14 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
         <span>상신자</span><span>${h(a.who)} · ${h(a.at)}</span>
         <span>양식</span><span>${a.form ? h(a.form) : '양식 없음'}</span>
         <span>결재라인</span><span>${L.length ? '' : '관리자'}</span>
-        </div>${steps}
+        </div>${steps}${apTimeline(a.log || [])}
       ${(a.cc || []).length ? `<div class="ap-meta"><span>참조</span><span>${a.cc.map(c => (window.mmAv ? mmAv(c.uid, c.name, 'sm') : '') + h(pName(c))).join(', ')}</span></div>` : ''}
       ${a.memo ? `<div class="ap-memo">${h(a.memo)}</div>` : ''}
       ${a.status === 'no' && a.reason ? `<div class="ap-reason"><b>반려 사유</b>${h(a.reason)}</div>` : ''}
       ${a.status === 'hold' && a.reason ? `<div class="ap-reason hold"><b>보류 · 고칠 내용</b>${h(a.reason)}</div>` : ''}
       ${a.status === 'ok' && a.reason ? `<div class="ap-memo" style="margin-top:12px"><b style="font-size:12px">결재 메모</b><br>${h(a.reason)}</div>` : ''}
       <div class="ap-files">${a.filelist.map((f, i) => `<button class="bi-b" type="button" onclick="apFile(${i})">${ic('clip')}<span>${h(f.name)}</span><small>${kb(f.size || 0)}</small></button>`).join('')}</div>
-      <div class="ap-log"><b>진행 기록</b>${a.log.map(l => `<div><span>${h(l.at)}</span><span>${h(l.by)} · ${h(l.act)}${l.reason ? ` — ${h(l.reason)}` : ''}</span></div>`).join('')}</div>`, closeM, '닫기');
+      `, closeM, '닫기');
     const foot = document.querySelector('#inv-modal .im-foot');
     foot.querySelector('.btn.ghost')?.remove();
     const b = [];
