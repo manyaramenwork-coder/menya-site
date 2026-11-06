@@ -5983,7 +5983,10 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
   @media(min-width:861px){body.mm-col .side .mm-nav-grp{font-size:0;height:1px;padding:0;background:#ffffff16;margin:12px 10px}body.mm-col .side .nav-items>.mm-nav-grp:first-child{display:none}}
   .top .av{position:relative;overflow:visible!important;border-radius:8px!important;border:2px solid transparent!important;background-clip:padding-box!important}
   .top .av img{border-radius:6px}
-  .top .av::after{content:"";position:absolute;inset:-2px;width:auto;height:auto;border:0;border-radius:9px;padding:2px;background:linear-gradient(135deg,#c62429,#f0a020,#2fa84f,#2f6fd6);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none}
+  .top .av::after{content:"";position:absolute;inset:-2px;width:auto;height:auto;border:0;border-radius:9px;padding:2px;background:linear-gradient(135deg,#c62429,#f0a020,#2fa84f,#2f6fd6);background:conic-gradient(from var(--mm-av-a),#c62429,#f0a020,#2fa84f,#2f6fd6,#c62429);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none;animation:mmAvSpin 4s linear infinite}
+  @property --mm-av-a{syntax:'<angle>';inherits:false;initial-value:0deg}
+  @keyframes mmAvSpin{to{--mm-av-a:360deg}}
+  @media (prefers-reduced-motion:reduce){.top .av::after{animation:none}}
   .top .av.mm-av-nm{font-size:11px;letter-spacing:-.04em}
   .top .av.mm-av-3{font-size:9px;letter-spacing:-.08em}`;
   document.head.appendChild(st);
