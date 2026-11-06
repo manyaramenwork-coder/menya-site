@@ -3879,7 +3879,8 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
   const ext = n => (String(n).split('.').pop() || '').toLowerCase();
   const kb = b => b >= 1073741824 ? (b / 1073741824).toFixed(2) + 'GB' : b >= 1048576 ? (b / 1048576).toFixed(1) + 'MB' : Math.max(1, Math.round(b / 1024)) + 'KB';
   const EXT_LAB = e => ({ pdf: 'PDF', hwp: '한글', hwpx: '한글', doc: '워드', docx: '워드', xls: '엑셀', xlsx: '엑셀' }[e] || e.toUpperCase());
-  const MN = { data: null, uid: '', kind: 'ops', f: { q: '', brand: '' }, cur: null };
+  const MN = { data: null, uid: '', kind: 'ops', f: { q: '', brand: '', sort: 'old' }, cur: null };
+  const pubTxt = d => d ? d.replace(/-/g, '.') : '';
   const writer = () => !!(MN.data && MN.data.writer), admin = () => !!(MN.data && MN.data.admin);
   const closeM = () => document.getElementById('inv-modal')?.remove();
   const uid4 = () => (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2));
@@ -3922,6 +3923,8 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
   .mn-pick{display:flex;align-items:center;gap:8px;font-size:13px;color:#3f4839;background:#f6f7f3;border-radius:8px;padding:9px 11px;margin-top:6px}
   .mn-pick span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .mn-pick small{color:#8b9381}
+  .mn-pub{font-size:12px;color:#4f6b3b;margin-top:3px;font-weight:500}
+  .mn-sort{margin-left:auto;display:flex;gap:4px}
   #mn-add{display:flex;gap:6px}
   .mn-foot-l{margin-right:auto;display:flex;gap:6px;flex-wrap:wrap}
   @media(max-width:640px){.mn-row{grid-template-columns:38px minmax(0,1fr) auto}.mn-m{grid-column:2;text-align:left}.mn-row .bi-b{grid-row:1;grid-column:3}}`;
@@ -3970,6 +3973,7 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
   let qT = 0;
   window.mnQ = v => { clearTimeout(qT); qT = setTimeout(() => { MN.f.q = v.trim(); draw(); }, 200); };
   window.mnBr = v => { MN.f.brand = v; draw(); };
+  window.mnSort = v => { MN.f.sort = v; draw(); };
   function drawUsage(){
     const c = document.getElementById('mn-usage-card'); if (!c) return;
     const u = MN.data && MN.data.usage; if (!u) { c.style.display = 'none'; return; }
@@ -3986,16 +3990,20 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
     const names = brNames();
     if (MN.f.brand && !names.includes(MN.f.brand)) MN.f.brand = '';
     document.getElementById('mn-chips').innerHTML = `<span>소속</span>` + [['', '전체'], ...names.map(x => [x, x])]
-      .map(([v, t]) => `<button class="bi-c ${MN.f.brand === v ? 'on' : ''}" onclick="mnBr('${h(v)}')">${h(t)}</button>`).join('');
+      .map(([v, t]) => `<button class="bi-c ${MN.f.brand === v ? 'on' : ''}" onclick="mnBr('${h(v)}')">${h(t)}</button>`).join('')
+      + `<span class="mn-sort">${[['old', '오래된 순'], ['new', '최신 순']].map(([v, t]) => `<button class="bi-c ${MN.f.sort === v ? 'on' : ''}" onclick="mnSort('${v}')">${t}</button>`).join('')}</span>`;
     const q = MN.f.q.toLowerCase();
     const all = MN.data.list.filter(m => m.kind === MN.kind);
-    const list = all.filter(m => (!q || m.title.toLowerCase().includes(q)) && (!MN.f.brand || m.brands.includes(MN.f.brand)));
+    const dir = MN.f.sort === 'new' ? -1 : 1;
+    const list = all.filter(m => (!q || m.title.toLowerCase().includes(q)) && (!MN.f.brand || m.brands.includes(MN.f.brand)))
+      .sort((a, b) => (!a.pub - !b.pub) || (a.pub && b.pub && a.pub !== b.pub ? (a.pub < b.pub ? -dir : dir) : 0) || a.title.localeCompare(b.title, 'ko'));
     document.getElementById('mn-cnt').textContent = `${list.length}건`;
     box.innerHTML = list.length ? `<div class="bi-list">${list.map(m => {
         const e = ext(m.name), cls = { hwp: 'hwp', hwpx: 'hwp', doc: 'doc', docx: 'doc', xls: 'xls', xlsx: 'xls' }[e] || '';
         return `<div class="mn-row"><span class="mn-ext ${cls}">${EXT_LAB(e)}</span>
         <div class="mn-main" role="button" tabindex="0" onclick="mnView(${m.id})" onkeydown="if(event.key==='Enter')mnView(${m.id})">
           <div class="mn-t"><span>${h(m.title)}</span><em class="mn-v">v${m.version}</em></div>
+          ${m.pub ? `<div class="mn-pub">발행 ${pubTxt(m.pub)}</div>` : ''}
           ${m.descr ? `<div class="mn-d">${h(m.descr)}</div>` : ''}
           <div class="mn-br">${brSort(m.brands).map(b => `<em>${h(b)}</em>`).join('')}</div></div>
         <div class="mn-m">${m.at} 수정<br>${kb(m.size)}</div>
@@ -4030,6 +4038,7 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
     iModal(m.title, `<div class="mn-meta">
         <span>분류</span><span>${KIND[m.kind]}</span>
         <span>소속</span><span>${brSort(m.brands).map(h).join(', ')}</span>
+        <span>발행일</span><span>${m.pub ? pubTxt(m.pub) : '<span style="color:#9aa38f">미입력</span>'}</span>
         <span>현재 버전</span><span>v${m.version} · ${h(m.at)} · ${h(m.by)}</span>
         <span>파일</span><span>${h(m.file.name)} (${kb(m.file.size || 0)})</span>
         <span>처음 등록</span><span>${h(m.made)}</span>
@@ -4048,13 +4057,14 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
   let ED = null;
   window.mnEdit = function(id, newVer){
     if (!writer()) return toast('관리자·본사 계정만 올릴 수 있어요.');
-    const m = id && MN.cur && MN.cur.id === id ? MN.cur : { kind: MN.kind, title: '', brands: [], descr: '' };
+    const m = id && MN.cur && MN.cur.id === id ? MN.cur : { kind: MN.kind, title: '', brands: [], descr: '', pub: '' };
     ED = { id: id || '', newVer: !!newVer, file: null, kind: m.kind };
     const names = brNames(), list = [...names, ...m.brands.filter(x => !names.includes(x))];
     const fileF = `<div class="f wide"><label>${id ? '새 파일' : '파일'} <span id="mn-fhelp"></span></label>
         <input type="file" id="mn-file" onchange="mnPick(this)"><div id="mn-pick"></div>
         ${id ? `<div class="bi-help">올리면 v${MN.cur.version + 1}이 되고, 지금 파일(v${MN.cur.version})은 이전 버전으로 보관돼요. 이전 버전은 최근 3개까지만 남아요.</div>` : ''}</div>`;
     const infoF = `<div class="f wide"><label>제목</label><input id="mn-title" maxlength="100" value="${h(m.title)}" placeholder="예) 오픈·마감 체크리스트"></div>
+      <div class="f"><label>발행일 <span>목록이 이 날짜 순서로 정렬돼요</span></label><input type="date" id="mn-pub" value="${h(m.pub || '')}"></div>
       <div class="f"><label>분류</label><select id="mn-kind" onchange="mnKind(this.value)">${Object.entries(KIND).map(([k, t]) => `<option value="${k}" ${k === m.kind ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
       <div class="f wide"><label>소속 <span>여러 개 고를 수 있어요</span></label><div class="bi-brs">${list.map(n => `<label class="bi-chk"><input type="checkbox" name="mn-br" value="${h(n)}" ${m.brands.includes(n) ? 'checked' : ''}>${h(n)}</label>`).join('')}</div></div>
       <div class="f wide"><label>설명 <span>선택 · 500자 이내</span></label><textarea id="mn-descr" maxlength="500" placeholder="예) 2026년 11월 개정 — 마감 청소 항목 추가">${h(m.descr)}</textarea></div>`;
@@ -4083,9 +4093,10 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
   async function save(){
     const cur = ED.id ? MN.cur : null;
     const p = ED.newVer
-      ? { id: ED.id, kind: cur.kind, title: cur.title, brands: cur.brands, descr: cur.descr }
+      ? { id: ED.id, kind: cur.kind, title: cur.title, brands: cur.brands, descr: cur.descr, pub: cur.pub || '' }
       : { id: ED.id, kind: document.getElementById('mn-kind').value, title: document.getElementById('mn-title').value.trim(),
-          brands: [...document.querySelectorAll('input[name=mn-br]:checked')].map(i => i.value), descr: document.getElementById('mn-descr').value.trim() };
+          brands: [...document.querySelectorAll('input[name=mn-br]:checked')].map(i => i.value), descr: document.getElementById('mn-descr').value.trim(),
+          pub: document.getElementById('mn-pub').value };
     if (!p.title) return toast('제목을 입력해주세요.');
     if (!p.brands.length) return toast('소속을 하나 이상 골라주세요.');
     const needFile = !ED.id || ED.newVer;
