@@ -5943,15 +5943,37 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
     if (v && CATS.indexOf(v) < 0) sel.insertAdjacentHTML('beforeend', `<option>${v}</option>`);
     sel.value = v;
   }
-  // 매장 선택: 폐점 매장은 이름 옆에 (폐점) 표시 — 값은 매장 이름 그대로라 조회에는 영향 없음
+  // 매장 선택: 영업 중 → 본사 → (체크 시) 폐점 순으로 묶어서 표시. 폐점은 '폐점 매장 포함'을 켰을 때만 보임
+  //   값은 매장 이름 그대로라 조회에는 영향 없음. '전체 매장'은 체크와 상관없이 그 기간 모든 매장 포함
+  window.JT_SHOW_CLOSED = window.JT_SHOW_CLOSED || false;
+  const esc = t => String(t).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  function buildStores(fromToggle){
+    const sel = document.getElementById('st'); if (!sel) return;
+    let cur = sel.value;
+    const st = n => (MASTER[n] || {}).status || '';
+    const sorted = STORES.slice().sort((a, b) => a.localeCompare(b, 'ko'));
+    const open = sorted.filter(n => st(n) !== '폐점' && st(n) !== '본사');
+    const hq = sorted.filter(n => st(n) === '본사');
+    const closed = sorted.filter(n => st(n) === '폐점');
+    if (!fromToggle && cur && closed.indexOf(cur) >= 0) window.JT_SHOW_CLOSED = true;   // 대시보드 등에서 폐점 매장으로 들어온 경우
+    const opt = (n, lab) => `<option value="${esc(n)}">${esc(lab || n)}</option>`;
+    sel.innerHTML = '<option value="">전체 매장</option>' +
+      `<optgroup label="영업 중 (${open.length}곳)">${open.map(n => opt(n)).join('')}</optgroup>` +
+      (hq.length ? `<optgroup label="본사">${hq.map(n => opt(n)).join('')}</optgroup>` : '') +
+      (window.JT_SHOW_CLOSED && closed.length ? `<optgroup label="폐점 (${closed.length}곳)">${closed.map(n => opt(n, n + ' (폐점)')).join('')}</optgroup>` : '');
+    sel.value = [...sel.options].some(o => o.value === cur) ? cur : '';
+    if (!document.getElementById('st-closed')) {
+      sel.insertAdjacentHTML('afterend', `<label class="st-closed" style="display:flex;align-items:center;gap:6px;margin-top:6px;font-size:12px;color:#5b6253;cursor:pointer"><input type="checkbox" id="st-closed" ${window.JT_SHOW_CLOSED ? 'checked' : ''} style="margin:0"> 폐점 매장 포함 <small style="color:#8a9083">(${closed.length}곳)</small></label>`);
+      document.getElementById('st-closed').addEventListener('change', e => { window.JT_SHOW_CLOSED = e.target.checked; buildStores(true); });
+    } else {
+      document.getElementById('st-closed').checked = window.JT_SHOW_CLOSED;
+    }
+    sel.dataset.built = '1';
+  }
   function markClosed(){
-    const sel = document.getElementById('st'); if (!sel || sel.dataset.closed) return;
-    [...sel.options].forEach(o => {
-      if (!o.value) return;
-      const v = o.value;
-      if ((MASTER[v] || {}).status === '폐점') { o.value = v; o.textContent = v + ' (폐점)'; }
-    });
-    sel.dataset.closed = '1';
+    const sel = document.getElementById('st'); if (!sel) return;
+    if (!sel.dataset.built) buildStores();
+    else if (sel.value && ((MASTER[sel.value] || {}).status === '폐점') && !window.JT_SHOW_CLOSED) buildStores();
   }
   function wrap(base){
     let seq = 0;
