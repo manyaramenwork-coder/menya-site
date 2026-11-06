@@ -4204,6 +4204,7 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
   .ap-foot-l{margin-right:auto;display:flex;gap:6px;flex-wrap:wrap}
   .ap-form{display:flex;gap:8px;align-items:center}
   .ap-form select{flex:1;min-width:0}
+  .ap-brs{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px}
   .nt-pop .ap-it{display:grid;grid-template-columns:8px minmax(0,1fr);gap:4px 10px;width:100%;text-align:left;border:0;border-bottom:1px solid #f2f3ee;background:#fff;padding:11px 14px;cursor:pointer}
   .nt-pop .ap-it:hover{background:#fafbf7}
   .nt-pop .ap-it .dot{width:7px;height:7px;border-radius:50%;background:#c9952b;margin-top:6px}
@@ -4388,8 +4389,12 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
     const src = id ? { line: a.lineIds, cc: a.ccIds } : (AP.data.last || {});
     ED = { id: id || '', keep: [...a.filelist], removed: [], add: [], line: okId(src.line, true).slice(0, MAXL), cc: okId(src.cc).slice(0, MAXC) };
     const forms = AP.data.forms;
+    const brs = ((AP.data.brands || []).filter(b => b.active).map(b => b.name));
+    forms.forEach(f => (f.brands || []).forEach(b => { if (!brs.includes(b)) brs.push(b); }));
+    const f0 = a.formId && forms.find(f => String(f.id) === String(a.formId));
+    ED.brs = brs; ED.br = (f0 && (f0.brands || [])[0]) || (brs.includes('본사') ? '본사' : brs[0] || ''); ED.form = a.formId || '';
     iModal(id ? (a.status === 'no' ? '고쳐서 다시 상신' : '상신 수정') : '새 상신', `<div class="im-grid">
-      <div class="f wide"><label>양식 <span>서류매뉴얼에 올라온 양식</span></label><div class="ap-form"><select id="ap-form" onchange="apFormPick(this.value)"><option value="">양식 없음</option>${forms.map(f => `<option value="${f.id}" ${String(f.id) === String(a.formId) ? 'selected' : ''}>${h(f.title)}</option>`).join('')}</select>
+      <div class="f wide"><label>양식 <span>서류매뉴얼에 올라온 양식</span></label><div class="ap-brs" id="ap-brs"></div><div class="ap-form"><select id="ap-form" onchange="apFormPick(this.value)"></select>
         <button type="button" class="bi-b" id="ap-dl" onclick="apFormDl()">${ic('download')}양식 받기</button></div></div>
       <div class="f wide"><label>제목</label><input id="ap-title" maxlength="100" value="${h(a.title)}" placeholder="예) 11월 연차 신청 (홍길동)"></div>
       <div class="f wide"><label>결재라인 <span>순서대로 결재해요 · 최대 ${MAXL}명</span></label><div class="ap-pp" id="ap-line"></div><select id="ap-addl" onchange="apPick('line',this)"></select></div>
@@ -4398,7 +4403,19 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
       <div class="f wide"><label>작성한 파일 <span>최대 ${MAXF}개 · 개당 20MB · PDF·한글·워드·엑셀·사진</span></label>
         <input type="file" id="ap-file" multiple accept="${Object.keys(MIME).map(e => '.' + e).join(',')}" onchange="apAdd(this)"><div class="nt-flist" id="ap-flist"></div></div>
     </div>`, save, id ? (a.status === 'no' ? '다시 상신' : '수정') : '상신');
-    apFormPick(document.getElementById('ap-form').value); drawFiles(); drawPick();
+    drawForms(); apFormPick(document.getElementById('ap-form').value); drawFiles(); drawPick();
+  };
+  // 양식: 소속 버튼으로 나눠 보기
+  function drawForms(){
+    const b = document.getElementById('ap-brs'), sel = document.getElementById('ap-form'); if (!b || !sel) return;
+    b.innerHTML = ED.brs.map(n => `<button type="button" class="bi-c ${ED.br === n ? 'on' : ''}" onclick="apBr('${h(n)}')">${h(n)}</button>`).join('');
+    const list = AP.data.forms.filter(f => !ED.br || (f.brands || []).includes(ED.br));
+    sel.innerHTML = `<option value="">${list.length ? '양식 없음' : '이 소속에 등록된 양식이 없어요'}</option>` +
+      list.map(f => `<option value="${f.id}" ${String(f.id) === String(ED.form) ? 'selected' : ''}>${h(f.title)}</option>`).join('');
+  }
+  window.apBr = function(n){
+    const sel = document.getElementById('ap-form'); ED.form = sel ? sel.value : ED.form;
+    ED.br = n; drawForms(); apFormPick(document.getElementById('ap-form').value);
   };
   // 결재라인 · 참조 고르기 (이름 · 직책)
   const person = id => AP.data.people.find(p => p.id === id);
