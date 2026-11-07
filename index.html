@@ -6206,7 +6206,7 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
   const REGIONS = ['수도권','강원','충청','경상','전라','제주'];
   const DUTY = ['홀','주방','서브','사이드','메인'];
   const DOCS = [['rrn','주민번호'],['bank','급여 계좌'],['idc','신분증 사본'],['ctr','근로계약서']];
-  const PAGES = { org:'조직도', 'bs-set':'회사·조직 설정', 'dm-staff':'직원 현황', 'dm-shift':'시프트 관리' };
+  const PAGES = { org:'연락망', 'bs-set':'회사·조직 설정', 'dm-staff':'직원 현황', 'dm-shift':'시프트 관리' };
   const DM = { boot:null, store:null };
   try { DM.store = +localStorage.getItem('dm-store') || null; } catch(e) {}
 
@@ -6273,10 +6273,10 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
      ========================================================== */
   const ORG = { data:null, open:new Set(['corp','hq']), sel:null, q:'' };
   async function pageOrg(){
-    main().innerHTML = simpleHero(['조직도'], 'ORGANIZATION', '조직도', '묶음을 누르면 선을 따라 아래로 펼쳐지고, 이름을 누르면 옆에 입사년도·직급·연락처가 나와요.')
+    main().innerHTML = simpleHero(['연락망'], 'DIRECTORY', '연락망', '묶음을 누르면 선을 따라 아래로 펼쳐지고, 이름을 누르면 옆에 입사년도·직급·연락처가 나와요.')
       + `<div class="dm-orgbar"><input class="dm-search" id="org-q" placeholder="이름·매장명 검색" oninput="dmOrgQ(this.value)" aria-label="이름·매장명 검색"></div>
          <div class="dm-dir"><section class="dm-tree" id="org-tree">${'<div class="dm-empty">불러오는 중...</div>'}</section><aside class="dm-pcard" id="org-card"></aside></div>` + pageFoot();
-    try { ORG.data = await rpc('org_data'); } catch (e) { document.getElementById('org-tree').innerHTML = `<div class="dm-empty">조직도를 불러오지 못했어요. (${esc(errMsg(e))})</div>`; return; }
+    try { ORG.data = await rpc('org_data'); } catch (e) { document.getElementById('org-tree').innerHTML = `<div class="dm-empty">연락망을 불러오지 못했어요. (${esc(errMsg(e))})</div>`; return; }
     const d = ORG.data;
     if (!ORG.inited) { ORG.inited = true; d.brands.filter(b => b.status !== '폐점').forEach(b => ORG.open.add('b' + b.id)); d.stores.filter(s => s.direct).forEach(s => { if (s.id === d.my_store || ORG.open.size < 6) ORG.open.add('s' + s.id); }); }
     orgDraw();
@@ -6345,8 +6345,8 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
   const STL = { '운영':'run', '영업중':'run', '오픈준비':'soon', '폐점':'off' };
   async function pageBS(){
     if (!isAdmin()) { main().innerHTML = simpleHero(['관리','회사·조직 설정'], 'SETTINGS', '회사·조직 설정', '관리자만 볼 수 있어요.') + pageFoot(); return; }
-    main().innerHTML = simpleHero(['관리','회사·조직 설정'], 'SETTINGS', '회사·조직 설정', '회사 · 본사 인원 · 브랜드 · 매장을 한곳에서 정해요. 여기서 정한 내용이 조직도, 직원 현황, 시프트·출결, 가맹점 현황에 쓰여요. (관리자만 보여요)')
-      + `<div id="bs-co"></div><section class="card" id="bs-hq"><div class="dm-sh"><strong>본사 인원</strong><small>조직도의 본사 칸이 이 명단으로 채워져요 · 매장 지원은 직원 현황 &gt; 매장 탭 &gt; 본사에서 불러오기</small></div><div id="st-body">${loading()}</div></section><div id="bs-body">${loading()}</div>` + pageFoot();
+    main().innerHTML = simpleHero(['관리','회사·조직 설정'], 'SETTINGS', '회사·조직 설정', '회사 · 본사 인원 · 브랜드 · 매장을 한곳에서 정해요. 여기서 정한 내용이 연락망, 직원 현황, 시프트·출결, 가맹점 현황에 쓰여요. (관리자만 보여요)')
+      + `<div id="bs-co"></div><section class="card" id="bs-hq"><div class="dm-sh"><strong>본사 인원</strong><small>연락망의 본사 칸이 이 명단으로 채워져요 · 매장 지원은 직원 현황 &gt; 매장 탭 &gt; 본사에서 불러오기</small></div><div id="st-body">${loading()}</div></section><div id="bs-body">${loading()}</div>` + pageFoot();
     DM.cur = 'hq'; ST.view = 'on';
     try { BS.d = await rpc('org_settings'); } catch (e) { document.getElementById('bs-body').innerHTML = loading('불러오지 못했어요: ' + esc(errMsg(e))); return; }
     bsDraw(); stLoad();
@@ -6357,10 +6357,10 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
     const list = d.stores.filter(s => (!BS.fb || String(s.brand_id) === BS.fb) && (!BS.ft || (BS.ft === 'dm') === !!s.direct)
       && (BS.fs === 'all' || (BS.fs === 'live' ? s.status !== '폐점' : s.status === BS.fs)) && (!BS.q || s.name.includes(BS.q) || (s.owner || '').includes(BS.q)));
     document.getElementById('bs-co').innerHTML = `
-      <section class="card"><div class="dm-sh"><strong>회사</strong><small>조직도 맨 위에 나와요</small><button class="dmb sm" style="margin-left:auto" onclick="dmBsCompany()">수정</button></div>
+      <section class="card"><div class="dm-sh"><strong>회사</strong><small>연락망 맨 위에 나와요</small><button class="dmb sm" style="margin-left:auto" onclick="dmBsCompany()">수정</button></div>
         <div class="dm-kv3"><div><span>회사명</span><b>${esc(c.name) || miss}</b></div><div><span>대표</span><b>${c.ceo_name ? esc(c.ceo_name) + ' <small>' + esc(c.ceo_title || '') + '</small>' : miss}</b></div><div><span>대표 연락처</span><b>${c.ceo_tel ? esc(c.ceo_tel) : miss}</b></div></div></section>`;
     document.getElementById('bs-body').innerHTML = `
-      <section class="card"><div class="dm-sh"><strong>브랜드</strong><small>${d.brands.length}개 · 조직도에서 회사 아래 갈래가 돼요</small></div>
+      <section class="card"><div class="dm-sh"><strong>브랜드</strong><small>${d.brands.length}개 · 연락망에서 회사 아래 갈래가 돼요</small></div>
         <div class="dm-brands">${d.brands.map(b => { const ss = d.stores.filter(s => s.brand_id === b.id && s.status !== '폐점');
           return `<div class="dm-bc" style="--bcol:${esc(b.color)}"><h3>${esc(b.name)} <span class="dm-st ${STL[b.status]}">${b.status === '운영' ? '운영 중' : b.status === '오픈준비' ? '오픈 준비' : '폐점'}</span></h3>
             <div class="meta">직영점 ${ss.filter(s => s.direct).length}곳 · 가맹점 ${ss.filter(s => !s.direct).length}곳</div>
@@ -6389,11 +6389,11 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
       const list = d.stores.filter(s => (!BS.fb || String(s.brand_id) === BS.fb) && (!BS.ft || (BS.ft === 'dm') === !!s.direct) && (BS.fs === 'all' || (BS.fs === 'live' ? s.status !== '폐점' : s.status === BS.fs)) && (!BS.q || s.name.includes(BS.q) || (s.owner || '').includes(BS.q)));
       document.getElementById('bs-rows').innerHTML = bsRows(list, bOf); document.querySelector('.dm-cnt').textContent = list.length + '곳'; } else bsDraw(); };
   window.dmBsCompany = () => { const c = BS.d.company || {};
-    modal('회사 정보', '조직도 맨 위 대표 칸에 나와요.', `<div class="dm-fg">
+    modal('회사 정보', '연락망 맨 위 대표 칸에 나와요.', `<div class="dm-fg">
       <label class="f2 wide"><span>회사명</span><input id="c-n" value="${esc(c.name)}"></label>
       <label class="f2"><span>대표 이름</span><input id="c-ceo" value="${esc(c.ceo_name)}"></label>
       <label class="f2"><span>직함</span><input id="c-t" value="${esc(c.ceo_title || '대표이사')}"></label>
-      <label class="f2 wide"><span>대표 연락처 <em>(조직도에서 전 직원에게 보여요)</em></span><input id="c-tel" type="tel" value="${esc(c.ceo_tel)}" placeholder="010-0000-0000"></label></div>`, foot('dmBsCompanySave(this)'));
+      <label class="f2 wide"><span>대표 연락처 <em>(연락망에서 전 직원에게 보여요)</em></span><input id="c-tel" type="tel" value="${esc(c.ceo_tel)}" placeholder="010-0000-0000"></label></div>`, foot('dmBsCompanySave(this)'));
   };
   window.dmBsCompanySave = async btn => { const v = id => document.getElementById(id).value;
     await run(btn, () => rpc('org_company_save', { p:{ name:v('c-n'), ceo_name:v('c-ceo'), ceo_title:v('c-t'), ceo_tel:v('c-tel') } }), '저장했어요.');
@@ -6401,7 +6401,7 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
   let BF = null;
   window.dmBsBrand = id => { const b = id ? BS.d.brands.find(x => x.id === id) : null;
     BF = b ? JSON.parse(JSON.stringify(b)) : { name:'', status:'오픈준비', color: BCOLS[BS.d.brands.length % BCOLS.length], links:{} };
-    const draw = () => modal(b ? `${b.name} · 브랜드 수정` : '브랜드 추가', '조직도·직원 현황·시프트·브랜드 채널에서 이 브랜드 기준으로 나눠 보여요.', `<div class="dm-fg">
+    const draw = () => modal(b ? `${b.name} · 브랜드 수정` : '브랜드 추가', '연락망·직원 현황·시프트·브랜드 채널에서 이 브랜드 기준으로 나눠 보여요.', `<div class="dm-fg">
       <label class="f2"><span>브랜드명</span><input id="b-n" value="${esc(BF.name)}" oninput="dmBF.name=this.value"></label>
       <div class="f2"><span>표시 색</span><div class="dm-cols">${BCOLS.map(c => `<button type="button" class="${BF.color === c ? 'on' : ''}" style="background:${c}" onclick="dmBF.color='${c}';dmBF._d()" aria-label="색"></button>`).join('')}</div></div>
       <div class="f2 wide"><span>상태</span><div class="dm-seg">${[['운영','운영 중'],['오픈준비','오픈 준비'],['폐점','폐점']].map(([k,t]) => `<button type="button" class="${BF.status === k ? 'on' : ''}" onclick="dmBF.status='${k}';dmBF._d()">${t}</button>`).join('')}</div></div>
@@ -6414,7 +6414,7 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
   let SF = null;
   window.dmBsStore = id => { const s = id ? BS.d.stores.find(x => x.id === id) : null;
     SF = s ? { ...s } : { name:'', brand_id:(BS.d.brands[0] || {}).id, direct:false, region:'', status:'영업중', sv:'', owner:'', owner_tel:'', open:'', close:'' };
-    const draw = () => modal(s ? `${s.name} · 매장 수정` : '매장 추가', '직영점은 직원 현황·시프트·출결에, 가맹점은 조직도에 나와요.', `<div class="dm-fg">
+    const draw = () => modal(s ? `${s.name} · 매장 수정` : '매장 추가', '직영점은 직원 현황·시프트·출결에, 가맹점은 연락망에 나와요.', `<div class="dm-fg">
       <label class="f2"><span>매장명</span><input id="s-n" value="${esc(SF.name)}" oninput="dmSF.name=this.value"></label>
       <label class="f2"><span>브랜드</span><select onchange="dmSF.brand_id=+this.value">${BS.d.brands.map(b => `<option value="${b.id}" ${SF.brand_id === b.id ? 'selected' : ''}>${esc(b.name)}</option>`).join('')}</select></label>
       <div class="f2"><span>구분</span><div class="dm-seg">${[[true,'직영점'],[false,'가맹점']].map(([k,t]) => `<button type="button" class="${!!SF.direct === k ? 'on' : ''}" onclick="dmSF.direct=${k};dmSF._d()">${t}</button>`).join('')}</div></div>
@@ -6459,7 +6459,7 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
     const tabs = storeTabs(false, 'dmStPick');
     if (DM.cur === 'hq') {
       const on = d.list.filter(p => !isOut(p)), off = d.list.filter(isOut);
-      B.innerHTML = `<div class="dm-bar">${vtabs(on.length, off.length)}<span class="dm-hint">${ST.view === 'on' ? '순서(▲▼)는 조직도 본사 칸 순서예요 · 이름을 누르면 상세·수정 · 대표님은 위 \'회사\'에서' : '재입사를 누르면 재직 중으로 돌아와요'}</span><button class="dmb pri" onclick="dmStEdit()">+ 본사 인원 추가</button></div>
+      B.innerHTML = `<div class="dm-bar">${vtabs(on.length, off.length)}<span class="dm-hint">${ST.view === 'on' ? '순서(▲▼)는 연락망 본사 칸 순서예요 · 이름을 누르면 상세·수정 · 대표님은 위 \'회사\'에서' : '재입사를 누르면 재직 중으로 돌아와요'}</span><button class="dmb pri" onclick="dmStEdit()">+ 본사 인원 추가</button></div>
         <div class="dm-tw"><table class="dm-t"><thead><tr>${ST.view === 'on' ? '<th class="dm-ord">순서</th>' : ''}<th>이름</th><th>직급</th><th>담당</th><th>입사일</th><th>연락처</th><th>지원 나가는 매장</th>${adm ? '<th>입사 서류</th>' : ''}<th></th></tr></thead><tbody>${
           (ST.view === 'on' ? on : off).map((p, i, a) => `<tr class="${isOut(p) ? 'out' : ''}">${ordCell(p, i, a)}<td>${nameBtn(p)}</td><td>${esc(p.rank) || miss}</td><td>${esc(p.duty) || '<span class="na">-</span>'}</td>
             <td>${p.start ? fmtD(p.start) : miss}</td><td>${telCell(p)}</td><td>${(p.stores || []).map(s => `<span class="dm-chip sup">${esc(s)}</span>`).join(' ') || '<span class="na">없음</span>'}</td>${adm ? `<td>${docCnt(p)}</td>` : ''}<td>${isOut(p) ? `<button class="dmb sm" onclick="dmStRehire(${p.id})">재입사</button>` : `<button class="dmb sm" onclick="dmStEdit(${p.id})">수정</button>`}</td></tr>`).join('') || `<tr><td colspan="9" class="dm-empty">${ST.view === 'on' ? '본사 인원이 없어요.' : '퇴사자가 없어요.'}</td></tr>`
@@ -6553,11 +6553,11 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
       ${work}
       <label class="f2"><span>입사일</span><input type="date" value="${esc(F.start || '')}" onchange="dmF.start=this.value"></label>
       <label class="f2"><span>퇴사일 <em>(정해지면)</em></span><input type="date" value="${esc(F.out || '')}" onchange="dmF.out=this.value"></label>
-      <label class="f2"><span>연락처 <em>🔒 ${hq ? '조직도에서 전 직원에게 보여요' : '본사·매장 관리자만'}</em></span><input type="tel" placeholder="010-0000-0000" value="${esc(F.tel || '')}" oninput="dmF.tel=this.value"></label>
+      <label class="f2"><span>연락처 <em>🔒 ${hq ? '연락망에서 전 직원에게 보여요' : '본사·매장 관리자만'}</em></span><input type="tel" placeholder="010-0000-0000" value="${esc(F.tel || '')}" oninput="dmF.tel=this.value"></label>
       <label class="f2"><span>메모</span><input value="${esc(F.memo || '')}" maxlength="60" oninput="dmF.memo=this.value"></label>
       ${hire}</div>`;
     const extra = p && !isOut(p) ? `<button class="dmb" style="color:#a3262c" onclick="dmStQuit()">퇴사 처리</button>${!hq && isHQ() ? `<button class="dmb" onclick="dmStMove([${p.id}])">🔁 매장 이동·지원</button>` : ''}` : '';
-    modal(p ? `${p.name} · ${hq ? '본사 인원' : '직원'} 정보` : (hq ? '본사 인원 추가' : '직원 추가'), hq ? '조직도의 본사 칸에 나오고, 매장 지원 인력으로 불러갈 수 있어요.' : '입사일부터 시프트에 나오고, 퇴사일 다음 날부터 빠져요.', body, foot('dmStSave(this)', extra), true);
+    modal(p ? `${p.name} · ${hq ? '본사 인원' : '직원'} 정보` : (hq ? '본사 인원 추가' : '직원 추가'), hq ? '연락망의 본사 칸에 나오고, 매장 지원 인력으로 불러갈 수 있어요.' : '입사일부터 시프트에 나오고, 퇴사일 다음 날부터 빠져요.', body, foot('dmStSave(this)', extra), true);
   }
   const keepName = () => { const n = document.getElementById('st-n'); if (n) F.name = n.value; };
   window.dmStF = (k, v) => { keepName(); F[k] = v; if (k === 'kind' && v === 'staff') { F.wk = F.wk || 6; F.rank = F.rank === 'PT' ? '사원' : F.rank; } if (k === 'kind' && v === 'pt') { F.days = F.days && F.days.length ? F.days : [0,1,2,3,4]; F.slot = F.slot || 'L'; F.rank = F.rank || 'PT'; } stForm(ST.d.list.find(x => x.id === F.id)); };
@@ -6841,7 +6841,7 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
     const grp = t => [...nav.querySelectorAll(':scope > .mm-nav-grp')].find(e => e.textContent.trim() === t);
     const opsEnd = () => { const g = grp('매장 데이터'); return g ? g.previousElementSibling : null; };
     // 조직도: 상신·결재 아래 (없으면 운영 끝)
-    const orgHtml = `<button class="cat js-dm ${active === 'org' ? 'open' : ''}" onclick="go('org')">${ic('users')}조직도</button>`;
+    const orgHtml = `<button class="cat js-dm ${active === 'org' ? 'open' : ''}" onclick="go('org')">${ic('users')}연락망<span style="margin-left:6px;font-size:11px;font-weight:500;opacity:.55">· Directory</span></button>`;
     const appr = cats().find(b => label(b) === '상신·결재');
     if (appr) unitEnd(appr).insertAdjacentHTML('afterend', orgHtml);
     else { const e = opsEnd(); e ? e.insertAdjacentHTML('afterend', orgHtml) : nav.insertAdjacentHTML('afterbegin', orgHtml); }
