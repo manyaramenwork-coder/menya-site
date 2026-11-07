@@ -4932,6 +4932,7 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
   .cp-bc b i:hover{color:#c62429}
   .cp-bc small{font-size:11px;color:#7d8574}
   .cp-bc small em{font-style:normal;color:#c62429}
+  .cp-bc small u.cp-hid{text-underline-offset:2px;cursor:pointer}.cp-bc small u.cp-hid:hover{color:#2c2f28}
   .cp-tag{display:inline-block;font-size:10px;font-weight:600;border-radius:5px;padding:1px 6px;white-space:nowrap}
   .cp-tag.new{background:#e3f0dc;color:#2f5a24}.cp-tag.sus{background:#fff1d6;color:#9a6a0b}.cp-tag.cls{background:#ececec;color:#666}
   .cp-tag.add{background:#e9f1fa;color:#2c5a8a}.cp-tag.stale{background:#f4ece6;color:#8a5a3c}.cp-tag.hid{background:#f1f1ee;color:#7a7f73}.cp-tag.wait{background:#f1efe7;color:#7a6f52}.cp-tag.ret{background:#e9f1fa;color:#2c5a8a}
@@ -5034,7 +5035,7 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
       <div class="cp-run"><i class="cp-dot ${run && !run.closed && run.total ? 'bad' : ''}"></i><span>${runTxt}</span></div>
       ${brands.length ? `<div class="cp-brands">${brands.map(b => `<button class="cp-bc ${CP.brand === b.id ? 'on' : ''} ${b.active ? '' : 'off'}" onclick="cpPick(${b.id})">
           <b>${h(b.name)} ${brandState(b)}<i onclick="event.stopPropagation();cpBrand(${b.id})" title="수정">✎</i></b>
-          <small>운영 ${b.open}곳${b.closed ? ` · <em>폐점 ${b.closed}곳</em>` : ''}${b.hid ? ` · 숨김 ${b.hid}` : ''}</small></button>`).join('')}</div>`
+          <small>운영 ${b.open}곳${b.closed ? ` · <em>폐점 ${b.closed}곳</em>` : ''}${b.hid ? ` · <u class="cp-hid" onclick="event.stopPropagation();cpHid(${b.id})">숨김 ${b.hid}</u>` : ''}</small></button>`).join('')}</div>`
         : `<div class="bi-empty">아직 등록된 브랜드가 없어요.<br><b>브랜드 추가</b>를 눌러 경쟁 브랜드 이름을 넣어 주세요. 몇 분 안에 매장 찾기가 시작돼요.</div>`}`;
     const main = document.getElementById('cp-main');
     if (!brands.length) { main.style.display = 'none'; return; }
@@ -5118,6 +5119,8 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
   window.cpTab = t => { CP.tab = t; draw(); };
   window.cpPick = id => { CP.brand = CP.brand === id ? 0 : id; draw(); };
   window.cpSt = v => { CP.st = v; drawList(); };
+  // 11/07: 카드의 '숨김 N'을 누르면 그 브랜드의 숨긴 매장 목록을 바로 엶
+  window.cpHid = id => { CP.brand = id; CP.tab = 'list'; CP.st = 'hidden'; draw(); };
   window.cpQ = v => { CP.q = v; clearTimeout(CP.qt); CP.qt = setTimeout(() => { drawList(); const i = document.querySelector('.cp-filter input'); if (i) { i.focus(); i.setSelectionRange(i.value.length, i.value.length); } }, 250); };
 
   /* ---------- 매장 상세 ---------- */
