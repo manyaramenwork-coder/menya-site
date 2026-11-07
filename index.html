@@ -6850,15 +6850,23 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
       const on = ['dm-staff','dm-shift','hr-att'].includes(active);
       const dmHtml = `<button class="cat js-dm ${on ? 'open' : ''}" onclick="const o=this.classList.toggle('open');this.nextElementSibling.classList.toggle('open',o)">${ic('store')}직영점 관리${ic('chevron').replace('class="icon"', 'class="icon ar"')}</button>
         <div class="sub js-dm ${on ? 'open' : ''}">${[['dm-staff','직원 현황'],['dm-shift','시프트 관리'],['hr-att','출결 관리']].map(([k,t]) => `<a role="button" tabindex="0" class="${active === k ? 'on' : ''}" onclick="go('${k}')">${t}</a>`).join('')}</div>`;
-      const e = opsEnd(); e ? e.insertAdjacentHTML('afterend', dmHtml) : nav.insertAdjacentHTML('beforeend', dmHtml);
+      // 연락망 바로 아래 (가맹점 현황보다 위)
+      const orgBtn = nav.querySelector(':scope > .cat.js-dm[onclick="go(\'org\')"]');
+      if (orgBtn) orgBtn.insertAdjacentHTML('afterend', dmHtml);
+      else { const e = opsEnd(); e ? e.insertAdjacentHTML('afterend', dmHtml) : nav.insertAdjacentHTML('beforeend', dmHtml); }
     }
     // 회사·조직 설정: 관리 묶음 (관리자)
     if (isAdmin()) {
       const html = `<button class="cat js-dm ${active === 'bs-set' ? 'open' : ''}" onclick="go('bs-set')">${ic('partner')}회사·조직 설정</button>`;
-      const bc = cats().find(b => label(b) === '브랜드 채널');
-      if (bc) unitEnd(bc).insertAdjacentHTML('afterend', html);
-      else { const g = grp('관리'); g ? g.insertAdjacentHTML('afterend', html) : nav.insertAdjacentHTML('beforeend', html); }
+      const us = cats().find(b => label(b) === '사용자 관리');
+      if (us) us.insertAdjacentHTML('beforebegin', html);
+      else { const bc = cats().find(b => label(b) === '브랜드 채널');
+        if (bc) bc.insertAdjacentHTML('beforebegin', html);
+        else { const g = grp('관리'); g ? g.insertAdjacentHTML('afterend', html) : nav.insertAdjacentHTML('beforeend', html); } }
     }
+    // 브랜드 채널(외부 바로가기): 관리 묶음 맨 끝
+    { const bc = cats().find(b => label(b) === '브랜드 채널'), us = cats().find(b => label(b) === '사용자 관리');
+      if (bc && us) { const bs = unitEnd(bc) !== bc ? unitEnd(bc) : null; unitEnd(us).after(bc); if (bs) bc.after(bs); } }
     // 비어 버린 묶음 제목 숨기기
     nav.querySelectorAll(':scope > .mm-nav-grp').forEach(g => { const nx = g.nextElementSibling; g.style.display = (!nx || nx.classList.contains('mm-nav-grp')) ? 'none' : ''; });
   }
