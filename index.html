@@ -3,6 +3,58 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<script>
+/* ==========================================================
+   전화번호 하이픈 (2026-11-08)
+   - mmTel(번호): 화면에 보일 때 010-1234-5678 / 02-123-4567 / 1588-1234 형태로 표시
+   - 입력 칸(전화 칸 전부)에서 숫자만 쳐도 하이픈 자동으로 붙음
+   - 쉼표(,)나 /로 여러 번호를 넣은 칸도 번호마다 따로 맞춰 줌
+   ========================================================== */
+(function(){
+  function one(d){
+    if (!d) return '';
+    if (d.indexOf('02') === 0) {
+      if (d.length <= 2) return d;
+      if (d.length <= 5) return d.slice(0,2) + '-' + d.slice(2);
+      if (d.length <= 9) return d.slice(0,2) + '-' + d.slice(2, d.length - 4 < 5 ? 5 : d.length - 4) + '-' + d.slice(d.length - 4 < 5 ? 5 : d.length - 4);
+      return d.slice(0,2) + '-' + d.slice(2,6) + '-' + d.slice(6,10);
+    }
+    if (/^1[5-9]/.test(d) && d.length <= 8) {
+      return d.length <= 4 ? d : d.slice(0,4) + '-' + d.slice(4);
+    }
+    if (d.charAt(0) === '0') {
+      if (d.length <= 3) return d;
+      if (d.length <= 6) return d.slice(0,3) + '-' + d.slice(3);
+      if (d.length <= 10) return d.slice(0,3) + '-' + d.slice(3,6) + '-' + d.slice(6);
+      return d.slice(0,3) + '-' + d.slice(3,7) + '-' + d.slice(7,11);
+    }
+    return d;
+  }
+  function seg(t){
+    var lead = t.match(/^\s*/)[0], tail = t.match(/\s*$/)[0], core = t.trim();
+    if (!core || !/^[\d\s-]+$/.test(core)) return t;
+    return lead + one(core.replace(/\D/g, '')) + tail;
+  }
+  window.mmTel = function(s){
+    if (s === null || s === undefined) return '';
+    s = String(s);
+    return s.split(/([,\/])/).map(function(p){ return /^[,\/]$/.test(p) ? p : seg(p); }).join('');
+  };
+  var SEL = 'input[type=tel], #u-phone, #bi-tel, #ii-tel';
+  document.addEventListener('input', function(e){
+    var el = e.target;
+    if (!el || !el.matches || !el.matches(SEL) || e.isComposing) return;
+    var v = el.value, pos = el.selectionStart == null ? v.length : el.selectionStart;
+    var digitsBefore = v.slice(0, pos).replace(/\D/g, '').length;
+    var nv = window.mmTel(v);
+    if (nv === v) return;
+    el.value = nv;
+    var i = 0, n = 0;
+    while (i < nv.length && n < digitsBefore) { if (/\d/.test(nv.charAt(i))) n++; i++; }
+    try { el.setSelectionRange(i, i); } catch (err) {}
+  }, true);
+})();
+</script>
 <script>/* 화면 스타일: 저장된 버전을 먼저 적용(깜빡임 방지), ?skin=1 이면 1 기본으로 */(function(){try{var q=new URLSearchParams(location.search).get('skin');if(q==='1'||q==='2')localStorage.setItem('mm_skin',q);if(localStorage.getItem('mm_skin')==='2')document.documentElement.classList.add('mm-skin2');}catch(e){}})();</script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <title>멘야마쯔리 매장관리</title>
@@ -774,7 +826,7 @@ function userForm(u, mode){
     <div class="f"><label for="u-pw">비밀번호 ${mode==='edit'?'<span>바꿀 때만 입력</span>':'<em>*</em>'}</label><input type="password" id="u-pw" placeholder="8자 이상" autocomplete="new-password"></div>
     <div class="f"><label for="u-pw2">비밀번호 확인 ${mode==='edit'?'':'<em>*</em>'}</label><input type="password" id="u-pw2" placeholder="한 번 더 입력" autocomplete="new-password"></div>
     <div class="f"><label for="u-title">직책</label><input type="text" id="u-title" value="${v('title')}" placeholder="예: 점장, 매니저"></div>
-    <div class="f"><label for="u-phone">연락처</label><input type="text" id="u-phone" value="${v('phone')}" placeholder="010-0000-0000"></div>
+    <div class="f"><label for="u-phone">연락처</label><input type="text" id="u-phone" value="${mmTel(v('phone'))}" placeholder="010-0000-0000"></div>
     <div class="f"><label for="u-org">소속</label>${sel('u-org', ORGS, u?.org || '본사')}</div>
     
     ${mode==='edit'?`<div class="f"><label for="u-status">상태</label>${sel('u-status', ['사용','중지'], u?.status || '사용')}</div>`:''}
@@ -811,7 +863,7 @@ function drawUsers(){
   const q = (document.getElementById('u-q')?.value || '').trim();
   const list = loadUsers().filter(u => !q || u.id.includes(q) || (u.name||'').includes(q));
   document.getElementById('u-count').textContent = `${list.length}명`;
-  document.getElementById('u-body').innerHTML = list.map(u => `<tr><td>${esc(u.id)}</td><td><b>${esc(u.name)}</b></td><td>${esc(u.title)}</td><td>${esc(u.org)}</td><td>${esc(u.phone)}</td><td><span class="ust ${u.status==='사용'?'on':'off'}">${esc(u.status)}</span></td><td>${esc(u.created)}</td>
+  document.getElementById('u-body').innerHTML = list.map(u => `<tr><td>${esc(u.id)}</td><td><b>${esc(u.name)}</b></td><td>${esc(u.title)}</td><td>${esc(u.org)}</td><td>${esc(mmTel(u.phone))}</td><td><span class="ust ${u.status==='사용'?'on':'off'}">${esc(u.status)}</span></td><td>${esc(u.created)}</td>
     <td class="n"><button class="mini" onclick="editUser('${esc(u.id)}')">${ic('edit')}편집</button>${u.seed?'<span class="lock">기본 관리자</span>':`<button class="mini del" onclick="deleteUser('${esc(u.id)}')">${ic('trash')}삭제</button>`}</td></tr>`).join('') || '<tr><td colspan="8" class="empty">검색 결과가 없어요.</td></tr>';
 }
 function editUser(id){
@@ -1256,7 +1308,7 @@ function runInvStock(){
    ${list.map(r => `<tr class="${r.state === '부족' || r.state === '확인 필요' ? 'inv-low' : ''}"><td><b>${ih(r.it.name)}</b>${r.it.spec ? `<small>${ih(r.it.spec)}</small>` : ''}${r.it.loc ? `<small class="loc">📍 ${ih(r.it.loc)}</small>` : ''}</td><td>${ih(r.it.cat)}</td>
      <td class="n"><span class="inv-st s-${r.state.replace(' ', '')}">${r.state}</span> <b class="inv-q">${r.known ? fmt(r.qty) : '-'}</b> ${ih(r.it.unit)}${r.pending ? `<small>FC 진행중 ${r.pending}${ih(r.it.unit)} 출고 대기</small>` : ''}</td>
      <td class="n">${r.it.min ? fmt(r.it.min) : '-'}</td><td class="n">${r.out30 ? fmt(r.out30) : '-'}</td><td class="n">${r.days === null ? '-' : r.days + '일'}</td><td class="n">${r.it.price ? fmt(r.it.price) : '-'}</td>
-     <td>${ih(r.it.vendor) || '-'}${r.it.tel ? `<small>${ih(r.it.tel)}</small>` : ''}</td><td>${r.baseDate ? r.baseDate.slice(2).replace(/-/g, '.') : '<span class="miss">없음</span>'}</td>
+     <td>${ih(r.it.vendor) || '-'}${r.it.tel ? `<small>${ih(mmTel(r.it.tel))}</small>` : ''}</td><td>${r.baseDate ? r.baseDate.slice(2).replace(/-/g, '.') : '<span class="miss">없음</span>'}</td>
      <td class="n inv-btns"><button onclick="invMoveModal('${r.it.code}','입고')">입고</button><button onclick="invMoveModal('${r.it.code}','출고')">출고</button><button onclick="invMoveModal('${r.it.code}','재고조사')">조사</button><button onclick="invItemModal('${r.it.code}')" title="품목 수정">✎</button></td></tr>`).join('')}
    </tbody></table></div>` : '<div class="empty">조건에 맞는 품목이 없어요.</div>'}</div>
    <p class="dash-hint">FC다움 발주가 '진행중'이면 출고 대기로만 표시하고, '완료'가 되면 재고에서 빠져요. 유니폼은 FC다움에 사이즈가 없어서 출고를 직접 등록해주세요.</p>`;
@@ -1284,7 +1336,7 @@ function invItemModal(code){
   iModal(code ? '품목 수정 · ' + it.code : '품목 추가', `<div class="im-grid">
     <div class="f"><label>분류</label><select id="ii-cat">${INV_CATS.map(c => `<option ${c === it.cat ? 'selected' : ''}>${c}</option>`).join('')}</select></div>
     ${f('name', '품목명', it.name)}${f('spec', '규격·사이즈', it.spec)}${f('unit', '단위', it.unit)}
-    ${f('vendor', '업체', it.vendor)}${f('tel', '연락처', it.tel)}${f('how', '주문방법', it.how)}${f('loc', '창고 위치', it.loc)}
+    ${f('vendor', '업체', it.vendor)}${f('tel', '연락처', mmTel(it.tel))}${f('how', '주문방법', it.how)}${f('loc', '창고 위치', it.loc)}
     ${f('cost', '매입단가 (VAT포함)', it.cost)}${f('price', '점주 출고가 (VAT포함)', it.price)}${f('min', '적정재고 (이하면 부족)', it.min)}
     ${f('fc', 'FC다움 품목명 (자동 출고 연결)', it.fc)}${f('memo', '메모', it.memo, 'wide')}
     <div class="f"><label>사용</label><select id="ii-use"><option ${it.use !== '중지' ? 'selected' : ''}>사용</option><option ${it.use === '중지' ? 'selected' : ''}>중지</option></select></div></div>
@@ -1909,7 +1961,7 @@ PATHS.partner = 'M3 21h18 M5 21V8l7-5 7 5v13 M9 12h2 M13 12h2 M9 16h2 M13 16h2';
       <div class="f"><label for="u-pw">${mode==='edit' ? '비밀번호 초기화 <span>필요할 때만 입력</span>' : '임시 비밀번호 <em>*</em>'}</label><input type="password" id="u-pw" placeholder="8자 이상" autocomplete="new-password"></div>
       <div class="f"><label for="u-pw2">${mode==='edit' ? '초기화 비밀번호 확인' : '임시 비밀번호 확인 <em>*</em>'}</label><input type="password" id="u-pw2" placeholder="한 번 더 입력" autocomplete="new-password"></div>
       <div class="f"><label for="u-title">직책</label><input type="text" id="u-title" value="${v('title')}" placeholder="예: 점장, 매니저"></div>
-      <div class="f"><label for="u-phone">연락처</label><input type="text" id="u-phone" value="${v('phone')}" placeholder="010-0000-0000"></div>
+      <div class="f"><label for="u-phone">연락처</label><input type="text" id="u-phone" value="${mmTel(v('phone'))}" placeholder="010-0000-0000"></div>
       <div class="f"><label for="u-org">소속</label>${sel('u-org', ORGS, u?.org || '본사')}</div>
       <div class="f"><label for="u-role">권한</label>${roleSel}</div>
     </div><p class="u-note">${ic('info')}${mode==='edit' ? '비밀번호를 초기화하면 그 사람은 다음 로그인 때 새 비밀번호를 정해야 해요.' : '등록한 사람은 처음 로그인할 때 임시 비밀번호를 자기 비밀번호로 바꾸게 돼요. 임시 비밀번호는 직접 전달해주세요.'}</p><div id="u-err" class="u-err" role="alert"></div>`;
@@ -1942,7 +1994,7 @@ PATHS.partner = 'M3 21h18 M5 21V8l7-5 7 5v13 M9 12h2 M13 12h2 M9 16h2 M13 16h2';
     const list = USERS.filter(u => !q || u.id.includes(q) || (u.name || '').toLowerCase().includes(q));
     const me = SESSION.user && SESSION.user.uid;
     document.getElementById('u-count').textContent = `${list.length}명`;
-    document.getElementById('u-body').innerHTML = list.map(u => `<tr class="${u.status === '사용' ? '' : 'u-off'}"><td>${esc(u.id)}</td><td><div class="mm-who">${window.mmAv ? mmAv(u.uid, u.name) : ''}<div><b>${esc(u.name)}</b>${u.phone ? `<small>${esc(u.phone)}</small>` : ''}</div></div></td><td>${esc(u.title)}</td><td>${esc(u.org)}</td><td>${ROLE_LABEL[u.role] || esc(u.role)}</td>
+    document.getElementById('u-body').innerHTML = list.map(u => `<tr class="${u.status === '사용' ? '' : 'u-off'}"><td>${esc(u.id)}</td><td><div class="mm-who">${window.mmAv ? mmAv(u.uid, u.name) : ''}<div><b>${esc(u.name)}</b>${u.phone ? `<small>${esc(mmTel(u.phone))}</small>` : ''}</div></div></td><td>${esc(u.title)}</td><td>${esc(u.org)}</td><td>${ROLE_LABEL[u.role] || esc(u.role)}</td>
       <td><span class="ust ${u.status==='사용'?'on':'off'}">${esc(u.status)}</span>${u.status === '사용' && u.mustChange ? '<small class="u-first">첫 로그인 전</small>' : ''}${u.stopped ? `<small>${esc(u.stopped)} 중지</small>` : ''}</td><td>${esc(u.created)}</td>
       <td class="n"><button class="mini" onclick="editUser('${esc(u.uid)}')">${ic('edit')}편집</button>${u.uid === me ? '<span class="lock">본인</span>' : u.status === '사용' ? `<button class="mini del" onclick="setUserActive('${esc(u.uid)}', false)">사용 중지</button>` : `<button class="mini" onclick="setUserActive('${esc(u.uid)}', true)">다시 사용</button>`}</td></tr>`).join('') || '<tr><td colspan="8" class="empty">검색 결과가 없어요.</td></tr>';
   };
@@ -3461,7 +3513,7 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
     drawVendList();
   }
   function telLinks(s){
-    return h(s).replace(/(0\d{1,2}-?\d{3,4}-?\d{4}|1\d{3}-\d{4})/g, m => `<a href="tel:${m.replace(/-/g, '')}">${m}</a>`);
+    return h(s).replace(/(0\d{1,2}-?\d{3,4}-?\d{4}|1\d{3}-\d{4})/g, m => `<a href="tel:${m.replace(/-/g, '')}">${mmTel(m)}</a>`);
   }
   function drawVendList(){
     const D = BI.vend, f = BI.vf, q = f.q.toLowerCase();
@@ -3493,7 +3545,7 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
       ${fld('name', '업체명', v.name, 'wide')}
       <div class="f wide"><label>소속 <span>여러 개 선택 가능</span></label>${brChecks(v.brs)}</div>
       <div class="f"><label>분류</label>${catSel('vendor', v.cat)}</div>
-      ${fld('tel', '연락처', v.tel, 'wide', '여러 개면 쉼표로, 예) 070-1234-5678, 010-1234-5678')}
+      ${fld('tel', '연락처', mmTel(v.tel), 'wide', '여러 개면 쉼표로, 예) 070-1234-5678, 010-1234-5678')}
       ${fld('manager', '담당자', v.manager)}
       ${fld('how', '주문 방법', v.how, '', '예) 전화, 카톡, 사이트 주문')}
       <div class="f wide"><label>메모</label><textarea id="bi-memo" placeholder="최소 주문량, 배송비, 할인 조건 등">${h(v.memo)}</textarea></div>
@@ -4807,8 +4859,8 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
       </div>
       <div class="nh-info">
         <span>점주</span><span>${h(s.owner) || '<span style="color:#9aa38f">미입력</span>'}</span>
-        <span>연락처</span><span>${h(s.phone) || '<span style="color:#9aa38f">미입력</span>'}</span>
-        <span>매장 전화</span><span>${s.store_phone ? `<a href="tel:${telNo(s.store_phone)}" style="color:inherit">${h(s.store_phone)}</a>` : '<span style="color:#9aa38f">-</span>'}</span>
+        <span>연락처</span><span>${h(mmTel(s.phone)) || '<span style="color:#9aa38f">미입력</span>'}</span>
+        <span>매장 전화</span><span>${s.store_phone ? `<a href="tel:${telNo(s.store_phone)}" style="color:inherit">${h(mmTel(s.store_phone))}</a>` : '<span style="color:#9aa38f">-</span>'}</span>
         <span>담당 SV</span><span>${h(s.sv) || '<span style="color:#9aa38f">-</span>'}</span>
         <span>주소</span><span>${h(s.addr) || '<span style="color:#9aa38f">미입력</span>'}</span>
         <span>오픈일</span><span>${h(s.open || '') || '<span style="color:#9aa38f">미입력</span>'}</span>
@@ -4830,7 +4882,7 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
     const s = (NH.data.stores || []).find(x => x.id === id); if (!s) return;
     iModal(`정보 수정 · ${s.name}`, `<div class="im-grid">
       <div class="f"><label>점주 이름</label><input id="nh-owner" maxlength="30" value="${h(s.owner)}"></div>
-      <div class="f"><label>연락처</label><input id="nh-phone" type="tel" maxlength="20" value="${h(s.phone)}" placeholder="010-0000-0000"></div>
+      <div class="f"><label>연락처</label><input id="nh-phone" type="tel" maxlength="20" value="${h(mmTel(s.phone))}" placeholder="010-0000-0000"></div>
       <div class="f wide"><label>주소</label><input id="nh-addr" maxlength="200" value="${h(s.addr)}"></div>
       <div class="f"><label>오픈일</label><input id="nh-open" type="date" value="${h(s.open || '')}"></div>
       <div class="f"><label>네이버 확인</label><select id="nh-skip"><option value="">확인함</option><option value="딜리버리 매장" ${s.skip ? 'selected' : ''}>제외 (플레이스 없음)</option></select></div>
@@ -5133,7 +5185,7 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
         <span>브랜드</span><span>${h(bName(s.brand))}</span>
         <span>상태</span><span>${stTag(s)}${s.miss && s.status !== '폐점' ? ` <span style="color:#9a6a0b;font-size:12px">${s.miss}일째 안 잡힘</span>` : ''}</span>
         <span>업종</span><span>${h(s.cat) || '-'}</span>
-        <span>전화</span><span>${h(s.tel) || '-'}</span>
+        <span>전화</span><span>${h(mmTel(s.tel)) || '-'}</span>
         <span>주소</span><span>${h(s.addr) || '-'}</span>
         <span>리뷰</span><span>${num(s.rev)}${s.rev30 != null ? ` <span style="color:#6f8a5a;font-size:12px">(30일 ${s.rev30 >= 0 ? '+' : ''}${num(s.rev30)})</span>` : ''}</span>
         <span>처음 확인</span><span>${ymd(s.first)}${s.base ? ' <span style="color:#9aa38f;font-size:12px">(등록 당시 기존 매장)</span>' : ''}</span>
@@ -6314,7 +6366,7 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
     const head = `<button class="dm-nh ${n.root ? 'root' : ''} ${n.brand ? 'brand' : ''}" onclick="dmOrgTog('${esc(n.k)}')" aria-expanded="${open}"><span class="ar">▶</span>${esc(n.t)} <span class="c">${n.soon && !cnt(n) ? '' : cnt(n)}</span>${n.badge ? `<span class="bdg">${n.badge}</span>` : ''}${n.soon ? '<span class="tag">오픈 준비</span>' : ''}${n.closed ? '<span class="tag off">현재 폐점</span>' : ''}${n.lock ? '<span class="lk">🔒 본사·관리자만</span>' : ''}</button>`;
     let body;
     if (n.kids) body = n.kids.map(orgNode).join('') || `<div class="dm-ek">${n.closed ? '현재 운영 중인 매장이 없어요.' : '아직 매장이 없어요.'}</div>`;
-    else if (n.ppl.length) body = n.ppl.map(p => `<div class="dm-pp ${ORG.sel && ORG.sel.id === p.id ? 'on' : ''} ${match(p) ? 'hit' : ''}" onclick="dmOrgSel('${esc(p.id)}')"><b>${esc(p.name)}</b><span class="r">${p.store ? (p.sv ? '담당 S.V ' + esc(p.sv) : '') : esc(personRole(p))}</span>${p.locked ? '<span class="lk2">🔒</span>' : `<span class="tel2">${p.tel ? esc(p.tel) : (p.store ? '연락처 미입력' : '')}</span>`}</div>`).join('');
+    else if (n.ppl.length) body = n.ppl.map(p => `<div class="dm-pp ${ORG.sel && ORG.sel.id === p.id ? 'on' : ''} ${match(p) ? 'hit' : ''}" onclick="dmOrgSel('${esc(p.id)}')"><b>${esc(p.name)}</b><span class="r">${p.store ? (p.sv ? '담당 S.V ' + esc(p.sv) : '') : esc(personRole(p))}</span>${p.locked ? '<span class="lk2">🔒</span>' : `<span class="tel2">${p.tel ? esc(mmTel(p.tel)) : (p.store ? '연락처 미입력' : '')}</span>`}</div>`).join('');
     else body = `<div class="dm-ek">${n.soon ? '직원 현황에 등록하면 자동으로 나와요.' : '없음'}</div>`;
     return `<div class="dm-node ${open ? 'open' : ''}">${head}<div class="dm-kids">${body}</div></div>`;
   }
@@ -6331,7 +6383,7 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
     const p = ORG.sel, C = document.getElementById('org-card');
     C.classList.toggle('on', !!p);
     if (!p) { C.innerHTML = '<div class="dm-none">왼쪽에서 이름을 누르면<br>여기에 연락처가 나와요.</div>'; return; }
-    const telRow = p.locked ? '🔒 매장 관리자 이상' : (p.tel ? esc(p.tel) : miss);
+    const telRow = p.locked ? '🔒 매장 관리자 이상' : (p.tel ? esc(mmTel(p.tel)) : miss);
     C.innerHTML = `<button class="dm-x cx" onclick="dmOrgSel(null)" aria-label="닫기">✕</button>
       <div class="pc-top"><div class="av4 ${p.store ? 'store' : ''}" style="${p.store || p.ceo ? '' : `background:${colorOf(p.id)}`}">${p.ceo ? '대표' : esc(String(p.name).slice(-2))}</div><div><h3>${esc(p.name)}</h3><p>${esc(p.org || '')}</p></div></div>
       <div class="pc-rows">${p.store
@@ -6366,7 +6418,7 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
       && (BS.fs === 'all' || (BS.fs === 'live' ? s.status !== '폐점' : s.status === BS.fs)) && (!BS.q || s.name.includes(BS.q) || (s.owner || '').includes(BS.q)));
     document.getElementById('bs-co').innerHTML = `
       <section class="card"><div class="dm-sh"><strong>회사</strong><small>연락망 맨 위에 나와요</small><button class="dmb sm" style="margin-left:auto" onclick="dmBsCompany()">수정</button></div>
-        <div class="dm-kv3"><div><span>회사명</span><b>${esc(c.name) || miss}</b></div><div><span>대표</span><b>${c.ceo_name ? esc(c.ceo_name) + ' <small>' + esc(c.ceo_title || '') + '</small>' : miss}</b></div><div><span>대표 연락처</span><b>${c.ceo_tel ? esc(c.ceo_tel) : miss}</b></div></div></section>`;
+        <div class="dm-kv3"><div><span>회사명</span><b>${esc(c.name) || miss}</b></div><div><span>대표</span><b>${c.ceo_name ? esc(c.ceo_name) + ' <small>' + esc(c.ceo_title || '') + '</small>' : miss}</b></div><div><span>대표 연락처</span><b>${c.ceo_tel ? esc(mmTel(c.ceo_tel)) : miss}</b></div></div></section>`;
     document.getElementById('bs-body').innerHTML = `
       <section class="card"><div class="dm-sh"><strong>브랜드</strong><small>${d.brands.length}개 · 연락망에서 회사 아래 갈래가 돼요</small></div>
         <div class="dm-brands">${d.brands.map(b => { const ss = d.stores.filter(s => s.brand_id === b.id && s.status !== '폐점');
@@ -6401,7 +6453,7 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
       <label class="f2 wide"><span>회사명</span><input id="c-n" value="${esc(c.name)}"></label>
       <label class="f2"><span>대표 이름</span><input id="c-ceo" value="${esc(c.ceo_name)}"></label>
       <label class="f2"><span>직함</span><input id="c-t" value="${esc(c.ceo_title || '대표이사')}"></label>
-      <label class="f2 wide"><span>대표 연락처 <em>(연락망에서 전 직원에게 보여요)</em></span><input id="c-tel" type="tel" value="${esc(c.ceo_tel)}" placeholder="010-0000-0000"></label></div>`, foot('dmBsCompanySave(this)'));
+      <label class="f2 wide"><span>대표 연락처 <em>(연락망에서 전 직원에게 보여요)</em></span><input id="c-tel" type="tel" value="${esc(mmTel(c.ceo_tel))}" placeholder="010-0000-0000"></label></div>`, foot('dmBsCompanySave(this)'));
   };
   window.dmBsCompanySave = async btn => { const v = id => document.getElementById(id).value;
     await run(btn, () => rpc('org_company_save', { p:{ name:v('c-n'), ceo_name:v('c-ceo'), ceo_title:v('c-t'), ceo_tel:v('c-tel') } }), '저장했어요.');
@@ -6433,7 +6485,7 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
       <label class="f2"><span>담당 S.V <em>(본사 명단에서)</em></span><select onchange="dmSF.sv=this.value"><option value="">미지정</option>${(BS.d.svs || []).map(v => `<option ${SF.sv === v ? 'selected' : ''}>${esc(v)}</option>`).join('')}</select></label><div></div>
       ${SF.direct ? '' : `<div class="dm-frsec"><div class="h">🔒 가맹점 정보 · 본사·관리자만</div>
         <label class="f2"><span>점주명</span><input value="${esc(SF.owner || '')}" oninput="dmSF.owner=this.value"></label>
-        <label class="f2"><span>점주 연락처</span><input type="tel" placeholder="010-0000-0000" value="${esc(SF.owner_tel || '')}" oninput="dmSF.owner_tel=this.value"></label></div>`}</div>`,
+        <label class="f2"><span>점주 연락처</span><input type="tel" placeholder="010-0000-0000" value="${esc(mmTel(SF.owner_tel || ''))}" oninput="dmSF.owner_tel=this.value"></label></div>`}</div>`,
       foot(`dmBsStoreSave(this)`));
     SF._d = () => { const n = document.getElementById('s-n')?.value; if (n != null) SF.name = n; draw(); };
     window.dmSF = SF; draw(); };
@@ -6520,7 +6572,7 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
   }
   const vtabs = (a, b) => `<div class="dm-tabs"><button class="${ST.view === 'on' ? 'on' : ''}" onclick="dmStView('on')">재직 중 ${a}</button><button class="${ST.view === 'off' ? 'on' : ''}" onclick="dmStView('off')">퇴사자 ${b}</button></div>`;
   const nameBtn = p => `<button class="dm-nm" onclick="dmStEdit(${p.id})"><i style="background:${colorOf(p.id)}"></i>${esc(p.name)}</button>`;
-  const telCell = p => p.tel ? `<a class="dm-tel" href="tel:${esc(p.tel)}">${esc(p.tel)}</a>` : miss;
+  const telCell = p => p.tel ? `<a class="dm-tel" href="tel:${esc(p.tel)}">${esc(mmTel(p.tel))}</a>` : miss;
   const daysChips = ds => `<span class="dm-days">${WD.map((w, i) => `<span class="${(ds || []).includes(i) ? 'on' : ''}">${w}</span>`).join('')}</span>`;
   const docCnt = p => { const d = (p.hire && p.hire.docs) || {}, x = p.pii || {}; const n = [x.rrn, x.acct, x.idc, d.ctr].filter(Boolean).length; return n === 4 ? '<span class="dm-chip ok">4/4 완료</span>' : `<span class="dm-miss">${n}/4</span>`; };
   const ordCell = (p, i, a) => ST.view === 'on' && !isOut(p) ? `<td class="dm-ord"><button onclick="dmStOrd(${p.id},-1)" ${i === 0 ? 'disabled' : ''} aria-label="위로">▲</button><button onclick="dmStOrd(${p.id},1)" ${i === a.length - 1 ? 'disabled' : ''} aria-label="아래로">▼</button></td>` : (ST.view === 'on' ? '<td></td>' : '');
@@ -6577,11 +6629,11 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
       ${PI.purge_at ? `<div class="f2 wide dm-note2">퇴사 후 보관 중이에요. ${esc(PI.purge_at)}에 주민번호·계좌가 자동으로 삭제돼요.</div>` : ''}</div></div>` : '';
     const body = `<div class="dm-fg">
       <label class="f2"><span>이름</span><input id="st-n" value="${esc(F.name)}" maxlength="12" oninput="dmF.name=this.value"></label>
-      <label class="f2"><span>직급</span><select onchange="dmF.rank=this.value"><option value="">선택</option>${ranks.map(r => `<option ${F.rank === r ? 'selected' : ''}>${r}</option>`).join('')}${F.rank && !ranks.includes(F.rank) ? `<option selected>${esc(F.rank)}</option>` : ''}</select></label>
+      ${hq ? `<label class="f2"><span>직급 <em>(직접 입력)</em></span><input id="st-rank" list="st-rank-list" value="${esc(F.rank || '')}" maxlength="12" placeholder="예: 팀장, 실장, 부장" oninput="dmF.rank=this.value.trim()"><datalist id="st-rank-list">${ranks.map(r => `<option value="${r}"></option>`).join('')}</datalist></label>` : `<label class="f2"><span>직급</span><select onchange="dmF.rank=this.value"><option value="">선택</option>${ranks.map(r => `<option ${F.rank === r ? 'selected' : ''}>${r}</option>`).join('')}${F.rank && !ranks.includes(F.rank) ? `<option selected>${esc(F.rank)}</option>` : ''}</select></label>`}
       ${work}
       <label class="f2"><span>입사일</span><input type="date" value="${esc(F.start || '')}" onchange="dmF.start=this.value"></label>
       <label class="f2"><span>퇴사일 <em>(정해지면)</em></span><input type="date" value="${esc(F.out || '')}" onchange="dmF.out=this.value"></label>
-      <label class="f2"><span>연락처 <em>🔒 ${hq ? '연락망에서 전 직원에게 보여요' : '본사·매장 관리자만'}</em></span><input type="tel" placeholder="010-0000-0000" value="${esc(F.tel || '')}" oninput="dmF.tel=this.value"></label>
+      <label class="f2"><span>연락처 <em>🔒 ${hq ? '연락망에서 전 직원에게 보여요' : '본사·매장 관리자만'}</em></span><input type="tel" placeholder="010-0000-0000" value="${esc(mmTel(F.tel || ''))}" oninput="dmF.tel=this.value"></label>
       <label class="f2"><span>메모</span><input value="${esc(F.memo || '')}" maxlength="60" oninput="dmF.memo=this.value"></label>
       ${hire}</div>`;
     const extra = p && !isOut(p) ? `<button class="dmb" style="color:#a3262c" onclick="dmStQuit()">퇴사 처리</button>${!hq && isHQ() ? `<button class="dmb" onclick="dmStMove([${p.id}])">🔁 매장 이동·지원</button>` : ''}` : '';
