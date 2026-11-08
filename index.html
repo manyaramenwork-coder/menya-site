@@ -6366,7 +6366,7 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
     const head = `<button class="dm-nh ${n.root ? 'root' : ''} ${n.brand ? 'brand' : ''}" onclick="dmOrgTog('${esc(n.k)}')" aria-expanded="${open}"><span class="ar">▶</span>${esc(n.t)} <span class="c">${n.soon && !cnt(n) ? '' : cnt(n)}</span>${n.badge ? `<span class="bdg">${n.badge}</span>` : ''}${n.soon ? '<span class="tag">오픈 준비</span>' : ''}${n.closed ? '<span class="tag off">현재 폐점</span>' : ''}${n.lock ? '<span class="lk">🔒 본사·관리자만</span>' : ''}</button>`;
     let body;
     if (n.kids) body = n.kids.map(orgNode).join('') || `<div class="dm-ek">${n.closed ? '현재 운영 중인 매장이 없어요.' : '아직 매장이 없어요.'}</div>`;
-    else if (n.ppl.length) body = n.ppl.map(p => `<div class="dm-pp ${ORG.sel && ORG.sel.id === p.id ? 'on' : ''} ${match(p) ? 'hit' : ''}" onclick="dmOrgSel('${esc(p.id)}')"><b>${esc(p.name)}</b><span class="r">${p.store ? (p.sv ? '담당 S.V ' + esc(p.sv) : '') : esc(personRole(p))}</span>${p.locked ? '<span class="lk2">🔒</span>' : `<span class="tel2">${p.tel ? esc(mmTel(p.tel)) : (p.store ? '연락처 미입력' : '')}</span>`}</div>`).join('');
+    else if (n.ppl.length) body = n.ppl.map(p => `<div class="dm-pp ${ORG.sel && ORG.sel.id === p.id ? 'on' : ''} ${match(p) ? 'hit' : ''}" onclick="dmOrgSel('${esc(p.id)}')"><b>${esc(p.name)}</b>${!p.store && p.rank ? `<span class="rk">${esc(p.rank)}</span>` : ''}<span class="r">${p.store ? (p.sv ? '담당 S.V ' + esc(p.sv) : '') : esc(personRole(p))}</span>${p.locked ? '<span class="lk2">🔒</span>' : `<span class="tel2">${p.tel ? esc(mmTel(p.tel)) : (p.store ? '연락처 미입력' : '')}</span>`}</div>`).join('');
     else body = `<div class="dm-ek">${n.soon ? '직원 현황에 등록하면 자동으로 나와요.' : '없음'}</div>`;
     return `<div class="dm-node ${open ? 'open' : ''}">${head}<div class="dm-kids">${body}</div></div>`;
   }
@@ -7125,7 +7125,7 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
   .dm-kids .dm-nh{font-size:13px;padding:9px 2px}
   .dm-pp{display:flex;align-items:center;gap:10px;padding:7px 8px;border-radius:8px;cursor:pointer;font-size:13px}
   .dm-pp:hover{background:#f4f5f0}.dm-pp.on{background:#2d3726;color:#fff}.dm-pp.on .r{color:#c9d2c3}.dm-pp.on .tel2{color:#cfe0ff}.dm-pp.hit{background:#fff3cc}
-  .dm-pp b{font-weight:600;min-width:52px}.dm-pp .r{color:#8a9181;font-size:12px}.dm-pp .tel2{margin-left:auto;font-size:12px;color:#2a56a8}.dm-pp .lk2{margin-left:auto;font-size:11px;color:#a0a797}
+  .dm-pp b{font-weight:600;min-width:52px}.dm-pp .r{color:#8a9181;font-size:12px}.dm-pp .rk{display:none}.dm-pp .tel2{margin-left:auto;font-size:12px;color:#2a56a8}.dm-pp .lk2{margin-left:auto;font-size:11px;color:#a0a797}
   .dm-pcard{background:#fff;border:1px solid var(--line);border-radius:14px;padding:20px;position:sticky;top:84px;min-height:220px}
   .dm-none{color:#a0a797;font-size:13px;text-align:center;padding:56px 10px;line-height:1.8}
   .pc-top{display:flex;align-items:center;gap:14px}.av4{width:54px;height:54px;border-radius:14px;background:#2d3726;color:#fff;display:grid;place-items:center;font-size:15px;font-weight:700;flex:none}.av4.store{background:#fff1d6;color:#8a5a00;font-size:12px}
@@ -7197,7 +7197,7 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
   @media(max-width:1100px){.dm-dir{grid-template-columns:1fr}.dm-pcard{position:fixed;left:0;right:0;bottom:0;top:auto;border-radius:16px 16px 0 0;box-shadow:0 -8px 30px #0003;z-index:70;transform:translateY(110%);transition:transform .2s;min-height:0}.dm-pcard.on{transform:none}.dm-pcard .cx{display:block}}
   @media(max-width:860px){
     .dm-sum{grid-template-columns:1fr 1fr}.dm-kv3{grid-template-columns:1fr}.dm-fg,.dm-frsec{grid-template-columns:1fr}.dm-seg2{grid-template-columns:1fr}
-    .dm-orgbar{margin-top:0}.dm-search{width:100%}.dm-pp .r{display:none}
+    .dm-orgbar{margin-top:0}.dm-search{width:100%}.dm-pp .r{display:none}.dm-pp .rk{display:inline;color:#8a9181;font-size:12px;font-weight:400;margin-left:2px}.dm-pp.on .rk{color:#c9d2c3}
     .dm-week{grid-template-columns:1fr;gap:10px}.dm-col.out{display:none}.sls{display:grid;grid-template-columns:1fr 1fr}.sl select{max-width:none}
     .dm-mon{grid-template-columns:1fr}.dm-mon .h,.md.empty{display:none}
     .dm-mon2 .mh{display:none}.dm-mon2 .mwh{display:block;font-size:11.5px;color:#6b7364;font-weight:600;margin:4px 0 5px}.dm-mon2 .mwk+.mwk{margin-top:12px}.dm-mon2 .mg{grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}.md2.empty{display:none}.md{height:auto;display:flex;flex-wrap:wrap;gap:4px 12px;align-items:baseline}.md .n,.md .off{margin-top:0}
