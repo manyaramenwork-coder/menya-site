@@ -6204,7 +6204,8 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
   const COLORS = ['#5b6b4e','#c62429','#2a6fb0','#c08a00','#7a4fa0','#c25a8a','#46708f','#2b8a6e','#8a8476','#b5562b','#3f8f8f','#9a4f6a'];
   const BCOLS = ['#c62429','#8a5a2b','#2a6fb0','#2b8a6e','#7a4fa0','#c08a00'];
   const REGIONS = ['수도권','강원','충청','경상','전라','제주'];
-  const DUTY = ['홀','주방','서브','사이드','메인'];
+  const DUTY = ['홀','주방'];
+  const BANKS = ['국민','신한','우리','하나','농협','기업','카카오뱅크','토스뱅크','케이뱅크','새마을금고','우체국','수협','신협','SC제일','iM뱅크(대구)','부산','경남','광주','전북','제주','씨티','산업'];
   const DOCS = [['rrn','주민번호'],['bank','급여 계좌'],['idc','신분증 사본'],['ctr','근로계약서']];
   const PAGES = { org:'연락망', 'bs-set':'회사·조직 설정', 'dm-staff':'직원 현황', 'dm-shift':'시프트 관리' };
   const DM = { boot:null, store:null };
@@ -6450,6 +6451,18 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
     try { ST.d = await rpc('staff_data', { p_store: DM.cur === 'hq' ? null : +DM.cur }); }
     catch (e) { B.innerHTML = storeTabs(false, 'dmStPick') + loading('불러오지 못했어요: ' + esc(errMsg(e))); return; }
     stDraw();
+    if (ST.d.admin) piSweep();
+  }
+  let piSwept = false;
+  async function piSweep(){
+    if (piSwept) return; piSwept = true;
+    try {
+      const due = await rpc('staff_pii_due');
+      for (const d of due || []) {
+        const { error } = await window.SB.storage.from('staff-idcards').remove([d.path]);
+        if (!error) await rpc('staff_pii_idcard_set', { p_staff: d.staff_id, p_path: null });
+      }
+    } catch (e) { console.warn('신분증 사본 정리 실패', e); }
   }
   window.dmStPick = id => { DM.cur = id === 'hq' ? 'hq' : +id; if (id !== 'hq') setStore(+id); ST.view = 'on'; stLoad(); };
   const isOut = p => p.out && p.out < today();
@@ -6502,7 +6515,7 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
   const nameBtn = p => `<button class="dm-nm" onclick="dmStEdit(${p.id})"><i style="background:${colorOf(p.id)}"></i>${esc(p.name)}</button>`;
   const telCell = p => p.tel ? `<a class="dm-tel" href="tel:${esc(p.tel)}">${esc(p.tel)}</a>` : miss;
   const daysChips = ds => `<span class="dm-days">${WD.map((w, i) => `<span class="${(ds || []).includes(i) ? 'on' : ''}">${w}</span>`).join('')}</span>`;
-  const docCnt = p => { const d = (p.hire && p.hire.docs) || {}; const n = DOCS.filter(([k]) => d[k]).length; return n === DOCS.length ? '<span class="dm-chip ok">4/4 완료</span>' : `<span class="dm-miss">${n}/4</span>`; };
+  const docCnt = p => { const d = (p.hire && p.hire.docs) || {}, x = p.pii || {}; const n = [x.rrn, x.acct, x.idc, d.ctr].filter(Boolean).length; return n === 4 ? '<span class="dm-chip ok">4/4 완료</span>' : `<span class="dm-miss">${n}/4</span>`; };
   const ordCell = (p, i, a) => ST.view === 'on' && !isOut(p) ? `<td class="dm-ord"><button onclick="dmStOrd(${p.id},-1)" ${i === 0 ? 'disabled' : ''} aria-label="위로">▲</button><button onclick="dmStOrd(${p.id},1)" ${i === a.length - 1 ? 'disabled' : ''} aria-label="아래로">▼</button></td>` : (ST.view === 'on' ? '<td></td>' : '');
   window.dmStView = v => { ST.view = v; stDraw(); };
   window.dmStSel = (id, on) => { on ? ST.sel.add(id) : ST.sel.delete(id); stBar(); };
@@ -6522,11 +6535,14 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
     try { await rpc('staff_order', { p_ids: same.map(x => x.id) }); toast('순서를 바꿨어요. 시프트에도 이 순서로 나와요.'); stLoad(); } catch (e) { toast('바꾸지 못했어요: ' + errMsg(e)); }
   };
   let F = null;
-  window.dmStEdit = id => {
+  window.dmStEdit = async id => {
     const hq = DM.cur === 'hq', p = id ? ST.d.list.find(x => x.id === id) : null;
     F = p ? JSON.parse(JSON.stringify(p)) : (hq ? { kind:'hq', name:'', rank:'', duty:'' } : { kind:'pt', name:'', rank:'PT', wk:6, days:[0,1,2,3,4], slot:'L' });
     F.hire = F.hire || { cond:'', hours:'', pay_type: F.kind === 'staff' || hq ? '월급' : '시급', pay:'', duty:[], docs:{} };
-    F.hire.duty = F.hire.duty || []; F.hire.docs = F.hire.docs || {};
+    F.hire.duty = (F.hire.duty || []).filter(x => DUTY.includes(x)); F.hire.docs = F.hire.docs || {};
+    F.pii = {}; F.idFile = null; F.idDel = false;
+    if (ST.d.admin && p) { try { F.pii = await rpc('staff_pii_get', { p_staff: p.id }) || {}; } catch (e) { console.warn(e); toast('개인정보를 불러오지 못했어요: ' + errMsg(e)); } }
+    F.pin = { rrn:'', acct:'', bank: F.pii.bank || '', holder: F.pii.holder || '' };
     window.dmF = F; stForm(p);
   };
   function stForm(p){
@@ -6539,14 +6555,19 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
            <label class="f2"><span>월 휴무 기준 <em>(비우면 자동)</em></span><input type="number" min="0" max="20" placeholder="자동 (${({6:5,5:9,4:13})[F.wk || 6]}일 안팎)" value="${F.off ?? ''}" oninput="dmF.off=this.value===''?null:+this.value"></label><div></div>`
         : `<div class="f2 wide"><span>출근 요일</span><div class="dm-dsel">${WD.map((w, i) => `<button type="button" class="${(F.days || []).includes(i) ? 'on' : ''}" onclick="dmStDay(${i})">${w}</button>`).join('')}</div></div>
            <div class="f2 wide"><span>시간대</span><div class="dm-seg">${Object.entries(SLOT).map(([k,t]) => `<button type="button" class="${F.slot === k ? 'on' : ''}" onclick="dmStF('slot','${k}')">${t}</button>`).join('')}</div><em class="dm-note2">고른 요일에 이 시간대로 시프트가 채워져요. 그날만 바꾸는 건 시프트에서 해요.</em></div>`}`;
-    const H = F.hire, autoCond = hq ? (F.duty || '본사 근무') : F.kind === 'staff' ? `주${F.wk || 6}일 (요일 변동)` : `${daysTxt(F.days)} ${SLOT[F.slot] || ''}`;
+    const H = F.hire, PI = F.pii || {}, PN = F.pin || {}, autoCond = hq ? (F.duty || '본사 근무') : F.kind === 'staff' ? `주${F.wk || 6}일 (요일 변동)` : `${daysTxt(F.days)} ${SLOT[F.slot] || ''}`;
     const hire = adm ? `<div class="dm-hire"><div class="hh">🔒 입사 정보 <small>홈페이지 관리자만 볼 수 있어요</small></div><div class="dm-fg">
       <label class="f2"><span>근무조건</span><input value="${esc(H.cond || '')}" placeholder="${esc(autoCond)}" oninput="dmF.hire.cond=this.value"></label>
       <label class="f2"><span>근무시간 <em>(하루)</em></span><div class="dm-unit"><input type="number" min="1" max="14" step="0.5" value="${esc(H.hours ?? '')}" oninput="dmF.hire.hours=this.value"><b>시간</b></div></label>
       <label class="f2"><span>급여</span><div class="dm-unit"><select onchange="dmF.hire.pay_type=this.value">${['시급','월급'].map(x => `<option ${H.pay_type === x ? 'selected' : ''}>${x}</option>`).join('')}</select><input inputmode="numeric" value="${esc(H.pay || '')}" oninput="this.value=this.value.replace(/[^0-9]/g,'').replace(/\\B(?=(\\d{3})+(?!\\d))/g,',');dmF.hire.pay=this.value"><b>원</b></div></label>
       ${hq ? '<div></div>' : `<div class="f2"><span>담당</span><div class="dm-chk">${DUTY.map(x => `<label><input type="checkbox" ${H.duty.includes(x) ? 'checked' : ''} onchange="dmStDuty('${x}',this.checked)">${x}</label>`).join('')}</div></div>`}
-      <div class="f2 wide"><span>입사 서류 <em>— 받았는지만 체크해요. 번호·사진은 여기 적지 않아요</em></span><div class="dm-chk">${DOCS.map(([k,t]) => `<label><input type="checkbox" ${H.docs[k] ? 'checked' : ''} onchange="dmF.hire.docs['${k}']=this.checked">${t} 받음</label>`).join('')}</div></div>
-      <div class="f2 wide dm-warn">주민번호·계좌번호·신분증 사진 원본은 대표님·관리자만 열 수 있는 구글 드라이브 폴더에 보관해 주세요.</div></div></div>` : '';
+      <div class="f2 wide dm-pii-h"><span>🔐 개인정보 <em>— 암호화해서 저장해요. 저장된 번호는 가려서 보이고, 바꿀 때만 새로 입력해요. ‘보기’를 누르면 열람 기록이 남아요</em></span></div>
+      <label class="f2"><span>주민등록번호</span><div class="dm-unit"><input id="pi-rrn" inputmode="numeric" maxlength="14" autocomplete="off" placeholder="${PI.rrn ? esc(PI.rrn) : '000000-0000000'}" value="${esc(PN.rrn)}" oninput="dmPiRrn(this)">${PI.has_rrn ? `<button type="button" class="dmb sm" onclick="dmPiView('rrn',this)">보기</button>` : ''}</div></label>
+      <div class="f2"><span>신분증 사본</span><div class="dm-unit dm-idc">${PI.has_idcard && !F.idDel ? `<button type="button" class="dmb sm" onclick="dmPiView('idcard',this)">보기</button><button type="button" class="dmb sm" onclick="dmPiDel()">삭제</button>` : ''}<label class="dmb sm">${PI.has_idcard && !F.idDel ? '바꾸기' : '파일 첨부'}<input type="file" accept="image/*,application/pdf" hidden onchange="dmPiFile(this)"></label><span class="dm-note2" id="pi-fn">${F.idFile ? esc(F.idFile.name) : F.idDel ? '저장하면 삭제돼요' : PI.has_idcard ? '등록됨' : ''}</span></div></div>
+      <div class="f2"><span>급여 계좌</span><div class="dm-unit"><select onchange="dmF.pin.bank=this.value"><option value="">은행</option>${[...BANKS, ...(PN.bank && !BANKS.includes(PN.bank) ? [PN.bank] : [])].map(b => `<option ${PN.bank === b ? 'selected' : ''}>${esc(b)}</option>`).join('')}</select><input inputmode="numeric" autocomplete="off" placeholder="${PI.acct ? esc(PI.acct) : '계좌번호'}" value="${esc(PN.acct)}" oninput="this.value=this.value.replace(/[^0-9-]/g,'');dmF.pin.acct=this.value">${PI.has_acct ? `<button type="button" class="dmb sm" onclick="dmPiView('acct',this)">보기</button>` : ''}</div></div>
+      <label class="f2"><span>예금주 <em>(본인이면 비워 두세요)</em></span><input value="${esc(PN.holder)}" placeholder="${esc(F.name || '본인')}" maxlength="20" oninput="dmF.pin.holder=this.value"></label>
+      <div class="f2 wide"><span>입사 서류</span><div class="dm-chk"><label><input type="checkbox" ${H.docs.ctr ? 'checked' : ''} onchange="dmF.hire.docs.ctr=this.checked">근로계약서 받음</label></div></div>
+      ${PI.purge_at ? `<div class="f2 wide dm-note2">퇴사 후 보관 중이에요. ${esc(PI.purge_at)}에 주민번호·계좌가 자동으로 삭제돼요.</div>` : ''}</div></div>` : '';
     const body = `<div class="dm-fg">
       <label class="f2"><span>이름</span><input id="st-n" value="${esc(F.name)}" maxlength="12" oninput="dmF.name=this.value"></label>
       <label class="f2"><span>직급</span><select onchange="dmF.rank=this.value"><option value="">선택</option>${ranks.map(r => `<option ${F.rank === r ? 'selected' : ''}>${r}</option>`).join('')}${F.rank && !ranks.includes(F.rank) ? `<option selected>${esc(F.rank)}</option>` : ''}</select></label>
@@ -6562,6 +6583,26 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
   const keepName = () => { const n = document.getElementById('st-n'); if (n) F.name = n.value; };
   window.dmStF = (k, v) => { keepName(); F[k] = v; if (k === 'kind' && v === 'staff') { F.wk = F.wk || 6; F.rank = F.rank === 'PT' ? '사원' : F.rank; } if (k === 'kind' && v === 'pt') { F.days = F.days && F.days.length ? F.days : [0,1,2,3,4]; F.slot = F.slot || 'L'; F.rank = F.rank || 'PT'; } stForm(ST.d.list.find(x => x.id === F.id)); };
   window.dmStDay = i => { keepName(); F.days = (F.days || []).includes(i) ? F.days.filter(x => x !== i) : [...(F.days || []), i].sort(); stForm(ST.d.list.find(x => x.id === F.id)); };
+  window.dmPiRrn = el => { const d = el.value.replace(/\D/g, '').slice(0, 13); el.value = d.length > 6 ? d.slice(0, 6) + '-' + d.slice(6) : d; F.pin.rrn = el.value; };
+  window.dmPiFile = el => {
+    const f = el.files && el.files[0]; if (!f) return;
+    if (f.size > 10 * 1024 * 1024) { el.value = ''; return toast('10MB 이하 파일만 올릴 수 있어요.'); }
+    F.idFile = f; F.idDel = false; const t = document.getElementById('pi-fn'); if (t) t.textContent = f.name + ' (저장하면 올라가요)';
+  };
+  window.dmPiDel = () => { if (!confirm('신분증 사본을 삭제할까요? 저장을 눌러야 지워져요.')) return; keepName(); F.idDel = true; F.idFile = null; stForm(ST.d.list.find(x => x.id === F.id)); };
+  window.dmPiView = async (what, btn) => {
+    const w = what === 'idcard' ? window.open('', '_blank') : null;
+    try {
+      const v = await rpc('staff_pii_reveal', { p_staff: F.id, p_what: what });
+      if (!v) { if (w) w.close(); return toast('저장된 내용이 없어요.'); }
+      if (what === 'idcard') {
+        const { data, error } = await window.SB.storage.from('staff-idcards').createSignedUrl(v, 120);
+        if (error) throw error; w.location = data.signedUrl; return;
+      }
+      btn.textContent = v; btn.classList.add('dm-rv'); btn.disabled = true;
+      setTimeout(() => { btn.textContent = '보기'; btn.classList.remove('dm-rv'); btn.disabled = false; }, 30000);
+    } catch (e) { if (w) w.close(); toast('열지 못했어요: ' + errMsg(e)); }
+  };
   window.dmStDuty = (x, on) => { F.hire.duty = on ? [...new Set([...F.hire.duty, x])] : F.hire.duty.filter(y => y !== x); };
   window.dmStSave = async btn => {
     keepName(); if (!F.name || !F.name.trim()) return toast('이름을 입력해 주세요.');
@@ -6570,7 +6611,30 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
       off: F.kind === 'staff' && F.off != null && F.off !== '' ? F.off : null, days: F.kind === 'pt' ? (F.days || []) : [], slot: F.kind === 'pt' ? F.slot : null,
       start:F.start || '', out:F.out || '', memo:F.memo || '', tel:F.tel || '' };
     if (ST.d.admin) p.hire = { ...F.hire, hours: F.hire.hours === '' ? null : F.hire.hours };
-    await run(btn, () => rpc('staff_save', { p }), '저장했어요. 시프트에도 반영돼요.');
+    const PN = F.pin || {}, PI = F.pii || {}, pin = {};
+    if (ST.d.admin) {
+      if (PN.rrn) { if (PN.rrn.replace(/\D/g, '').length !== 13) return toast('주민등록번호 13자리를 확인해 주세요.'); pin.rrn = PN.rrn; }
+      if (PN.acct) { if (PN.acct.replace(/\D/g, '').length < 8) return toast('계좌번호를 확인해 주세요.'); pin.acct = PN.acct; }
+      if ((PN.bank || '') !== (PI.bank || '')) pin.bank = PN.bank || '';
+      if ((PN.holder || '').trim() !== (PI.holder || '')) pin.holder = (PN.holder || '').trim();
+    }
+    await run(btn, async () => {
+      const sid = await rpc('staff_save', { p });
+      if (!ST.d.admin || !sid) return;
+      if (Object.keys(pin).length) await rpc('staff_pii_save', { p_staff: sid, p: pin });
+      const bk = window.SB.storage.from('staff-idcards');
+      if (F.idFile) {
+        const f = F.idFile, ext = ((f.name.split('.').pop() || 'jpg').toLowerCase()).replace(/[^a-z0-9]/g, '') || 'jpg';
+        const path = `${sid}/${Date.now()}.${ext}`;
+        const { error } = await bk.upload(path, f, { contentType: f.type || (ext === 'pdf' ? 'application/pdf' : 'image/jpeg'), upsert: false });
+        if (error) throw error;
+        const old = await rpc('staff_pii_idcard_set', { p_staff: sid, p_path: path });
+        if (old) await bk.remove([old]);
+      } else if (F.idDel) {
+        const old = await rpc('staff_pii_idcard_set', { p_staff: sid, p_path: null });
+        if (old) await bk.remove([old]);
+      }
+    }, '저장했어요. 시프트에도 반영돼요.');
     closeModal(); stLoad();
   };
   window.dmStQuit = () => {
@@ -6960,6 +7024,7 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
   .dm-hire{grid-column:1/-1;border:1px solid #e3d9f0;background:#faf7fd;border-radius:12px;padding:12px 14px}.dm-hire .hh{font-size:13px;font-weight:700;color:#4b2f73;margin-bottom:10px}.dm-hire .hh small{font-weight:500;font-size:11px;color:#8a7aa3;margin-left:6px}
   .dm-unit{display:flex;align-items:center;gap:6px}.dm-unit input{flex:1;min-width:0}.dm-unit select{width:78px;flex:none}.dm-unit b{font-weight:500;color:#6b7364;font-size:12px}
   .dm-chk{display:flex;flex-wrap:wrap;gap:6px 12px;font-size:12.5px;color:#2f372a;min-height:34px;align-items:center}.dm-chk label{display:inline-flex;align-items:center;gap:5px;cursor:pointer}.dm-chk input{width:16px;height:16px;accent-color:#2d3726}.dm-chk.col{flex-direction:column;align-items:flex-start;gap:10px}
+  .dm-unit .dmb{flex:none}.dm-idc{flex-wrap:wrap}label.dmb{cursor:pointer;display:inline-flex;align-items:center}.dm-rv{font-variant-numeric:tabular-nums;color:#4b2f73;background:#f1eafa}.dm-pii-h{border-top:1px dashed #d9c9ee;padding-top:10px;margin-top:2px}
   .dm-warn{background:#fff;border:1px dashed #d9c9ee;border-radius:8px;padding:10px 12px;font-size:12px;color:#4a5244;line-height:1.7;display:block}
   .dm-frsec{grid-column:1/-1;border:1px solid #e3d9f0;background:#faf7fd;border-radius:10px;padding:12px;display:grid;grid-template-columns:1fr 1fr;gap:12px}.dm-frsec .h{grid-column:1/-1;font-size:12px;font-weight:700;color:#4b2f73}
   .dm-cols{display:flex;gap:6px}.dm-cols button{width:28px;height:28px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px #dfe3d9;cursor:pointer}.dm-cols button.on{box-shadow:0 0 0 2px #232621}
