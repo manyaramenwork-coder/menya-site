@@ -6201,10 +6201,17 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
   const SLOT = {L:'런치', D:'디너', F:'풀타임'};
   const CODE = {F:'출근', L:'런치만', D:'디너만', H:'반휴무', O:'휴무', V:'월차', N:'—'};
   const CODES = ['F','L','D','H','O','V','N'];
+  const CODE_ST = {F:'출근', L:'런치만(반휴)', D:'디너만(반휴)', O:'휴무', V:'월차'};
+  const CODE_PT = {F:'풀타임', L:'런치', D:'디너', O:'휴무', N:'—'};
+  const isPt = p => p && (p.kind === 'pt' || p.kind === 'tmp');
+  const cOf = c => c === 'H' ? 'L' : c;
+  const codesOf = (p, cur) => { const m = isPt(p) ? CODE_PT : CODE_ST, ks = Object.keys(m); const c = cOf(cur); if (c && !ks.includes(c)) ks.push(c); return ks.map(k => [k, m[k] || CODE[k]]); };
+  const labOf = (p, c) => { c = cOf(c); return (isPt(p) ? CODE_PT : CODE_ST)[c] || CODE[c] || ''; };
   const COLORS = ['#5b6b4e','#c62429','#2a6fb0','#c08a00','#7a4fa0','#c25a8a','#46708f','#2b8a6e','#8a8476','#b5562b','#3f8f8f','#9a4f6a'];
   const BCOLS = ['#c62429','#8a5a2b','#2a6fb0','#2b8a6e','#7a4fa0','#c08a00'];
   const REGIONS = ['수도권','강원','충청','경상','전라','제주'];
-  const DUTY = ['홀','주방','서브','사이드','메인'];
+  const DUTY = ['홀','주방'];
+  const BANKS = ['국민','신한','우리','하나','농협','기업','카카오뱅크','토스뱅크','케이뱅크','새마을금고','우체국','수협','신협','SC제일','iM뱅크(대구)','부산','경남','광주','전북','제주','씨티','산업'];
   const DOCS = [['rrn','주민번호'],['bank','급여 계좌'],['idc','신분증 사본'],['ctr','근로계약서']];
   const PAGES = { org:'연락망', 'bs-set':'회사·조직 설정', 'dm-staff':'직원 현황', 'dm-shift':'시프트 관리' };
   const DM = { boot:null, store:null };
@@ -6450,6 +6457,18 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
     try { ST.d = await rpc('staff_data', { p_store: DM.cur === 'hq' ? null : +DM.cur }); }
     catch (e) { B.innerHTML = storeTabs(false, 'dmStPick') + loading('불러오지 못했어요: ' + esc(errMsg(e))); return; }
     stDraw();
+    if (ST.d.admin) piSweep();
+  }
+  let piSwept = false;
+  async function piSweep(){
+    if (piSwept) return; piSwept = true;
+    try {
+      const due = await rpc('staff_pii_due');
+      for (const d of due || []) {
+        const { error } = await window.SB.storage.from('staff-idcards').remove([d.path]);
+        if (!error) await rpc('staff_pii_idcard_set', { p_staff: d.staff_id, p_path: null });
+      }
+    } catch (e) { console.warn('신분증 사본 정리 실패', e); }
   }
   window.dmStPick = id => { DM.cur = id === 'hq' ? 'hq' : +id; if (id !== 'hq') setStore(+id); ST.view = 'on'; stLoad(); };
   const isOut = p => p.out && p.out < today();
@@ -6502,7 +6521,7 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
   const nameBtn = p => `<button class="dm-nm" onclick="dmStEdit(${p.id})"><i style="background:${colorOf(p.id)}"></i>${esc(p.name)}</button>`;
   const telCell = p => p.tel ? `<a class="dm-tel" href="tel:${esc(p.tel)}">${esc(p.tel)}</a>` : miss;
   const daysChips = ds => `<span class="dm-days">${WD.map((w, i) => `<span class="${(ds || []).includes(i) ? 'on' : ''}">${w}</span>`).join('')}</span>`;
-  const docCnt = p => { const d = (p.hire && p.hire.docs) || {}; const n = DOCS.filter(([k]) => d[k]).length; return n === DOCS.length ? '<span class="dm-chip ok">4/4 완료</span>' : `<span class="dm-miss">${n}/4</span>`; };
+  const docCnt = p => { const d = (p.hire && p.hire.docs) || {}, x = p.pii || {}; const n = [x.rrn, x.acct, x.idc, d.ctr].filter(Boolean).length; return n === 4 ? '<span class="dm-chip ok">4/4 완료</span>' : `<span class="dm-miss">${n}/4</span>`; };
   const ordCell = (p, i, a) => ST.view === 'on' && !isOut(p) ? `<td class="dm-ord"><button onclick="dmStOrd(${p.id},-1)" ${i === 0 ? 'disabled' : ''} aria-label="위로">▲</button><button onclick="dmStOrd(${p.id},1)" ${i === a.length - 1 ? 'disabled' : ''} aria-label="아래로">▼</button></td>` : (ST.view === 'on' ? '<td></td>' : '');
   window.dmStView = v => { ST.view = v; stDraw(); };
   window.dmStSel = (id, on) => { on ? ST.sel.add(id) : ST.sel.delete(id); stBar(); };
@@ -6522,11 +6541,14 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
     try { await rpc('staff_order', { p_ids: same.map(x => x.id) }); toast('순서를 바꿨어요. 시프트에도 이 순서로 나와요.'); stLoad(); } catch (e) { toast('바꾸지 못했어요: ' + errMsg(e)); }
   };
   let F = null;
-  window.dmStEdit = id => {
+  window.dmStEdit = async id => {
     const hq = DM.cur === 'hq', p = id ? ST.d.list.find(x => x.id === id) : null;
     F = p ? JSON.parse(JSON.stringify(p)) : (hq ? { kind:'hq', name:'', rank:'', duty:'' } : { kind:'pt', name:'', rank:'PT', wk:6, days:[0,1,2,3,4], slot:'L' });
     F.hire = F.hire || { cond:'', hours:'', pay_type: F.kind === 'staff' || hq ? '월급' : '시급', pay:'', duty:[], docs:{} };
-    F.hire.duty = F.hire.duty || []; F.hire.docs = F.hire.docs || {};
+    F.hire.duty = (F.hire.duty || []).filter(x => DUTY.includes(x)); F.hire.docs = F.hire.docs || {};
+    F.pii = {}; F.idFile = null; F.idDel = false;
+    if (ST.d.admin && p) { try { F.pii = await rpc('staff_pii_get', { p_staff: p.id }) || {}; } catch (e) { console.warn(e); toast('개인정보를 불러오지 못했어요: ' + errMsg(e)); } }
+    F.pin = { rrn:'', acct:'', bank: F.pii.bank || '', holder: F.pii.holder || '' };
     window.dmF = F; stForm(p);
   };
   function stForm(p){
@@ -6539,14 +6561,19 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
            <label class="f2"><span>월 휴무 기준 <em>(비우면 자동)</em></span><input type="number" min="0" max="20" placeholder="자동 (${({6:5,5:9,4:13})[F.wk || 6]}일 안팎)" value="${F.off ?? ''}" oninput="dmF.off=this.value===''?null:+this.value"></label><div></div>`
         : `<div class="f2 wide"><span>출근 요일</span><div class="dm-dsel">${WD.map((w, i) => `<button type="button" class="${(F.days || []).includes(i) ? 'on' : ''}" onclick="dmStDay(${i})">${w}</button>`).join('')}</div></div>
            <div class="f2 wide"><span>시간대</span><div class="dm-seg">${Object.entries(SLOT).map(([k,t]) => `<button type="button" class="${F.slot === k ? 'on' : ''}" onclick="dmStF('slot','${k}')">${t}</button>`).join('')}</div><em class="dm-note2">고른 요일에 이 시간대로 시프트가 채워져요. 그날만 바꾸는 건 시프트에서 해요.</em></div>`}`;
-    const H = F.hire, autoCond = hq ? (F.duty || '본사 근무') : F.kind === 'staff' ? `주${F.wk || 6}일 (요일 변동)` : `${daysTxt(F.days)} ${SLOT[F.slot] || ''}`;
+    const H = F.hire, PI = F.pii || {}, PN = F.pin || {}, autoCond = hq ? (F.duty || '본사 근무') : F.kind === 'staff' ? `주${F.wk || 6}일 (요일 변동)` : `${daysTxt(F.days)} ${SLOT[F.slot] || ''}`;
     const hire = adm ? `<div class="dm-hire"><div class="hh">🔒 입사 정보 <small>홈페이지 관리자만 볼 수 있어요</small></div><div class="dm-fg">
       <label class="f2"><span>근무조건</span><input value="${esc(H.cond || '')}" placeholder="${esc(autoCond)}" oninput="dmF.hire.cond=this.value"></label>
       <label class="f2"><span>근무시간 <em>(하루)</em></span><div class="dm-unit"><input type="number" min="1" max="14" step="0.5" value="${esc(H.hours ?? '')}" oninput="dmF.hire.hours=this.value"><b>시간</b></div></label>
       <label class="f2"><span>급여</span><div class="dm-unit"><select onchange="dmF.hire.pay_type=this.value">${['시급','월급'].map(x => `<option ${H.pay_type === x ? 'selected' : ''}>${x}</option>`).join('')}</select><input inputmode="numeric" value="${esc(H.pay || '')}" oninput="this.value=this.value.replace(/[^0-9]/g,'').replace(/\\B(?=(\\d{3})+(?!\\d))/g,',');dmF.hire.pay=this.value"><b>원</b></div></label>
       ${hq ? '<div></div>' : `<div class="f2"><span>담당</span><div class="dm-chk">${DUTY.map(x => `<label><input type="checkbox" ${H.duty.includes(x) ? 'checked' : ''} onchange="dmStDuty('${x}',this.checked)">${x}</label>`).join('')}</div></div>`}
-      <div class="f2 wide"><span>입사 서류 <em>— 받았는지만 체크해요. 번호·사진은 여기 적지 않아요</em></span><div class="dm-chk">${DOCS.map(([k,t]) => `<label><input type="checkbox" ${H.docs[k] ? 'checked' : ''} onchange="dmF.hire.docs['${k}']=this.checked">${t} 받음</label>`).join('')}</div></div>
-      <div class="f2 wide dm-warn">주민번호·계좌번호·신분증 사진 원본은 대표님·관리자만 열 수 있는 구글 드라이브 폴더에 보관해 주세요.</div></div></div>` : '';
+      <div class="f2 wide dm-pii-h"><span>🔐 개인정보 <em>— 암호화해서 저장해요. 저장된 번호는 가려서 보이고, 바꿀 때만 새로 입력해요. ‘보기’를 누르면 열람 기록이 남아요</em></span></div>
+      <label class="f2"><span>주민등록번호</span><div class="dm-unit"><input id="pi-rrn" inputmode="numeric" maxlength="14" autocomplete="off" placeholder="${PI.rrn ? esc(PI.rrn) : '000000-0000000'}" value="${esc(PN.rrn)}" oninput="dmPiRrn(this)">${PI.has_rrn ? `<button type="button" class="dmb sm" onclick="dmPiView('rrn',this)">보기</button>` : ''}</div></label>
+      <div class="f2"><span>신분증 사본</span><div class="dm-unit dm-idc">${PI.has_idcard && !F.idDel ? `<button type="button" class="dmb sm" onclick="dmPiView('idcard',this)">보기</button><button type="button" class="dmb sm" onclick="dmPiDel()">삭제</button>` : ''}<label class="dmb sm">${PI.has_idcard && !F.idDel ? '바꾸기' : '파일 첨부'}<input type="file" accept="image/*,application/pdf" hidden onchange="dmPiFile(this)"></label><span class="dm-note2" id="pi-fn">${F.idFile ? esc(F.idFile.name) : F.idDel ? '저장하면 삭제돼요' : PI.has_idcard ? '등록됨' : ''}</span></div></div>
+      <div class="f2"><span>급여 계좌</span><div class="dm-unit"><select onchange="dmF.pin.bank=this.value"><option value="">은행</option>${[...BANKS, ...(PN.bank && !BANKS.includes(PN.bank) ? [PN.bank] : [])].map(b => `<option ${PN.bank === b ? 'selected' : ''}>${esc(b)}</option>`).join('')}</select><input inputmode="numeric" autocomplete="off" placeholder="${PI.acct ? esc(PI.acct) : '계좌번호'}" value="${esc(PN.acct)}" oninput="this.value=this.value.replace(/[^0-9-]/g,'');dmF.pin.acct=this.value">${PI.has_acct ? `<button type="button" class="dmb sm" onclick="dmPiView('acct',this)">보기</button>` : ''}</div></div>
+      <label class="f2"><span>예금주 <em>(본인이면 비워 두세요)</em></span><input value="${esc(PN.holder)}" placeholder="${esc(F.name || '본인')}" maxlength="20" oninput="dmF.pin.holder=this.value"></label>
+      <div class="f2 wide"><span>입사 서류</span><div class="dm-chk"><label><input type="checkbox" ${H.docs.ctr ? 'checked' : ''} onchange="dmF.hire.docs.ctr=this.checked">근로계약서 받음</label></div></div>
+      ${PI.purge_at ? `<div class="f2 wide dm-note2">퇴사 후 보관 중이에요. ${esc(PI.purge_at)}에 주민번호·계좌가 자동으로 삭제돼요.</div>` : ''}</div></div>` : '';
     const body = `<div class="dm-fg">
       <label class="f2"><span>이름</span><input id="st-n" value="${esc(F.name)}" maxlength="12" oninput="dmF.name=this.value"></label>
       <label class="f2"><span>직급</span><select onchange="dmF.rank=this.value"><option value="">선택</option>${ranks.map(r => `<option ${F.rank === r ? 'selected' : ''}>${r}</option>`).join('')}${F.rank && !ranks.includes(F.rank) ? `<option selected>${esc(F.rank)}</option>` : ''}</select></label>
@@ -6562,6 +6589,26 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
   const keepName = () => { const n = document.getElementById('st-n'); if (n) F.name = n.value; };
   window.dmStF = (k, v) => { keepName(); F[k] = v; if (k === 'kind' && v === 'staff') { F.wk = F.wk || 6; F.rank = F.rank === 'PT' ? '사원' : F.rank; } if (k === 'kind' && v === 'pt') { F.days = F.days && F.days.length ? F.days : [0,1,2,3,4]; F.slot = F.slot || 'L'; F.rank = F.rank || 'PT'; } stForm(ST.d.list.find(x => x.id === F.id)); };
   window.dmStDay = i => { keepName(); F.days = (F.days || []).includes(i) ? F.days.filter(x => x !== i) : [...(F.days || []), i].sort(); stForm(ST.d.list.find(x => x.id === F.id)); };
+  window.dmPiRrn = el => { const d = el.value.replace(/\D/g, '').slice(0, 13); el.value = d.length > 6 ? d.slice(0, 6) + '-' + d.slice(6) : d; F.pin.rrn = el.value; };
+  window.dmPiFile = el => {
+    const f = el.files && el.files[0]; if (!f) return;
+    if (f.size > 10 * 1024 * 1024) { el.value = ''; return toast('10MB 이하 파일만 올릴 수 있어요.'); }
+    F.idFile = f; F.idDel = false; const t = document.getElementById('pi-fn'); if (t) t.textContent = f.name + ' (저장하면 올라가요)';
+  };
+  window.dmPiDel = () => { if (!confirm('신분증 사본을 삭제할까요? 저장을 눌러야 지워져요.')) return; keepName(); F.idDel = true; F.idFile = null; stForm(ST.d.list.find(x => x.id === F.id)); };
+  window.dmPiView = async (what, btn) => {
+    const w = what === 'idcard' ? window.open('', '_blank') : null;
+    try {
+      const v = await rpc('staff_pii_reveal', { p_staff: F.id, p_what: what });
+      if (!v) { if (w) w.close(); return toast('저장된 내용이 없어요.'); }
+      if (what === 'idcard') {
+        const { data, error } = await window.SB.storage.from('staff-idcards').createSignedUrl(v, 120);
+        if (error) throw error; w.location = data.signedUrl; return;
+      }
+      btn.textContent = v; btn.classList.add('dm-rv'); btn.disabled = true;
+      setTimeout(() => { btn.textContent = '보기'; btn.classList.remove('dm-rv'); btn.disabled = false; }, 30000);
+    } catch (e) { if (w) w.close(); toast('열지 못했어요: ' + errMsg(e)); }
+  };
   window.dmStDuty = (x, on) => { F.hire.duty = on ? [...new Set([...F.hire.duty, x])] : F.hire.duty.filter(y => y !== x); };
   window.dmStSave = async btn => {
     keepName(); if (!F.name || !F.name.trim()) return toast('이름을 입력해 주세요.');
@@ -6570,7 +6617,30 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
       off: F.kind === 'staff' && F.off != null && F.off !== '' ? F.off : null, days: F.kind === 'pt' ? (F.days || []) : [], slot: F.kind === 'pt' ? F.slot : null,
       start:F.start || '', out:F.out || '', memo:F.memo || '', tel:F.tel || '' };
     if (ST.d.admin) p.hire = { ...F.hire, hours: F.hire.hours === '' ? null : F.hire.hours };
-    await run(btn, () => rpc('staff_save', { p }), '저장했어요. 시프트에도 반영돼요.');
+    const PN = F.pin || {}, PI = F.pii || {}, pin = {};
+    if (ST.d.admin) {
+      if (PN.rrn) { if (PN.rrn.replace(/\D/g, '').length !== 13) return toast('주민등록번호 13자리를 확인해 주세요.'); pin.rrn = PN.rrn; }
+      if (PN.acct) { if (PN.acct.replace(/\D/g, '').length < 8) return toast('계좌번호를 확인해 주세요.'); pin.acct = PN.acct; }
+      if ((PN.bank || '') !== (PI.bank || '')) pin.bank = PN.bank || '';
+      if ((PN.holder || '').trim() !== (PI.holder || '')) pin.holder = (PN.holder || '').trim();
+    }
+    await run(btn, async () => {
+      const sid = await rpc('staff_save', { p });
+      if (!ST.d.admin || !sid) return;
+      if (Object.keys(pin).length) await rpc('staff_pii_save', { p_staff: sid, p: pin });
+      const bk = window.SB.storage.from('staff-idcards');
+      if (F.idFile) {
+        const f = F.idFile, ext = ((f.name.split('.').pop() || 'jpg').toLowerCase()).replace(/[^a-z0-9]/g, '') || 'jpg';
+        const path = `${sid}/${Date.now()}.${ext}`;
+        const { error } = await bk.upload(path, f, { contentType: f.type || (ext === 'pdf' ? 'application/pdf' : 'image/jpeg'), upsert: false });
+        if (error) throw error;
+        const old = await rpc('staff_pii_idcard_set', { p_staff: sid, p_path: path });
+        if (old) await bk.remove([old]);
+      } else if (F.idDel) {
+        const old = await rpc('staff_pii_idcard_set', { p_staff: sid, p_path: null });
+        if (old) await bk.remove([old]);
+      }
+    }, '저장했어요. 시프트에도 반영돼요.');
     closeModal(); stLoad();
   };
   window.dmStQuit = () => {
@@ -6684,13 +6754,13 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
         <section class="card" id="sh-sched"><div class="dm-bar">
           <div class="dm-tabs"><button class="${SH.view === 'week' ? 'on' : ''}" onclick="dmShView('week')">주간 보기</button><button class="${SH.view === 'month' ? 'on' : ''}" onclick="dmShView('month')">월간 요약</button></div>
           ${SH.view === 'week' ? `<div class="dm-wnav"><button onclick="dmShWk(-1)" ${SH.week === 0 ? 'disabled' : ''} aria-label="이전 주">‹</button><b>${SH.week + 1}주차 · ${wkRange(SH.week)}</b><button onclick="dmShWk(1)" ${SH.week >= weeks().length - 1 ? 'disabled' : ''} aria-label="다음 주">›</button></div>` : ''}
-          <span class="dm-hint">${SH.view === 'week' ? (d.can_edit ? '기본은 출근 · 이름 옆 화살표로 휴무·반휴무·월차를 골라요 · 날짜를 누르면 그날 전체' : '보기 전용이에요') : '날짜를 누르면 그날 근무를 바로 고칠 수 있어요 · 빨간 숫자 = 인원 부족'}</span></div>
+          <span class="dm-hint">${SH.view === 'week' ? (d.can_edit ? '기본은 출근 · 이름 옆 화살표로 휴무·월차·런치만·디너만을 골라요 · 직원의 런치만·디너만은 반휴 · 날짜를 누르면 그날 전체' : '보기 전용이에요') : '표시 없음 = 풀타임 · 런 = 런치만 · 디 = 디너만 · 취소선 = 휴무 · 날짜를 누르면 그날 근무를 고칠 수 있어요'}</span></div>
           ${SH.view === 'week' ? `<div class="dm-who"><span>직원 강조</span>${['전체', ...d.roster.map(p => p.id)].map(id => { const p = d.roster.find(x => x.id === id); return `<button class="${(SH.focus || '전체') === id ? 'on' : ''}" onclick="dmShFocus(${id === '전체' ? 'null' : id})">${p ? `<i style="background:${colorOf(p.id)}"></i>${esc(p.name)}` : '전체'}</button>`; }).join('')}</div>` : ''}
           <div id="sh-view">${SH.view === 'week' ? weekHtml() : monthHtml()}</div>
           <div class="dm-tools">${d.can_edit ? `${SH.view === 'week' ? `<button class="dmb" onclick="dmShCopy()" ${SH.week >= weeks().length - 1 ? 'disabled' : ''}>이번 주 → 다음 주에 복사</button>` : ''}<button class="dmb" onclick="dmShRefill()">직원 현황 기준으로 다시 채우기</button>` : ''}
             <span style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap">${flowBtns()}</span></div>
         </section>
-        <section class="card"><div class="dm-sh"><strong>${+m}월 휴무 카운터</strong><small>어느 주를 보고 있어도 한 달 기준 · 반휴무는 휴무 1회, 근무 0.5일</small></div>${counterHtml()}</section>
+        <section class="card"><div class="dm-sh"><strong>${+m}월 휴무 카운터</strong><small>어느 주를 보고 있어도 한 달 기준 · 직원 런치만·디너만은 반휴(휴무 1회, 근무 0.5일) · 파트 런치·디너는 근무 0.5일</small></div>${counterHtml()}</section>
       </div>
       <aside class="dm-side">
         <section class="card"><div class="dm-sh"><strong>비고 (공유 사항)</strong><small>한 달 공통 · 결정된 내용만</small></div>
@@ -6706,36 +6776,44 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
     if (d.status === 1) return d.can_confirm ? `<button class="dmb" onclick="dmShStatus(0)">수정 요청</button><button class="dmb pri" onclick="dmShStatus(2)">확정</button>` : '<span class="dm-hint">본사 확인을 기다리는 중이에요</span>';
     return d.can_confirm ? `<button class="dmb" onclick="dmShStatus(0)">확정 해제</button>` : '';
   }
-  function optHtml(cur){ return CODES.map(k => `<option value="${k}" ${cur === k ? 'selected' : ''}>${CODE[k]}</option>`).join(''); }
+  function optHtml(cur, p){ const c = cOf(cur); return codesOf(p, cur).map(([k, t]) => `<option value="${k}" ${c === k ? 'selected' : ''}>${t}</option>`).join(''); }
   function weekHtml(){
-    const d = SH.d, days = weeks()[SH.week], minL = x => isWe(x) ? 6 : 5, minD = x => isWe(x) ? 5 : 4;
+    const d = SH.d, days = weeks()[SH.week];
     return `<div class="dm-week">${days.map((x, i) => {
       if (!inM(x)) return `<div class="dm-col out"><div class="ch"><div class="dd"><span>${WD[i]} · 다른 달</span></div></div></div>`;
       const [l, dn] = cnt2(x), hasC = d.comments.some(c => c.day === x && !c.parent && !c.deleted);
       const ppl = d.roster.filter(p => active(p, x));
       return `<div class="dm-col ${isWe(x) ? 'we' : ''} ${SH.sel === x ? 'sel' : ''}" id="shc${x}">
         <div class="ch ${i === 5 ? 'sat' : i === 6 ? 'sun' : ''}" onclick="dmShDay(${x})" title="${x}일 전체 수정 · 이 날짜에 댓글"><div class="dd"><b>${x}</b><span>${WD[i]}</span>${hasC ? '<i>💬</i>' : ''}</div>
-          <div class="n"><span class="${l < minL(x) ? 'lo' : ''}">런치 <b>${l}</b></span><span class="${dn < minD(x) ? 'lo' : ''}">디너 <b>${dn}</b></span></div></div>
-        <div class="sls">${ppl.map(p => { const c = v(x, p.id); return `<div class="sl ${c} ${SH.focus === p.id ? 'hl' : ''} ${SH.focus && SH.focus !== p.id ? 'dim' : ''}" style="--pc:${colorOf(p.id)}"><b title="${esc(p.name)}${p.from ? ' (' + esc(p.from) + ')' : ''}">${esc(p.name)}</b>${d.can_edit ? `<select aria-label="${esc(p.name)} ${x}일 근무" onchange="dmShSet(${x},${p.id},this.value)">${optHtml(c)}</select>` : `<span class="ro">${CODE[c]}</span>`}</div>`; }).join('') || '<div class="dm-ek">근무자 없음</div>'}</div></div>`;
+          <div class="n"><span>런치 <b>${l}</b></span><span>디너 <b>${dn}</b></span></div></div>
+        <div class="sls">${ppl.map(p => { const c = v(x, p.id); return `<div class="sl ${cOf(c)} ${SH.focus === p.id ? 'hl' : ''} ${SH.focus && SH.focus !== p.id ? 'dim' : ''}" style="--pc:${colorOf(p.id)}"><b title="${esc(p.name)}${p.from ? ' (' + esc(p.from) + ')' : ''}">${esc(p.name)}</b>${d.can_edit ? `<select aria-label="${esc(p.name)} ${x}일 근무" onchange="dmShSet(${x},${p.id},this.value)">${optHtml(c, p)}</select>` : `<span class="ro">${labOf(p, c)}</span>`}</div>`; }).join('') || '<div class="dm-ek">근무자 없음</div>'}</div></div>`;
     }).join('')}</div>`;
   }
   function monthHtml(){
-    const d = SH.d, n = dim(SH.ym), f = firstIdx(SH.ym);
-    let h = WD.map((w, i) => `<div class="h ${i === 5 ? 'sat' : i === 6 ? 'sun' : ''}">${w}</div>`).join('');
-    for (let i = 0; i < f; i++) h += '<div class="md empty"></div>';
-    for (let x = 1; x <= n; x++) {
-      const [l, dn] = cnt2(x), i = wdi(x), hasC = d.comments.some(c => c.day === x && !c.parent && !c.deleted);
-      const off = d.roster.filter(p => active(p, x) && ['O','V','H'].includes(v(x, p.id))).map(p => `${esc(p.name)}${v(x, p.id) === 'V' ? '(월차)' : v(x, p.id) === 'H' ? '(반휴)' : ''}`);
-      h += `<div class="md ${isWe(x) ? 'we' : ''}" id="shm${x}" onclick="dmShDay(${x})"><div class="mtop"><b class="${i === 5 ? 'sat' : i === 6 ? 'sun' : ''}">${x}</b>${hasC ? '<i>💬</i>' : ''}</div>
-        <div class="n"><span class="${l < (isWe(x) ? 6 : 5) ? 'lo' : ''}">런 <b>${l}</b></span> · <span class="${dn < (isWe(x) ? 5 : 4) ? 'lo' : ''}">디 <b>${dn}</b></span></div>${off.length ? `<div class="off">휴 ${off.join(', ')}</div>` : ''}</div>`;
-    }
-    return `<div class="dm-mon">${h}</div>`;
+    const d = SH.d, cls = i => i === 5 ? 'sat' : i === 6 ? 'sun' : '';
+    const head = `<div class="mh">${WD.map((w, i) => `<div class="${cls(i)}">${w}</div>`).join('')}</div>`;
+    const cell = x => {
+      if (!inM(x)) return '<div class="md2 empty"></div>';
+      const [l, dn] = cnt2(x), i = wdi(x), hasC = d.comments.some(c => c.day === x && !c.parent && !c.deleted), off = [];
+      const rows = d.roster.filter(p => active(p, x)).map(p => {
+        const c = cOf(v(x, p.id)), nm = esc(p.name);
+        if (c === 'O' || c === 'V') { off.push(nm + (c === 'V' ? '<small>(월차)</small>' : '')); return `<div class="r x" style="--pc:${colorOf(p.id)}"><b>${nm}</b></div>`; }
+        if (c === 'N') return `<div class="r na"><b>${nm}</b><span>-</span></div>`;
+        if ((c === 'L' || c === 'D') && !isPt(p)) off.push(nm + '<small>(반휴)</small>');
+        return `<div class="r" style="--pc:${colorOf(p.id)}"><b>${nm}</b>${c === 'L' ? '<i class="L">런</i>' : c === 'D' ? '<i class="D">디</i>' : ''}</div>`;
+      }).join('');
+      return `<div class="md2 ${isWe(x) ? 'we' : ''} ${SH.sel === x ? 'sel' : ''}" id="shm${x}" onclick="dmShDay(${x})">
+        <div class="mc"><div class="dd"><b class="${cls(i)}">${x}</b><span class="${cls(i)}">${WD[i]}</span>${hasC ? '<i>💬</i>' : ''}</div><div class="n"><span>런치<b>${l}</b></span><span>디너<b>${dn}</b></span></div></div>
+        <div class="rs">${rows || '<div class="r na"><b>근무자 없음</b></div>'}</div>
+        <div class="of ${off.length ? '' : 'none'}"><em>휴무</em>${off.join(', ') || '없음'}</div></div>`;
+    };
+    return `<div class="dm-mon2">${head}${weeks().map((w, k) => { const ds = w.filter(inM); return `<div class="mwk"><div class="mwh">${k + 1}주차 · ${ds[0]}일~${ds[ds.length - 1]}일</div><div class="mg">${w.map(cell).join('')}</div></div>`; }).join('')}</div>`;
   }
   function counterHtml(){
     const d = SH.d, n = dim(SH.ym);
     const rows = d.roster.filter(p => p.kind !== 'sup').map(p => {
       let w = 0, o = 0, h = 0;
-      (p.active || []).forEach(x => { const c = v(x, p.id); if (c === 'F' || c === 'L' || c === 'D') w++; if (c === 'H') { w += .5; o++; h++; } if (c === 'O' || c === 'V') o++; });
+      (p.active || []).forEach(x => { const c = cOf(v(x, p.id)); if (c === 'F') w++; else if (c === 'L' || c === 'D') { w += .5; if (!isPt(p)) { o++; h++; } } else if (c === 'O' || c === 'V') o++; });
       const base = p.kind === 'staff' ? (p.off != null ? p.off : Math.round((p.active || []).length * (7 - (p.wk || 6)) / 7)) : null;
       const b = base == null ? '<span class="na">기준 없음</span>' : o === base ? '<span class="dm-chip ok">맞음</span>' : `<span class="dm-chip warn">${o > base ? '+' : ''}${o - base}일</span>`;
       return `<tr><td><span class="dm-nm2"><i style="background:${colorOf(p.id)}"></i>${esc(p.name)}</span>${p.from ? ` <small class="na">${esc(p.from)}</small>` : ''}</td><td>${p.kind === 'staff' ? `주${p.wk || 6}일` : `${daysTxt(p.days)} ${SLOT[p.slot] || ''}`}</td><td class="n">${w}</td><td class="n">${o}${h ? ` <small class="na">(반휴 ${h})</small>` : ''}</td><td class="n">${base ?? '-'}</td><td>${b}</td></tr>`;
@@ -6775,14 +6853,14 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
     try { await rpc('shift_set', { p_store:+DM.cur, p_day:dstr(x), p_staff:sid, p_code:code }); }
     catch (e) { SH.map[x][sid] = prev; redraw(); refreshCounts(); toast('저장하지 못했어요: ' + errMsg(e)); }
   };
-  function refreshCounts(){ const c = document.querySelector('#sh-body .dm-shlay > div > section:nth-child(2)'); if (c) c.innerHTML = `<div class="dm-sh"><strong>${+SH.ym.slice(5)}월 휴무 카운터</strong><small>어느 주를 보고 있어도 한 달 기준 · 반휴무는 휴무 1회, 근무 0.5일</small></div>` + counterHtml(); }
+  function refreshCounts(){ const c = document.querySelector('#sh-body .dm-shlay > div > section:nth-child(2)'); if (c) c.innerHTML = `<div class="dm-sh"><strong>${+SH.ym.slice(5)}월 휴무 카운터</strong><small>어느 주를 보고 있어도 한 달 기준 · 직원 런치만·디너만은 반휴(휴무 1회, 근무 0.5일) · 파트 런치·디너는 근무 0.5일</small></div>` + counterHtml(); }
   let DAY = null;
   window.dmShDay = x => {
     SH.sel = x; SH.cw = weekOf(x); document.getElementById('sh-cmt').innerHTML = cmtHtml(); redraw();
     if (!SH.d.can_edit) return;
     DAY = { x, map:{} }; SH.d.roster.filter(p => active(p, x)).forEach(p => DAY.map[p.id] = v(x, p.id));
     const draw = () => modal(`${+SH.ym.slice(5)}월 ${x}일 (${WD[wdi(x)]})`, '여기서 고치면 주간 보기와 월간 요약에 같이 반영돼요.',
-      `<div class="dm-day">${SH.d.roster.filter(p => active(p, x)).map(p => `<div class="er"><div class="nm"><i style="background:${colorOf(p.id)}"></i>${esc(p.name)}</div><div class="dm-seg sm">${CODES.map(k => `<button type="button" class="${DAY.map[p.id] === k ? 'on ' + k : ''}" onclick="dmDAY.map[${p.id}]='${k}';dmDAY._d()">${CODE[k]}</button>`).join('')}</div></div>`).join('') || '<div class="dm-empty">이날 근무할 수 있는 사람이 없어요.</div>'}</div>`,
+      `<div class="dm-day">${SH.d.roster.filter(p => active(p, x)).map(p => `<div class="er"><div class="nm"><i style="background:${colorOf(p.id)}"></i>${esc(p.name)}</div><div class="dm-seg sm">${codesOf(p, DAY.map[p.id]).map(([k, t]) => `<button type="button" class="${cOf(DAY.map[p.id]) === k ? 'on ' + k : ''}" onclick="dmDAY.map[${p.id}]='${k}';dmDAY._d()">${t}</button>`).join('')}</div></div>`).join('') || '<div class="dm-empty">이날 근무할 수 있는 사람이 없어요.</div>'}</div>`,
       `<button class="dmb" onclick="dmClose();document.getElementById('sh-cin')?.focus()">💬 이 날짜에 댓글</button>${SH.view === 'month' ? `<button class="dmb" onclick="dmClose();dmShGo(${x})">이 주 보기</button>` : ''}<span style="flex:1"></span><button class="dmb" onclick="dmClose()">취소</button><button class="dmb pri" onclick="dmShDaySave(this)">적용</button>`, true);
     DAY._d = draw; window.dmDAY = DAY; draw();
   };
@@ -6960,6 +7038,7 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
   .dm-hire{grid-column:1/-1;border:1px solid #e3d9f0;background:#faf7fd;border-radius:12px;padding:12px 14px}.dm-hire .hh{font-size:13px;font-weight:700;color:#4b2f73;margin-bottom:10px}.dm-hire .hh small{font-weight:500;font-size:11px;color:#8a7aa3;margin-left:6px}
   .dm-unit{display:flex;align-items:center;gap:6px}.dm-unit input{flex:1;min-width:0}.dm-unit select{width:78px;flex:none}.dm-unit b{font-weight:500;color:#6b7364;font-size:12px}
   .dm-chk{display:flex;flex-wrap:wrap;gap:6px 12px;font-size:12.5px;color:#2f372a;min-height:34px;align-items:center}.dm-chk label{display:inline-flex;align-items:center;gap:5px;cursor:pointer}.dm-chk input{width:16px;height:16px;accent-color:#2d3726}.dm-chk.col{flex-direction:column;align-items:flex-start;gap:10px}
+  .dm-unit .dmb{flex:none}.dm-idc{flex-wrap:wrap}label.dmb{cursor:pointer;display:inline-flex;align-items:center}.dm-rv{font-variant-numeric:tabular-nums;color:#4b2f73;background:#f1eafa}.dm-pii-h{border-top:1px dashed #d9c9ee;padding-top:10px;margin-top:2px}
   .dm-warn{background:#fff;border:1px dashed #d9c9ee;border-radius:8px;padding:10px 12px;font-size:12px;color:#4a5244;line-height:1.7;display:block}
   .dm-frsec{grid-column:1/-1;border:1px solid #e3d9f0;background:#faf7fd;border-radius:10px;padding:12px;display:grid;grid-template-columns:1fr 1fr;gap:12px}.dm-frsec .h{grid-column:1/-1;font-size:12px;font-weight:700;color:#4b2f73}
   .dm-cols{display:flex;gap:6px}.dm-cols button{width:28px;height:28px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px #dfe3d9;cursor:pointer}.dm-cols button.on{box-shadow:0 0 0 2px #232621}
@@ -7022,7 +7101,7 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
   .sl{height:30px;display:flex;align-items:center;gap:4px;border-radius:6px;background:#f4f5f0;font-size:12.5px;padding-right:3px;overflow:hidden;white-space:nowrap;transition:opacity .15s}
   .sl:before{content:'';width:4px;align-self:stretch;background:var(--pc);flex:none}
   .sl b{font-weight:600;overflow:hidden;text-overflow:ellipsis;min-width:0}
-  .sl select{margin-left:auto;border:1px solid transparent;-webkit-appearance:none;appearance:none;border-radius:5px;font-size:11px;font-weight:600;padding:3px 16px 3px 6px;cursor:pointer;color:#2f372a;flex:none;max-width:66px;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='6'%3E%3Cpath d='M1 1l3.5 3.5L8 1' fill='none' stroke='%23777' stroke-width='1.4'/%3E%3C/svg%3E") no-repeat right 5px center}
+  .sl select{margin-left:auto;border:1px solid transparent;min-width:0;-webkit-appearance:none;appearance:none;border-radius:5px;font-size:11px;font-weight:600;padding:3px 16px 3px 6px;cursor:pointer;color:#2f372a;flex:none;max-width:92px;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='6'%3E%3Cpath d='M1 1l3.5 3.5L8 1' fill='none' stroke='%23777' stroke-width='1.4'/%3E%3C/svg%3E") no-repeat right 5px center}
   .sl select:hover{border-color:#c9cdc2}
   .sl.F select{color:#2b7a3a;background-color:#eef7ef}.sl.L select{color:#8a5a00;background-color:#ffefcc}.sl.D select{color:#284f99;background-color:#e1eafb}
   .sl.O select,.sl.H select{color:#fff;background-color:#c62429}.sl.V select{color:#fff;background-color:#7a4fa0}.sl.N select{color:#b5bbad;background-color:transparent;font-weight:400}
@@ -7030,6 +7109,17 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
   .sl .ro{margin-left:auto;font-size:11px;font-weight:600;color:#4a5244;padding-right:4px}.sl.O .ro,.sl.H .ro{color:#c62429}.sl.V .ro{color:#7a4fa0}.sl.N .ro{color:#c4c8bd;font-weight:400}
   .sl.dim{opacity:.22}.sl.hl{box-shadow:0 0 0 2px var(--pc)}
   .dm-mon{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}.dm-mon .h{font-size:11px;text-align:center;color:#6b7364;font-weight:600;padding:2px 0}.dm-mon .h.sat{color:#2a56a8}.dm-mon .h.sun{color:#c62429}
+  .dm-mon2 .mh{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;font-size:11px;text-align:center;color:#6b7364;font-weight:600;padding:2px 0 6px}.dm-mon2 .mh .sat{color:#2a56a8}.dm-mon2 .mh .sun{color:#c62429}
+  .dm-mon2 .mwk+.mwk{margin-top:6px}.dm-mon2 .mwh{display:none}.dm-mon2 .mg{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+  .md2{border:1px solid var(--line);border-radius:10px;background:#fff;overflow:hidden;display:flex;flex-direction:column;cursor:pointer;min-width:0}.md2:hover{border-color:#c4c8bd}.md2.we{background:#fcfcf9}.md2.sel{box-shadow:0 0 0 2px #c62429}.md2.empty{border:0;background:none;cursor:default}
+  .md2 .mc{padding:7px 8px 6px;background:#fafaf7;border-bottom:1px solid var(--line)}.md2 .dd{display:flex;align-items:baseline;gap:4px}.md2 .dd b{font-size:15px}.md2 .dd span{font-size:11px;color:#6b7364}.md2 .dd .sat{color:#2a56a8}.md2 .dd .sun{color:#c62429}.md2 .dd i{margin-left:auto;font-style:normal;font-size:10px}
+  .md2 .n{display:flex;gap:4px;margin-top:4px}.md2 .n span{flex:1;text-align:center;background:#fff;border:1px solid #eceee7;border-radius:6px;font-size:10.5px;color:#6b7364;padding:1px 0;white-space:nowrap}.md2 .n b{font-size:12px;color:#2f372a;margin-left:2px}
+  .md2 .rs{padding:5px;display:flex;flex-direction:column;gap:2px;flex:1}
+  .md2 .r{height:21px;display:flex;align-items:center;gap:5px;border-radius:5px;background:#f4f5f0;font-size:11.5px;padding-right:5px;overflow:hidden;white-space:nowrap}.md2 .r:before{content:'';width:3px;align-self:stretch;background:var(--pc,#e3e5de);flex:none}
+  .md2 .r b{font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}.md2 .r i{font-style:normal;font-size:10.5px;font-weight:700;border-radius:4px;padding:0 4px;line-height:15px}.md2 .r i.L{background:#ffefcc;color:#8a5a00}.md2 .r i.D{background:#e1eafb;color:#284f99}
+  .md2 .r.x{background:none}.md2 .r.x:before{background:#d9dcd3}.md2 .r.x b{color:#b3b7ad;font-weight:400;text-decoration:line-through}
+  .md2 .r.na{background:none}.md2 .r.na:before{background:transparent}.md2 .r.na b{color:#cfd2c9;font-weight:400}.md2 .r.na span{color:#cfd2c9;font-size:10px}
+  .md2 .of{margin:0 5px 5px;border-radius:6px;background:#fdf3f3;border:1px dashed #efc9cb;padding:4px 6px;font-size:11px;color:#a3262c;line-height:1.45}.md2 .of em{font-style:normal;font-weight:700;font-size:10.5px;color:#c06d71;margin-right:3px}.md2 .of small{font-size:10px;color:#c06d71;margin-left:1px}.md2 .of.none{background:#fafaf7;border-color:#e3e5de;color:#b3b7ad}.md2 .of.none em{color:#b3b7ad}
   .md{border:1px solid var(--line);border-radius:10px;padding:8px 9px;height:100px;cursor:pointer;background:#fff;overflow:hidden}.md:hover{border-color:#c4c8bd}.md.we{background:#fcfcf9}.md.empty{border:0;background:none;cursor:default}
   .md .mtop{display:flex;align-items:baseline}.md .mtop b{font-size:15px}.md .mtop b.sat{color:#2a56a8}.md .mtop b.sun{color:#c62429}.md .mtop i{font-style:normal;font-size:10px;margin-left:auto}
   .md .n{font-size:11px;color:#6b7364;margin-top:5px}.md .n b{color:#2f372a}.md .n .lo,.md .n .lo b{color:#c62429}.md .off{font-size:11px;color:#a3262c;margin-top:4px;line-height:1.45}
@@ -7056,7 +7146,8 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
     .dm-sum{grid-template-columns:1fr 1fr}.dm-kv3{grid-template-columns:1fr}.dm-fg,.dm-frsec{grid-template-columns:1fr}.dm-seg2{grid-template-columns:1fr}
     .dm-orgbar{margin-top:0}.dm-search{width:100%}.dm-pp .r{display:none}
     .dm-week{grid-template-columns:1fr;gap:10px}.dm-col.out{display:none}.sls{display:grid;grid-template-columns:1fr 1fr}.sl select{max-width:none}
-    .dm-mon{grid-template-columns:1fr}.dm-mon .h,.md.empty{display:none}.md{height:auto;display:flex;flex-wrap:wrap;gap:4px 12px;align-items:baseline}.md .n,.md .off{margin-top:0}
+    .dm-mon{grid-template-columns:1fr}.dm-mon .h,.md.empty{display:none}
+    .dm-mon2 .mh{display:none}.dm-mon2 .mwh{display:block;font-size:11.5px;color:#6b7364;font-weight:600;margin:4px 0 5px}.dm-mon2 .mwk+.mwk{margin-top:12px}.dm-mon2 .mg{grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}.md2.empty{display:none}.md{height:auto;display:flex;flex-wrap:wrap;gap:4px 12px;align-items:baseline}.md .n,.md .off{margin-top:0}
     .dm-who{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px}.dm-avg{margin-left:0}
     .dm-day .er{grid-template-columns:1fr}.dm-day .dm-seg.sm{display:grid;grid-template-columns:repeat(4,1fr);gap:4px}.dm-day .dm-seg.sm button{padding:7px 2px}
   }`;
