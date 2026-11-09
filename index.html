@@ -835,7 +835,7 @@ function userForm(u, mode){
 function pageUserNew(){
   document.getElementById('main').innerHTML = simpleHero(['사용자 관리','사용자 등록'], 'USERS · NEW ACCOUNT', '사용자 등록', '매장관리 홈페이지에 로그인할 직원 계정을 만들어요.') +
   `<section class="card uf-card"><div class="section-title"><strong>${ic('user')}계정 정보</strong><small><em>*</em> 표시는 필수 항목</small></div>${userForm(null,'new')}
-   <div class="actions"><span class="filter-hint">${ic('info')}등록한 계정은 모든 메뉴를 똑같이 사용할 수 있어요.</span><button class="btn ghost" onclick="pageUserNew()">${ic('reset')}다시 쓰기</button><button class="btn primary" onclick="createUser()">${ic('check')}등록하기</button></div></section>` + pageFoot();
+   <div class="actions"><span class="filter-hint">${ic('info')}등급에 따라 보이는 메뉴가 달라요. 등급별 메뉴는 등급·권한 설정에서 바꿀 수 있어요.</span><button class="btn ghost" onclick="pageUserNew()">${ic('reset')}다시 쓰기</button><button class="btn primary" onclick="createUser()">${ic('check')}등록하기</button></div></section>` + pageFoot();
 }
 async function createUser(){
   const g = id => document.getElementById(id).value.trim();
@@ -1950,11 +1950,14 @@ PATHS.partner = 'M3 21h18 M5 21V8l7-5 7 5v13 M9 12h2 M13 12h2 M9 16h2 M13 16h2';
     if (data && data.ok === false) throw new Error(data.error || '처리하지 못했어요');
     return data;
   }
-  const ROLE_LABEL = { admin: '관리자', hq: '일반' };
+  const ROLE_LABEL = { admin: '관리자', hq: '본사', store: '매장 관리자', staff: '매장 사원' };
   userForm = function(u, mode){
     const v = k => esc(u?.[k] || '');
     const sel = (id, opts, cur) => `<select id="${id}">${opts.map(o => `<option ${o===cur?'selected':''}>${o}</option>`).join('')}</select>`;
-    const roleSel = `<select id="u-role"><option value="hq" ${u?.role !== 'admin' ? 'selected' : ''}>일반 (사용자 관리 메뉴 안 보임)</option><option value="admin" ${u?.role === 'admin' ? 'selected' : ''}>관리자</option></select>`;
+    const curRole = u?.role || 'hq';
+    const roleSel = `<select id="u-role" onchange="mmUserRoleChange()">${[['admin','관리자'],['hq','본사'],['store','매장 관리자'],['staff','매장 사원']].map(([k, t]) => `<option value="${k}" ${curRole === k ? 'selected' : ''}>${t}</option>`).join('')}</select>`;
+    const needStore = curRole === 'store' || curRole === 'staff';
+    setTimeout(window.mmFillUserStores, 0);
     return `<div class="uf-grid">
       <div class="f"><label for="u-id">아이디 <em>*</em></label><input type="text" id="u-id" value="${v('id')}" ${mode==='edit'?'disabled':''} placeholder="영문 소문자·숫자 4~20자" autocomplete="off" autocapitalize="off"></div>
       <div class="f"><label for="u-name">이름 <em>*</em></label><input type="text" id="u-name" value="${v('name')}" placeholder="예: 홍길동"></div>
@@ -1963,11 +1966,12 @@ PATHS.partner = 'M3 21h18 M5 21V8l7-5 7 5v13 M9 12h2 M13 12h2 M9 16h2 M13 16h2';
       <div class="f"><label for="u-title">직책</label><input type="text" id="u-title" value="${v('title')}" placeholder="예: 점장, 매니저"></div>
       <div class="f"><label for="u-phone">연락처</label><input type="text" id="u-phone" value="${mmTel(v('phone'))}" placeholder="010-0000-0000"></div>
       <div class="f"><label for="u-org">소속</label>${sel('u-org', ORGS, u?.org || '본사')}</div>
-      <div class="f"><label for="u-role">권한</label>${roleSel}</div>
+      <div class="f"><label for="u-role">등급</label>${roleSel}</div>
+      <div class="f" id="u-store-wrap" ${needStore ? '' : 'hidden'}><label for="u-store">소속 매장 <em>*</em></label><select id="u-store" data-cur="${esc(u?.store_id || '')}"><option value="">불러오는 중…</option></select></div>
     </div><p class="u-note">${ic('info')}${mode==='edit' ? '비밀번호를 초기화하면 그 사람은 다음 로그인 때 새 비밀번호를 정해야 해요.' : '등록한 사람은 처음 로그인할 때 임시 비밀번호를 자기 비밀번호로 바꾸게 돼요. 임시 비밀번호는 직접 전달해주세요.'}</p><div id="u-err" class="u-err" role="alert"></div>`;
   };
   const pageUserNewBase = pageUserNew;
-  pageUserNew = function(){ pageUserNewBase(); const h = document.querySelector('.uf-card .filter-hint'); if (h) h.innerHTML = ic('info') + '관리자만 계정을 만들 수 있어요. 일반 계정은 사용자 관리 메뉴를 빼고 모든 메뉴를 똑같이 써요.'; };
+  pageUserNew = function(){ pageUserNewBase(); const h = document.querySelector('.uf-card .filter-hint'); if (h) h.innerHTML = ic('info') + '관리자만 계정을 만들 수 있어요. 등급별로 보이는 메뉴는 등급·권한 설정에서 정해요.'; };
   createUser = async function(){
     const g = id => document.getElementById(id).value.trim(), err = m => { document.getElementById('u-err').textContent = m; };
     const id = g('u-id').toLowerCase(), name = g('u-name'), pw = document.getElementById('u-pw').value, pw2 = document.getElementById('u-pw2').value;
@@ -1977,7 +1981,9 @@ PATHS.partner = 'M3 21h18 M5 21V8l7-5 7 5v13 M9 12h2 M13 12h2 M9 16h2 M13 16h2';
     if (pw !== pw2) return err('임시 비밀번호 확인이 일치하지 않아요.');
     const btn = document.querySelector('.uf-card .btn.primary'); if (btn) btn.disabled = true;
     try {
-      const made = await adminCall({ action: 'create', login_id: id, password: pw, name, title: g('u-title'), phone: g('u-phone'), dept: g('u-org'), role: document.getElementById('u-role').value });
+      const role = document.getElementById('u-role').value, storeId = window.mmUserStoreVal();
+      if ((role === 'store' || role === 'staff') && !storeId) { if (btn) btn.disabled = false; return err('매장 관리자·매장 사원은 소속 매장을 골라주세요.'); }
+      const made = await adminCall({ action: 'create', login_id: id, password: pw, name, title: g('u-title'), phone: g('u-phone'), dept: g('u-org'), role, store_id: storeId });
       if (window.mmAvAfterCreate) await window.mmAvAfterCreate(made && made.id);
       USERS_AT = 0; toast(`${name}님 계정을 만들었어요. 아이디 ${id}와 임시 비밀번호를 전달해주세요.`); go('user-list');
     } catch (e) { err(e.message); if (btn) btn.disabled = false; }
@@ -2013,6 +2019,8 @@ PATHS.partner = 'M3 21h18 M5 21V8l7-5 7 5v13 M9 12h2 M13 12h2 M9 16h2 M13 16h2';
     try {
       const patch = { action: 'update', id: uid, name: g('u-name'), title: g('u-title'), phone: g('u-phone'), dept: g('u-org') };
       const role = document.getElementById('u-role').value; if (role !== u.role) patch.role = role;
+      const storeId = window.mmUserStoreVal();
+      if (role === 'store' || role === 'staff') { if (!storeId) { btn.disabled = false; return err('매장 관리자·매장 사원은 소속 매장을 골라주세요.'); } patch.store_id = storeId; }
       await adminCall(patch);
       if (pw) await adminCall({ action: 'reset_password', id: uid, password: pw });
       await loadUsersSB(); closeModal(); drawUsers(); toast(pw ? '저장하고 비밀번호를 초기화했어요. 새 임시 비밀번호를 전달해주세요.' : '사용자 정보를 저장했어요.');
@@ -7687,6 +7695,46 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
   // 로그인 직후 권한 받아오기
   setTimeout(loadMine, 0);
   document.addEventListener('visibilitychange', () => { if (!document.hidden && !isAdm()) { PM.mine = null; loadMine(); } });
+})();
+</script>
+<script>
+/* ==========================================================
+   계정 등급 4단계 + 소속 매장 (2026-11-09)
+   - 매장 관리자·매장 사원을 고르면 소속 매장 칸이 나타남
+   - 매장 목록은 직영점(폐점 제외)만
+   ========================================================== */
+(function(){
+  var cache = null;
+  window.mmUserRoleChange = function(){
+    var r = document.getElementById('u-role'), w = document.getElementById('u-store-wrap');
+    if (!r || !w) return;
+    w.hidden = !(r.value === 'store' || r.value === 'staff');
+    if (!w.hidden) window.mmFillUserStores();
+  };
+  window.mmUserStoreVal = function(){
+    var w = document.getElementById('u-store-wrap'), s = document.getElementById('u-store');
+    if (!w || w.hidden || !s) return null;
+    return Number(s.value) || null;
+  };
+  window.mmFillUserStores = async function(){
+    var s = document.getElementById('u-store');
+    if (!s || s.dataset.filled) return;
+    try {
+      if (!cache) {
+        var res = await SB.rpc('org_data');
+        if (res.error) throw res.error;
+        cache = ((res.data && res.data.stores) || []).filter(function(x){ return x.direct; });
+      }
+      var cur = String(s.dataset.cur || '');
+      s.innerHTML = '<option value="">매장 선택</option>' + cache.map(function(x){
+        var nm = String(x.name).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; });
+        return '<option value="' + x.id + '"' + (String(x.id) === cur ? ' selected' : '') + '>' + nm + (x.status && x.status !== '영업중' ? ' (' + x.status + ')' : '') + '</option>';
+      }).join('');
+      s.dataset.filled = '1';
+    } catch (e) {
+      s.innerHTML = '<option value="">매장을 불러오지 못했어요</option>';
+    }
+  };
 })();
 </script>
 </body>
