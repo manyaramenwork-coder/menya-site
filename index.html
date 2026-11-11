@@ -7754,6 +7754,7 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
   const h = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const can = () => !!(typeof SESSION !== 'undefined' && SESSION.user && (SESSION.user.role === 'admin' || SESSION.user.role === 'hq'));
   const ST = { active: ['진행 중', 'on'], closed: ['마감', ''], stopped: ['중단', ''], scheduled: ['예약', 'on'], draft: ['작성 중', ''] };
+  const dt = d => { const y = String(new Date().getFullYear()); return !d ? '' : d.slice(0, 4) === y ? d.slice(5).replace('-', '.') : d.slice(2).replace(/-/g, '.'); };
   const kb = b => !b ? '' : b >= 1048576 ? (b / 1048576).toFixed(1) + 'MB' : Math.max(1, Math.round(b / 1024)) + 'KB';
   const FN = { data: null, at: 0, uid: '', tab: 'all', q: '', cur: null, view: 'status', filt: 'all', open: null, all: {}, more: false };
 
@@ -7841,7 +7842,7 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
     box.innerHTML = `
       <div class="data-note"><span class="status-dot"></span><span>FC다움 마지막 확인 ${h(D.synced ? D.synced.at : '-')}</span><span class="tag">10분마다 자동</span>
         <a class="btn ghost fnn-ext" href="${FC_URL}" target="_blank" rel="noopener">FC다움에서 공지 쓰기 ${ic('arrow')}</a></div>
-      ${pend.length ? `<section class="card fnn-pend"><div class="section-title"><strong>${ic('bell')}점주 댓글 · 본사 답글 전</strong><small>최근 ${RECENT}일 · ${pend.length}건 · 답글은 FC다움에서</small></div>
+      ${false ? `<section class="card fnn-pend"><div class="section-title"><strong>${ic('bell')}점주 댓글 · 본사 답글 전</strong><small>최근 ${RECENT}일 · ${pend.length}건 · 답글은 FC다움에서</small></div>
         ${shown.map(p => `<button type="button" class="fnn-prow" onclick="fnOpen(${p.nid},'talk','${h(p.tkey)}')"><b>${h(p.store)}</b><span class="m"><span class="t">${h(p.body)}</span><small>${h(p.title)}</small></span><span class="d">${h(p.at)}</span></button>`).join('')}
         ${pend.length > 5 ? `<button type="button" class="fnn-more" onclick="fnMore()">${FN.more ? '접기' : `${pend.length - 5}건 더 보기`}</button>` : ''}</section>` : ''}
       <section class="card"><div class="fnn-bar">
@@ -7855,11 +7856,11 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
     const list = rowsOf();
     el.innerHTML = list.length ? list.map(n => {
       const st = ST[n.status] || [n.status, ''], pct = n.total ? Math.round(n.read / n.total * 100) : 0;
-      return `<button type="button" class="fnn-row" onclick="fnOpen(${n.id})">
+      return `<button type="button" class="fnn-row ${n.status === 'active' ? '' : 'done'}" onclick="fnOpen(${n.id})">
         <span class="fnn-l"><span class="fnn-t">${n.pin && n.status === 'active' ? '<em class="fnn-pin">필독</em>' : ''}${h(n.title)}</span>
-          <span class="fnn-s">${h(n.at)} · ${n.total}개 매장 · <span class="fnn-st ${st[1]}">${st[0]}</span>${n.files ? ` · 첨부 ${n.files}` : ''}</span></span>
+          <span class="fnn-s">${n.total}개 매장 · ${n.read}곳 읽음 · <span class="fnn-st ${st[1]}">${st[0]}</span>${n.files ? ` · 첨부 ${n.files}` : ''}</span></span>
         ${n.pend ? `<span class="fnn-cb new">점주 댓글 ${n.pend}</span>` : n.cmt ? `<span class="fnn-cb">댓글 ${n.cmt}</span>` : ''}
-        <span class="fnn-r"><span><b>${n.read}</b> / ${n.total} 읽음</span><span class="fnn-bar2"><i style="width:${pct}%"></i></span></span></button>`;
+        <span class="fnn-date">${dt(n.at)}</span></button>`;
     }).join('') : `<div class="fnn-empty">조건에 맞는 공지가 없어요.</div>`;
   }
   let qT = 0;
@@ -7949,7 +7950,7 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
     const D = FN.data;
     if (!D) return '<div class="ns-empty">불러오는 중...</div>';
     const list = (D.list || []).slice().sort((a, b) => b.at.localeCompare(a.at)).slice(0, 3);
-    return list.map(n => `<button type="button" class="fnn-drow" onclick="fnOpen(${n.id}${n.pend ? ",'talk'" : ''})"><span class="t">${h(n.title)}</span>${n.pend ? `<em class="fnn-dcb">점주 댓글 ${n.pend}</em>` : ''}<small class="${n.total && n.read / n.total < .5 ? 'red' : ''}">${n.read}/${n.total} 읽음</small></button>`).join('')
+    return list.map(n => `<button type="button" class="fnn-drow ${n.status === 'active' ? '' : 'done'}" onclick="fnOpen(${n.id}${n.pend ? ",'talk'" : ''})"><span class="t">${h(n.title)}</span>${n.pend ? `<em class="fnn-dcb">점주 댓글 ${n.pend}</em>` : ''}<small>${dt(n.at)}</small></button>`).join('')
       + `<a class="fnn-dall" onclick="go('${PAGE}')">가맹점 공지 전체 보기 ${ic('arrow')}</a>`;
   }
   const pageDashboardFn = pageDashboard;
@@ -7999,6 +8000,9 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
   .fnn-pin{font-style:normal;font-size:11px;font-weight:700;background:#fbeeee;color:#a3262c;border-radius:5px;padding:1px 7px;margin-right:7px;vertical-align:1px}
   .fnn-cb{flex:none;font-size:11px;font-weight:600;border-radius:11px;padding:3px 9px;background:#eef0ea;color:#4d524a;border:0;font-family:inherit}
   .fnn-cb.new{background:#c62429;color:#fff;cursor:pointer}
+  .fnn-date{flex:none;font-size:12px;color:#5e625b;font-variant-numeric:tabular-nums;min-width:44px;text-align:right}
+  .fnn-row.done .fnn-t,.fnn-row.done .fnn-s,.fnn-row.done .fnn-date,.fnn-drow.done .t,.fnn-drow.done small{color:#a3a89c}
+  .fnn-row.done .fnn-st{color:#a3a89c}
   .fnn-r{flex:none;width:118px;display:flex;flex-direction:column;align-items:flex-end;gap:6px;font-size:12px;color:#5e625b}
   .fnn-r b{color:#232621;font-size:13px}
   .fnn-bar2{width:118px;height:4px;background:#eceee8;border-radius:2px;display:block}
