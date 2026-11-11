@@ -7780,9 +7780,11 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
     const nav = document.querySelector('#side .nav-items'); if (!nav) return;
     nav.querySelectorAll('.js-fn-menu').forEach(e => e.remove());
     const nh = nav.querySelector(':scope > .cat.js-nh-menu'); if (!nh) return;
-    const open = active === PAGE || active === 'nh-week';
+    const open = active === PAGE || active === 'nh-week' || active === 'fc-orders';
+    // 본사 택배 발주(FC다움 매장 발주)는 가맹점 관리로 옮김 → 본사 발주·재고에서는 뺌
+    nav.querySelectorAll('.sub:not(.js-fn-menu) a[onclick="go(\'fc-orders\')"]').forEach(a => a.remove());
     nh.insertAdjacentHTML('beforebegin', `<button class="cat js-fn-menu ${open ? 'open' : ''}" onclick="const o=this.classList.toggle('open');this.nextElementSibling.classList.toggle('open',o)">${ic('store')}가맹점 관리${ic('chevron').replace('class="icon"', 'class="icon ar"')}</button>
-      <div class="sub js-fn-menu ${open ? 'open' : ''}"><a role="button" tabindex="0" data-p="nh-week" class="${active === 'nh-week' ? 'on' : ''}" onclick="go('nh-week')">가맹점 현황</a><a role="button" tabindex="0" data-p="${PAGE}" class="${active === PAGE ? 'on' : ''}" onclick="go('${PAGE}')">가맹점 공지</a></div>`);
+      <div class="sub js-fn-menu ${open ? 'open' : ''}"><a role="button" tabindex="0" data-p="nh-week" class="${active === 'nh-week' ? 'on' : ''}" onclick="go('nh-week')">가맹점 현황</a><a role="button" tabindex="0" data-p="${PAGE}" class="${active === PAGE ? 'on' : ''}" onclick="go('${PAGE}')">가맹점 공지</a><a role="button" tabindex="0" data-p="fc-orders" class="${active === 'fc-orders' ? 'on' : ''}" onclick="go('fc-orders')">가맹점 발주</a></div>`);
     nh.remove();
     badge();
   }
@@ -7801,7 +7803,19 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
       document.getElementById('nt-pop')?.remove();
       closeSide(); renderSide(p); window.__curPage = p; FN.cur = null; pageList(); window.scrollTo(0, 0); return;
     }
-    return goFn(p, t);
+    const r = goFn(p, t);
+    if (p === 'fc-orders') {
+      const fix = () => {
+        const c = document.querySelector('#main .crumb'), hh = document.querySelector('#main .page-hero h1');
+        if (c) c.innerHTML = c.innerHTML.replace(/<span>본사 발주·재고<\/span>|<span>발주 관리<\/span>/, '<span>가맹점 관리</span>').replace('<span>매장 발주 (FC다움)</span>', '<span>가맹점 발주</span>');
+        if (hh && /매장 발주|FC다움 본사 발주/.test(hh.textContent)) hh.textContent = '가맹점 발주';
+        const hero = document.querySelector('#main > .page-hero');
+        if (hero && !document.querySelector('#main .pg-guide') && typeof pageGuide === 'function')
+          hero.insertAdjacentHTML('afterend', pageGuide('fc', 'FC다움 10분마다 업데이트 · 확인용 화면', [['수집', 'FC다움에서 10분마다 새 발주를 가져와요.'], ['처리', '이 화면은 확인용이에요. 확인·완료 처리는 FC다움에서 해 주세요.']]));
+      };
+      fix(); Promise.resolve(r).then(fix);
+    }
+    return r;
   };
 
   /* ---------- 목록 ---------- */
@@ -7934,9 +7948,8 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
   function dashHtml(){
     const D = FN.data;
     if (!D) return '<div class="ns-empty">불러오는 중...</div>';
-    const p = recentPend(DASH_RECENT), list = (D.list || []).slice().sort((a, b) => b.at.localeCompare(a.at)).slice(0, p.length ? 2 : 3);
-    return (p.length ? `<div class="fnn-dh">점주 댓글 · 본사 답글 전 <b>${p.length}</b></div>` + p.slice(0, 3).map(x => `<button type="button" class="fnn-drow" onclick="fnOpen(${x.nid},'talk','${h(x.tkey)}')"><b>${h(x.store)}</b><span>${h(x.body)}</span><small>${h(x.at)}</small></button>`).join('') + (p.length > 3 ? `<div class="fnn-dmore">외 ${p.length - 3}건</div>` : '') : '')
-      + `<div class="fnn-dh">최근 공지</div>` + list.map(n => `<button type="button" class="fnn-drow" onclick="fnOpen(${n.id})"><span class="t">${h(n.title)}</span><small class="${n.total && n.read / n.total < .5 ? 'red' : ''}">${n.read}/${n.total} 읽음</small></button>`).join('')
+    const list = (D.list || []).slice().sort((a, b) => b.at.localeCompare(a.at)).slice(0, 3);
+    return list.map(n => `<button type="button" class="fnn-drow" onclick="fnOpen(${n.id}${n.pend ? ",'talk'" : ''})"><span class="t">${h(n.title)}</span>${n.pend ? `<em class="fnn-dcb">점주 댓글 ${n.pend}</em>` : ''}<small class="${n.total && n.read / n.total < .5 ? 'red' : ''}">${n.read}/${n.total} 읽음</small></button>`).join('')
       + `<a class="fnn-dall" onclick="go('${PAGE}')">가맹점 공지 전체 보기 ${ic('arrow')}</a>`;
   }
   const pageDashboardFn = pageDashboard;
@@ -7946,7 +7959,7 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
     const sec = [...document.querySelectorAll('#main .dash-sec')].find(s => (s.querySelector('.sec-head h2') || {}).textContent === '최근 점주 공지');
     if (!sec) return;
     sec.querySelector('.sec-head h2').textContent = '가맹점 공지';
-    const sm = sec.querySelector('.sec-head small'); if (sm) sm.textContent = '점주 댓글 · 최근 공지';
+    const sm = sec.querySelector('.sec-head small'); if (sm) sm.textContent = '최근 3건';
     const strip = sec.querySelector('.notice-strip'); if (!strip) return;
     strip.classList.add('fnn-dash');
     strip.innerHTML = dashHtml();
@@ -8054,6 +8067,7 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
   .fnn-drow span,.fnn-drow .t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .fnn-drow small{flex:none;font-size:10px;color:#8b9381}
   .fnn-drow small.red{color:#c62429;font-weight:700}
+  .fnn-dcb{flex:none;font-style:normal;font-size:10px;font-weight:700;background:#c62429;color:#fff;border-radius:9px;padding:1px 7px}
   .fnn-dmore{font-size:11px;color:#8b9381;padding:2px 0 4px}
   .fnn-dall{display:inline-flex;align-items:center;gap:4px;margin-top:6px;font-size:11px;color:#6b6f68;cursor:pointer}
   .fnn-dall .icon{width:11px;height:11px}
@@ -8063,6 +8077,66 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
     .fnn-prow b{width:64px}.fnn-prow .d{display:none}
     #fnn-pbody{padding:14px}
   }`;
+  document.head.appendChild(st);
+})();
+</script>
+<script>
+/* ==========================================================
+   대시보드 '가맹점 발주' 정리 (2026-11-11)
+   - 큰 숫자 칸(새 발주 · 진행중) 대신 위에 작은 개수 표시 + 한 줄짜리 발주 목록
+   - 미확인 → 진행중 순, 같은 상태는 최근 것부터, 최대 6건 (나머지는 '전체 발주 보기')
+   - 데이터는 기존 FC(대시보드가 받아 둔 처리 대기 발주) 그대로 사용
+   ========================================================== */
+(function(){
+  const URL_FC = 'https://fcdaum.com/comu/helpdesk/list', MAX = 6;
+  const h = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  function html(){
+    const list = (FC || []).filter(q => fcStatus(q) !== '완료')
+      .sort((a, b) => (fcStatus(a) === '미확인' ? 0 : 1) - (fcStatus(b) === '미확인' ? 0 : 1) || String(b.at).localeCompare(String(a.at)));
+    const nNew = list.filter(q => fcStatus(q) === '미확인').length, nIng = list.length - nNew;
+    const row = q => { const st = fcStatus(q), at = fcDate(q.at).slice(5);
+      return `<div class="fcd-row"><span class="fcd-st ${st === '미확인' ? 'new' : 'ing'}">${st}</span>
+        <span class="fcd-who"><b>${h(q.store)}</b><small>${h(at)} · ${h(q.by)}</small></span>
+        <span class="fcd-items" title="${h(fcItems(q))}">${h(fcItems(q))}</span>
+        <span class="fcd-amt">${fmt(q.total)}원</span></div>`; };
+    return `<section class="card fcd">
+      <div class="fcd-top"><span class="fcd-cnt"><b class="${nNew ? 'red' : ''}">${nNew}</b> 미확인</span><span class="fcd-cnt"><b>${nIng}</b> 진행중</span>
+        <span class="fcd-acts"><button class="btn ghost" onclick="go('fc-orders')">전체 발주 보기</button><a class="btn" href="${URL_FC}" target="_blank" rel="noopener">FC다움에서 처리 ${ic('arrow')}</a></span></div>
+      ${list.length ? `<div class="fcd-list">${list.slice(0, MAX).map(row).join('')}</div>${list.length > MAX ? `<button class="fcd-more" onclick="go('fc-orders')">외 ${list.length - MAX}건 더 보기</button>` : ''}`
+        : '<div class="fcd-empty">처리할 발주가 없어요.</div>'}
+      <p class="fcd-hint">확인·완료 처리는 FC다움에서 해요. 처리하면 몇 분 안에 여기서 빠져요.</p></section>`;
+  }
+  const pageDashboardFcd = pageDashboard;
+  pageDashboard = function(){
+    pageDashboardFcd.apply(this, arguments);
+    const sec = [...document.querySelectorAll('#main .dash-sec')].find(s => ['본사 택배 발주', '가맹점 발주'].includes((s.querySelector('.sec-head h2') || {}).textContent));
+    if (!sec) return;
+    sec.querySelector('.sec-head h2').textContent = '가맹점 발주';
+    [...sec.children].forEach(c => { if (!c.classList.contains('sec-head')) c.remove(); });
+    sec.insertAdjacentHTML('beforeend', html());
+  };
+  const st = document.createElement('style');
+  st.textContent = `
+  .fcd{padding:16px 20px}
+  .fcd-top{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:10px}
+  .fcd-cnt{font-size:12px;color:#5e625b}
+  .fcd-cnt b{font-size:20px;color:#232621;margin-right:3px}.fcd-cnt b.red{color:#c62429}
+  .fcd-acts{margin-left:auto;display:flex;gap:6px}
+  .fcd-acts .btn{min-height:34px;font-size:12px;padding:6px 12px;text-decoration:none}
+  .fcd-acts .icon{width:13px;height:13px}
+  .fcd-row{display:grid;grid-template-columns:62px 150px minmax(0,1fr) auto;gap:12px;align-items:center;padding:10px 2px;border-top:1px solid #f0f1ec;font-size:13px}
+  .fcd-st{font-size:11px;font-weight:700;border-radius:10px;padding:3px 0;text-align:center}
+  .fcd-st.new{background:#c62429;color:#fff}.fcd-st.ing{background:#fff1d6;color:#8a5a00}
+  .fcd-who{display:flex;flex-direction:column;gap:2px;min-width:0}
+  .fcd-who b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .fcd-who small{font-size:11px;color:#6b6f68}
+  .fcd-items{color:#4d524a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .fcd-amt{font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .fcd-more{display:block;margin:6px auto 0;border:0;background:none;color:#5f6858;font-size:12px;cursor:pointer;padding:6px 10px}
+  .fcd-empty{text-align:center;color:#909b84;font-size:13px;padding:22px 0;border-top:1px solid #f0f1ec}
+  .fcd-hint{margin:8px 0 0;font-size:11px;color:#8b9381}
+  @media(max-width:640px){.fcd-acts{margin-left:0;width:100%}.fcd-acts .btn{flex:1;justify-content:center}
+    .fcd-row{grid-template-columns:56px minmax(0,1fr) auto;row-gap:4px}.fcd-items{grid-column:2/4;grid-row:2;font-size:12px}}`;
   document.head.appendChild(st);
 })();
 </script>
