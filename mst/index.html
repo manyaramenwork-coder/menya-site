@@ -1,0 +1,1053 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>멘야마쯔리 파트너</title>
+<meta name="theme-color" content="#c62429">
+<meta name="color-scheme" content="light">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="멘야 파트너">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
+<!--
+  멘야마쯔리 파트너 (가맹점 앱) — 2026-11-12 첫 버전
+  - 주소: store.menyamatsuri.work (주소는 코드에 고정하지 않음, 어디에 올려도 동작)
+  - 가맹점주(mst): 홈 · 공지(1:1 본사 대화) · 발주 · 레시피 · 내 정보
+  - 관리자·본사(admin·hq): 관리 화면 — 공지 쓰기 · 품목 · 레시피 · 계정(관리자만)
+  - 직영점 계정(store·staff)은 들어올 수 없음 → 워크스페이스 안내
+  - 데이터는 워크스페이스와 같은 Supabase. 점주는 mst_ 함수로 '우리 매장 것'만 받음
+-->
+<style>
+:root{
+  --red:#c62429; --red-d:#9f1b20; --red-t:#fbeceb;
+  --ink:#1f271b; --ink2:#465140; --mut:#869080; --line:#e2e7dc;
+  --bg:#f4f6f1; --card:#fff; --ok:#2e7a4c; --ok-t:#e6f3ea; --amb:#a8670f; --amb-t:#fbf1df; --blue:#2a5ca8; --blue-t:#e8eff9;
+  --r:14px; --tab:64px;
+  --safe-t:env(safe-area-inset-top,0px); --safe-b:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%}
+body{font-family:"Pretendard Variable",Pretendard,-apple-system,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;background:var(--bg);color:var(--ink);
+  font-size:15px;line-height:1.55;letter-spacing:-.01em;-webkit-font-smoothing:antialiased;word-break:keep-all;overflow-wrap:anywhere}
+button,input,select,textarea{font:inherit;color:inherit;letter-spacing:inherit}
+button{cursor:pointer;border:0;background:none;padding:0}
+a{color:var(--blue)}
+:focus-visible{outline:2px solid var(--red);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+#app{max-width:560px;margin:0 auto;min-height:100%;padding-top:var(--safe-t)}
+#view{padding:0 16px calc(var(--tab) + var(--safe-b) + 28px)}
+#view.has-bar{padding-bottom:calc(var(--tab) + var(--safe-b) + 108px)}
+
+/* 위쪽 제목줄 */
+.top{position:sticky;top:0;z-index:20;margin:0 -16px 6px;padding:calc(var(--safe-t) + 10px) 10px 10px;background:rgba(244,246,241,.94);
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);display:flex;align-items:center;gap:4px;min-height:54px}
+.top h1{font-size:18px;font-weight:750;margin:0 6px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.top .back{width:40px;height:40px;border-radius:12px;display:grid;place-items:center}
+.top .back:active{background:#e8ece3}
+.top .act{padding:8px 12px;border-radius:10px;font-weight:650;color:var(--red);font-size:14px}
+.page-h{padding:calc(var(--safe-t) + 22px) 4px 12px}
+.page-h h1{font-size:26px;font-weight:800;letter-spacing:-.03em;margin:0}
+.page-h p{margin:4px 0 0;color:var(--mut);font-size:14px}
+
+/* 노렌 (홈 상단) */
+.noren{margin:0 -16px 18px;background:var(--red);color:#fff;padding:calc(var(--safe-t) + 26px) 22px 46px;position:relative}
+.noren::after{content:"";position:absolute;left:0;right:0;bottom:0;height:26px;
+  background:linear-gradient(90deg,transparent calc(33.33% - 2px),var(--bg) calc(33.33% - 2px),var(--bg) calc(33.33% + 2px),transparent calc(33.33% + 2px),
+  transparent calc(66.66% - 2px),var(--bg) calc(66.66% - 2px),var(--bg) calc(66.66% + 2px),transparent calc(66.66% + 2px))}
+.noren small{display:block;font-size:13px;opacity:.82;font-weight:500}
+.noren b{display:block;font-size:34px;font-weight:850;letter-spacing:-.045em;line-height:1.15;margin-top:4px}
+.noren .who{margin-top:8px;font-size:14px;opacity:.9}
+
+/* 공통 블록 */
+.sec{margin:22px 0 8px;display:flex;align-items:baseline;justify-content:space-between;padding:0 4px}
+.sec h2{font-size:16px;font-weight:750;margin:0}
+.sec a,.sec button{font-size:13px;color:var(--mut);text-decoration:none}
+.box{background:var(--card);border-radius:var(--r);border:1px solid var(--line)}
+.list{background:var(--card);border-radius:var(--r);border:1px solid var(--line);overflow:hidden}
+.row{display:flex;align-items:center;gap:12px;padding:14px 16px;border-top:1px solid var(--line);text-decoration:none;color:inherit;width:100%;text-align:left}
+.row:first-child{border-top:0}
+.row:active{background:#f6f8f3}
+.row .main{flex:1;min-width:0}
+.row .t{font-weight:620;font-size:15px;display:flex;gap:6px;align-items:center}
+.row .t span.tx{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .s{color:var(--mut);font-size:13px;margin-top:2px;display:flex;gap:8px;flex-wrap:wrap}
+.row .r{text-align:right;flex-shrink:0;font-size:13px;color:var(--ink2)}
+.row.unread .t{font-weight:760}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--red);flex-shrink:0}
+.empty{padding:34px 18px;text-align:center;color:var(--mut);font-size:14px}
+.empty b{display:block;color:var(--ink2);font-size:15px;margin-bottom:4px}
+.load{padding:40px 0;text-align:center;color:var(--mut);font-size:14px}
+.err{background:var(--red-t);color:var(--red-d);border-radius:12px;padding:12px 14px;font-size:14px;margin:12px 0}
+.note{background:#eef1ea;color:var(--ink2);border-radius:12px;padding:12px 14px;font-size:13.5px;margin:12px 0;line-height:1.6}
+
+/* 꼬리표 */
+.pill{display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:999px;font-size:12px;font-weight:650;white-space:nowrap;flex-shrink:0}
+.p-red{background:var(--red-t);color:var(--red-d)} .p-amb{background:var(--amb-t);color:var(--amb)} .p-blue{background:var(--blue-t);color:var(--blue)}
+.p-ok{background:var(--ok-t);color:var(--ok)} .p-grey{background:#eceee8;color:#6d7568}
+
+/* 홈 바로가기 */
+.quick{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:8px}
+.quick a{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px 14px 12px;text-decoration:none;color:var(--ink);display:flex;flex-direction:column;gap:2px;min-height:86px}
+.quick a.main{background:var(--ink);border-color:var(--ink);color:#fff}
+.quick a .n{font-size:24px;font-weight:800;letter-spacing:-.03em;line-height:1.2}
+.quick a .l{font-size:13px;color:var(--mut)} .quick a.main .l{color:#c9d0c2}
+.quick a .n.hot{color:var(--red)}
+.quick a.main .n{font-size:18px;margin-top:auto}
+
+/* 버튼 */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:48px;padding:0 18px;border-radius:12px;font-weight:700;font-size:15px;background:var(--red);color:#fff;width:100%}
+.btn:active{background:var(--red-d)} .btn[disabled]{opacity:.45;pointer-events:none}
+.btn.ghost{background:var(--card);color:var(--ink);border:1px solid var(--line)} .btn.ghost:active{background:#eef1ea}
+.btn.dark{background:var(--ink)} .btn.sm{height:38px;font-size:14px;padding:0 14px;width:auto;border-radius:10px}
+.btn.line{background:none;border:1px solid var(--red);color:var(--red)}
+.btns{display:flex;gap:8px;margin-top:14px} .btns .btn{flex:1}
+
+/* 입력 */
+.f{margin:14px 0} .f>label{display:block;font-size:13px;font-weight:650;color:var(--ink2);margin:0 0 6px 2px}
+.in{width:100%;height:48px;border:1px solid var(--line);border-radius:12px;padding:0 14px;background:#fff;font-size:16px}
+textarea.in{height:auto;min-height:120px;padding:12px 14px;line-height:1.6;resize:vertical}
+.in:focus{border-color:var(--ink2);outline:none}
+.hint{font-size:12.5px;color:var(--mut);margin:6px 2px 0}
+.sw{display:flex;align-items:center;gap:12px;padding:14px 16px;border-top:1px solid var(--line)} .sw:first-child{border-top:0}
+.sw span{flex:1} .sw small{display:block;color:var(--mut);font-size:12.5px}
+.tg{appearance:none;width:46px;height:28px;border-radius:999px;background:#d6dbd0;position:relative;transition:background .15s;flex-shrink:0}
+.tg::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.2);transition:left .15s}
+.tg:checked{background:var(--ok)} .tg:checked::after{left:21px}
+
+/* 아래 탭 */
+#tabs{position:fixed;left:0;right:0;bottom:0;z-index:30;background:rgba(255,255,255,.97);border-top:1px solid var(--line);
+  padding-bottom:var(--safe-b);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+#tabs .in{max-width:560px;margin:0 auto;display:flex;height:var(--tab);border:0;padding:0;background:none;border-radius:0}
+#tabs a{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:#9aa293;text-decoration:none;font-size:11.5px;font-weight:600;position:relative}
+#tabs a svg{width:24px;height:24px}
+#tabs a.on{color:var(--ink)}
+#tabs a .bd{position:absolute;top:8px;left:calc(50% + 6px);min-width:17px;height:17px;padding:0 5px;border-radius:999px;background:var(--red);color:#fff;font-size:10.5px;display:grid;place-items:center;font-weight:700}
+svg.i{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+
+/* 공지 본문 */
+.art h2{font-size:21px;font-weight:780;letter-spacing:-.03em;margin:6px 4px 6px;line-height:1.35}
+.art .meta{color:var(--mut);font-size:13px;margin:0 4px 14px;display:flex;gap:10px;flex-wrap:wrap}
+.art .body{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:18px;font-size:15.5px;line-height:1.75}
+.files{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.files img,.files video{width:100%;border-radius:12px;display:block;background:#e9ece5}
+.file{display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--card);border:1px solid var(--line);border-radius:12px;text-align:left;width:100%}
+.file span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px}
+.file small{color:var(--mut);font-size:12px}
+
+/* 1:1 대화 */
+.talk{margin-top:18px}
+.talk .hd{font-size:14px;font-weight:700;margin:0 4px 8px;display:flex;justify-content:space-between}
+.talk .hd small{color:var(--mut);font-weight:500}
+.msgs{display:flex;flex-direction:column;gap:10px}
+.msg{max-width:84%;padding:10px 13px;border-radius:16px;font-size:14.5px;line-height:1.55}
+.msg.store{align-self:flex-end;background:var(--ink);color:#fff;border-bottom-right-radius:6px}
+.msg.hq{align-self:flex-start;background:var(--card);border:1px solid var(--line);border-bottom-left-radius:6px}
+.msg .w{display:block;font-size:11.5px;opacity:.7;margin-bottom:2px}
+.composer{position:fixed;left:0;right:0;bottom:0;z-index:31;background:#fff;border-top:1px solid var(--line);padding:8px 10px calc(8px + var(--safe-b))}
+.composer .in2{max-width:560px;margin:0 auto;display:flex;gap:8px;align-items:flex-end}
+.composer textarea{flex:1;min-height:44px;max-height:120px;height:44px;border:1px solid var(--line);border-radius:22px;padding:10px 16px;resize:none;font-size:16px;line-height:1.4;background:var(--bg)}
+.composer button{height:44px;padding:0 16px;border-radius:22px;background:var(--red);color:#fff;font-weight:700}
+.composer button[disabled]{opacity:.4}
+
+/* 발주 */
+.seg{display:flex;background:#e7ebe2;border-radius:12px;padding:3px;margin:4px 0 12px}
+.seg button{flex:1;height:36px;border-radius:9px;font-size:14px;font-weight:650;color:var(--ink2)}
+.seg button.on{background:#fff;color:var(--ink);box-shadow:0 1px 2px rgba(31,39,27,.08)}
+.cat-h{font-size:13px;font-weight:700;color:var(--ink2);margin:18px 6px 8px}
+.it{display:flex;align-items:center;gap:10px;padding:12px 12px 12px 16px;border-top:1px solid var(--line)}
+.it:first-child{border-top:0}
+.it .main{flex:1;min-width:0} .it .nm{font-weight:620;font-size:15px} .it .pr{font-size:13px;color:var(--mut)}
+.it.on{background:#fbfcf9}
+.step{display:flex;align-items:center;border:1px solid var(--line);border-radius:12px;overflow:hidden;flex-shrink:0;background:#fff}
+.step button{width:38px;height:40px;font-size:20px;color:var(--ink2);display:grid;place-items:center}
+.step button:active{background:#eef1ea}
+.step input{width:44px;height:40px;border:0;text-align:center;font-weight:700;font-size:16px;background:none;-moz-appearance:textfield}
+.step input::-webkit-inner-spin-button{-webkit-appearance:none}
+.it.on .step{border-color:var(--ink)}
+.cartbar{position:fixed;left:0;right:0;bottom:calc(var(--tab) + var(--safe-b));z-index:29;padding:10px 12px}
+.cartbar .in2{max-width:536px;margin:0 auto;background:var(--ink);color:#fff;border-radius:16px;display:flex;align-items:center;gap:12px;padding:10px 10px 10px 18px;box-shadow:0 6px 20px rgba(31,39,27,.25)}
+.cartbar .sum{flex:1;font-size:13px;color:#c9d0c2} .cartbar .sum b{display:block;color:#fff;font-size:18px;font-weight:800}
+.cartbar .btn{width:auto;height:44px}
+.steps{display:flex;margin:6px 0 2px}
+.steps div{flex:1;text-align:center;font-size:12px;color:var(--mut);position:relative;padding-top:20px}
+.steps div::before{content:"";position:absolute;top:5px;left:50%;width:10px;height:10px;margin-left:-5px;border-radius:50%;background:#d5dacf;z-index:1}
+.steps div::after{content:"";position:absolute;top:9px;left:-50%;width:100%;height:2px;background:#d5dacf}
+.steps div:first-child::after{display:none}
+.steps div.done{color:var(--ink);font-weight:650} .steps div.done::before,.steps div.done::after{background:var(--ok)}
+.kv{display:flex;justify-content:space-between;gap:12px;padding:11px 16px;border-top:1px solid var(--line);font-size:14px}
+.kv:first-child{border-top:0} .kv span:first-child{color:var(--mut)} .kv b{font-weight:700}
+.inv{display:flex;align-items:center;gap:10px;padding:14px 16px}
+.inv .n{flex:1;font-size:17px;font-weight:750;letter-spacing:.02em} .inv small{display:block;color:var(--mut);font-size:12.5px;font-weight:500;letter-spacing:0}
+table.items{width:100%;border-collapse:collapse;font-size:14px}
+table.items td{padding:11px 16px;border-top:1px solid var(--line);vertical-align:top}
+table.items tr:first-child td{border-top:0}
+table.items td.q{text-align:right;white-space:nowrap;color:var(--ink2)}
+table.items tfoot td{font-weight:800;border-top:1px solid var(--ink)}
+.logs{font-size:13px;color:var(--ink2);padding:6px 16px 12px}
+.logs div{display:flex;gap:10px;padding:5px 0} .logs time{color:var(--mut);width:84px;flex-shrink:0}
+
+/* 아래에서 올라오는 창 */
+.sheet-bg{position:fixed;inset:0;z-index:50;background:rgba(20,26,17,.42);display:flex;align-items:flex-end;justify-content:center;animation:fd .15s}
+.sheet{background:#fff;width:100%;max-width:560px;max-height:88vh;overflow:auto;border-radius:20px 20px 0 0;padding:8px 18px calc(18px + var(--safe-b));animation:up .2s ease-out}
+.sheet .grab{width:38px;height:4px;border-radius:2px;background:#d5dacf;margin:4px auto 10px}
+.sheet h3{font-size:18px;font-weight:780;margin:4px 2px 4px}
+.sheet .sub{color:var(--mut);font-size:13.5px;margin:0 2px 8px}
+@keyframes up{from{transform:translateY(40px);opacity:.4}} @keyframes fd{from{opacity:0}}
+#toast{position:fixed;left:50%;bottom:calc(var(--tab) + var(--safe-b) + 18px);transform:translateX(-50%);z-index:60;background:var(--ink);color:#fff;
+  padding:11px 18px;border-radius:12px;font-size:14px;max-width:88vw;opacity:0;pointer-events:none;transition:opacity .2s}
+#toast.on{opacity:1}
+
+/* 로그인 */
+.auth{min-height:100vh;display:flex;flex-direction:column;padding:0 22px}
+.auth .hero{margin:0 -22px;background:var(--red);color:#fff;padding:calc(var(--safe-t) + 56px) 28px 64px;position:relative}
+.auth .hero::after{content:"";position:absolute;left:0;right:0;bottom:0;height:32px;
+  background:linear-gradient(90deg,transparent calc(33.33% - 2px),var(--bg) calc(33.33% - 2px),var(--bg) calc(33.33% + 2px),transparent calc(33.33% + 2px),
+  transparent calc(66.66% - 2px),var(--bg) calc(66.66% - 2px),var(--bg) calc(66.66% + 2px),transparent calc(66.66% + 2px))}
+.auth .hero b{display:block;font-size:34px;font-weight:850;letter-spacing:-.045em;line-height:1.2}
+.auth .hero span{display:block;margin-top:6px;opacity:.85;font-size:14.5px}
+.auth form{padding:26px 0 30px}
+.auth .foot{margin-top:auto;padding:18px 0 calc(22px + var(--safe-b));color:var(--mut);font-size:12.5px;text-align:center}
+
+/* 관리 */
+.chips{display:flex;flex-wrap:wrap;gap:6px;max-height:280px;overflow:auto;padding:2px}
+.chip{height:34px;padding:0 12px;border-radius:999px;border:1px solid var(--line);background:#fff;font-size:13.5px;display:inline-flex;align-items:center;gap:4px}
+.chip.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.chip small{font-size:11px;opacity:.65}
+.stat{display:flex;gap:12px;font-size:12.5px;color:var(--mut);margin-top:3px}
+.stat b{color:var(--ink2);font-weight:650}
+.up{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:#fff;margin-top:6px;font-size:14px}
+.up span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.up button{color:var(--mut);font-size:13px;padding:4px 6px}
+.filebtn{display:flex;align-items:center;justify-content:center;gap:6px;height:46px;border:1px dashed #c3cab9;border-radius:12px;color:var(--ink2);font-weight:600;font-size:14px;background:#fafbf8}
+.copybox{background:var(--bg);border-radius:12px;padding:14px;font-size:14px;line-height:1.7;white-space:pre-wrap;margin:10px 0}
+.f>label.filebtn{display:flex;margin:0;font-size:14px;color:var(--ink2)}
+.row .s svg.i,.stat svg.i{width:14px;height:14px;vertical-align:-2px}
+.stat{flex-wrap:wrap;column-gap:12px;row-gap:0} .stat span{white-space:nowrap}
+a.file{color:var(--ink);text-decoration:none}
+</style>
+</head>
+<body>
+<div id="app"><div class="load">불러오는 중...</div></div>
+<div id="toast" role="status" aria-live="polite"></div>
+<script>
+'use strict';
+/* ==========================================================
+   설정 · 공통
+   ========================================================== */
+const CFG = {
+  url: 'https://bauaychmvbfmtqototvt.supabase.co',
+  key: 'sb_publishable_rfd_8qDKEpokFmGACsBJ7A_qhHmQlEB',
+  idDomain: '@menya.local',
+  vapid: 'BMyjGCMhmrVOC5aEb0uKdqRAXcnffTLJ8FYow7hyKjYMEpHaBJzubuX3pMm84FK-BPYfVEKuVOZAkZB9ajjwTV8',
+  workspace: 'https://menyamatsuri.work',
+  track: n => 'https://www.lotteglogis.com/home/reservation/tracking/linkView?InvNo=' + encodeURIComponent(String(n).replace(/\D/g, ''))
+};
+const SB = window.supabase ? window.supabase.createClient(CFG.url, CFG.key, { auth: { persistSession: true, autoRefreshToken: true, storageKey: 'mst-auth' } }) : null;
+
+const S = { me: null, tok: 0, cart: {}, items: null, home: null, nav: [], installEvt: null };
+const $ = s => document.querySelector(s);
+const h = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const won = n => Number(n || 0).toLocaleString('ko-KR');
+const rich = s => h(s).replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>').replace(/\n/g, '<br>');
+const kb = n => { n = Number(n || 0); return n >= 1048576 ? (n / 1048576).toFixed(1) + 'MB' : Math.max(1, Math.round(n / 1024)) + 'KB'; };
+const isMst = () => S.me && S.me.role === 'mst';
+const isHq = () => S.me && (S.me.role === 'admin' || S.me.role === 'hq');
+const isAdm = () => S.me && S.me.role === 'admin';
+
+const IC = {
+  home: '<path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',
+  bell: '<path d="M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8"/><path d="M10 20a2 2 0 0 0 4 0"/>',
+  box: '<path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/>',
+  book: '<path d="M4 4h6a3 3 0 0 1 3 3v13a2 2 0 0 0-2-2H4z"/><path d="M20 4h-4a3 3 0 0 0-3 3v13a2 2 0 0 1 2-2h5z"/>',
+  user: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
+  back: '<path d="M15 5l-7 7 7 7"/>',
+  clip: '<path d="M21 11.5 12.5 20a5 5 0 0 1-7-7L14 4.5a3.3 3.3 0 0 1 4.7 4.7L10.2 17.7a1.7 1.7 0 0 1-2.4-2.4L15.5 7.6"/>',
+  truck: '<path d="M2 6h12v10H2zM14 10h4l3 3v3h-7"/><circle cx="6.5" cy="17.5" r="1.8"/><circle cx="17.5" cy="17.5" r="1.8"/>',
+  copy: '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a1 1 0 0 1 1-1h10"/>',
+  file: '<path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8z"/><path d="M14 3v5h5"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  edit: '<path d="M4 20h4L19 9l-4-4L4 16z"/>',
+  tag: '<path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="7.5" r="1.3"/>',
+  key: '<circle cx="8" cy="15" r="4"/><path d="m11 12 9-9M17 6l3 3"/>',
+  chev: '<path d="m9 6 6 6-6 6"/>'
+};
+const ic = (k, cls) => `<svg class="i ${cls || ''}" viewBox="0 0 24 24" aria-hidden="true">${IC[k] || ''}</svg>`;
+
+function toast(m){ const t = $('#toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('on'), 2600); }
+function cleanErr(e){
+  const m = String((e && (e.message || e.error_description)) || e || '');
+  if (/Failed to fetch|NetworkError|Load failed/i.test(m)) return '인터넷 연결을 확인해 주세요.';
+  if (/JWT|jwt expired|refresh token/i.test(m)) return '로그인이 만료됐어요. 다시 로그인해 주세요.';
+  return m || '처리하지 못했어요.';
+}
+async function rpc(fn, args){ const { data, error } = await SB.rpc(fn, args || {}); if (error) throw new Error(cleanErr(error)); return data; }
+const loading = () => '<div class="load">불러오는 중...</div>';
+const errBox = e => `<div class="err">${h(cleanErr(e))}</div>`;
+function topbar(title, back, act){
+  return `<div class="top"><button class="back" onclick="goBack('${back || '#home'}')" aria-label="뒤로">${ic('back')}</button><h1>${h(title)}</h1>${act || ''}</div>`;
+}
+function goBack(fallback){ if (S.nav.length > 1) history.back(); else location.hash = fallback; }
+function view(){ return document.getElementById('view'); }
+function setView(html, bar){ const v = view(); if (!v) return; v.innerHTML = html; v.classList.toggle('has-bar', !!bar); }
+
+/* 아래에서 올라오는 창 */
+function sheet(html){
+  closeSheet();
+  const bg = document.createElement('div'); bg.className = 'sheet-bg'; bg.id = 'sheet';
+  bg.innerHTML = `<div class="sheet" role="dialog" aria-modal="true"><div class="grab"></div>${html}</div>`;
+  bg.addEventListener('click', e => { if (e.target === bg) closeSheet(); });
+  document.body.appendChild(bg); return bg.firstElementChild;
+}
+function closeSheet(){ const s = document.getElementById('sheet'); if (s) s.remove(); }
+function confirmSheet(title, sub, okText, danger){
+  return new Promise(res => {
+    sheet(`<h3>${h(title)}</h3>${sub ? `<p class="sub">${h(sub)}</p>` : ''}
+      <div class="btns"><button class="btn ghost" id="cf-no">닫기</button><button class="btn ${danger ? '' : 'dark'}" id="cf-ok">${h(okText)}</button></div>`);
+    $('#cf-no').onclick = () => { closeSheet(); res(false); };
+    $('#cf-ok').onclick = () => { closeSheet(); res(true); };
+  });
+}
+async function copyText(t){
+  try { await navigator.clipboard.writeText(t); toast('복사했어요'); }
+  catch (e) { const a = document.createElement('textarea'); a.value = t; document.body.appendChild(a); a.select(); document.execCommand('copy'); a.remove(); toast('복사했어요'); }
+}
+
+/* 비공개 파일 주소 (1시간짜리) */
+const URLC = {};
+async function signed(bucket, paths){
+  const need = paths.filter(p => !URLC[bucket + p]);
+  if (need.length) {
+    const { data, error } = await SB.storage.from(bucket).createSignedUrls(need, 3600);
+    if (error) throw error;
+    (data || []).forEach(d => { if (d.signedUrl) URLC[bucket + d.path] = d.signedUrl; });
+  }
+  return paths.map(p => URLC[bucket + p] || '');
+}
+async function filesHtml(bucket, files){
+  if (!files || !files.length) return '';
+  let urls = [];
+  try { urls = await signed(bucket, files.map(f => f.path)); } catch (e) { return `<div class="note">첨부 파일을 불러오지 못했어요. 잠시 뒤 다시 열어 주세요.</div>`; }
+  return `<div class="files">${files.map((f, i) => {
+    const u = urls[i], mime = f.mime || '', kind = f.kind || (mime.startsWith('image/') ? 'image' : mime.startsWith('video/') ? 'video' : 'file');
+    const isImg = kind === 'image' || /\.(jpe?g|png|gif|webp|heic)$/i.test(f.name || f.path);
+    const isVid = kind === 'video' || /\.(mp4|mov|webm|m4v)$/i.test(f.name || f.path);
+    if (u && isImg) return `<a href="${h(u)}" target="_blank" rel="noopener"><img src="${h(u)}" alt="${h(f.name)}" loading="lazy"></a>`;
+    if (u && isVid) return `<video src="${h(u)}" controls playsinline preload="metadata"></video>`;
+    return `<a class="file" href="${h(u)}" target="_blank" rel="noopener">${ic('file')}<span>${h(f.name || '첨부 파일')}</span><small>${f.size ? kb(f.size) : ''}</small></a>`;
+  }).join('')}</div>`;
+}
+
+/* ==========================================================
+   로그인 · 비밀번호 변경 · 시작
+   ========================================================== */
+function showLogin(msg){
+  S.me = null; renderTabs();
+  document.getElementById('app').innerHTML = `<div class="auth">
+    <div class="hero"><b>멘야마쯔리<br>파트너</b><span>가맹점 공지 · 발주 · 레시피</span></div>
+    <form id="lf" autocomplete="on">
+      <div class="f"><label for="lid">아이디</label><input class="in" id="lid" name="username" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="본사에서 받은 아이디"></div>
+      <div class="f"><label for="lpw">비밀번호</label><input class="in" id="lpw" name="password" type="password" autocomplete="current-password"></div>
+      <div id="lerr">${msg ? errBox(msg) : ''}</div>
+      <button class="btn" id="lbtn" type="submit" style="margin-top:8px">로그인</button>
+      <p class="hint" style="text-align:center;margin-top:14px">비밀번호를 잊으셨으면 본사에 초기화를 요청해 주세요.</p>
+    </form>
+    <div class="foot">멘야마쯔리 본사</div></div>`;
+  $('#lf').onsubmit = async e => {
+    e.preventDefault();
+    const id = $('#lid').value.trim().toLowerCase(), pw = $('#lpw').value, b = $('#lbtn');
+    if (!id || !pw) { $('#lerr').innerHTML = errBox('아이디와 비밀번호를 입력해 주세요.'); return; }
+    b.disabled = true; b.textContent = '확인 중...';
+    const email = id.includes('@') ? id : id + CFG.idDomain;
+    const { data, error } = await SB.auth.signInWithPassword({ email, password: pw });
+    if (error) {
+      b.disabled = false; b.textContent = '로그인';
+      const m = /Invalid login/i.test(error.message) ? '아이디 또는 비밀번호가 맞지 않아요.' : /banned/i.test(error.message) ? '사용이 중지된 계정이에요. 본사에 문의해 주세요.' : cleanErr(error);
+      $('#lerr').innerHTML = errBox(m); return;
+    }
+    await start(data.session);
+  };
+}
+
+async function start(session){
+  if (!session) return showLogin();
+  const { data: p, error } = await SB.from('profiles').select('login_id,name,role,store_id,active,must_change').eq('id', session.user.id).maybeSingle();
+  if (error) return showLogin(cleanErr(error));
+  if (!p) { await SB.auth.signOut(); return showLogin('계정 정보가 등록되지 않았어요. 본사에 문의해 주세요.'); }
+  if (!p.active) { await SB.auth.signOut(); return showLogin('사용이 중지된 계정이에요. 본사에 문의해 주세요.'); }
+  S.me = { uid: session.user.id, id: p.login_id, name: p.name || p.login_id, role: p.role, storeId: p.store_id };
+  if (p.role === 'store' || p.role === 'staff') return showBlocked();
+  if (p.must_change) return showPw(true);
+  enter();
+}
+function showBlocked(){
+  document.getElementById('app').innerHTML = `<div class="auth"><div class="hero"><b>워크스페이스를<br>이용해 주세요</b><span>직영점 계정은 이 앱을 쓰지 않아요</span></div>
+    <div style="padding:26px 0"><p>${h(S.me.name)}님의 계정은 직영점 계정이에요. 업무는 워크스페이스에서 확인해 주세요.</p>
+    <a class="btn dark" href="${CFG.workspace}" style="text-decoration:none;margin-top:10px">워크스페이스로 가기</a>
+    <button class="btn ghost" style="margin-top:8px" onclick="logout()">로그아웃</button></div></div>`;
+}
+function pwForm(first){
+  return `<div class="f"><label for="np1">새 비밀번호</label><input class="in" id="np1" type="password" autocomplete="new-password" placeholder="8자 이상, 영문과 숫자 섞어서"></div>
+    <div class="f"><label for="np2">새 비밀번호 확인</label><input class="in" id="np2" type="password" autocomplete="new-password"></div>
+    <div id="perr"></div><button class="btn" id="pbtn" style="margin-top:6px">${first ? '비밀번호 바꾸고 시작하기' : '비밀번호 바꾸기'}</button>`;
+}
+async function savePw(first){
+  const a = $('#np1').value, b = $('#np2').value, btn = $('#pbtn');
+  const bad = a.length < 8 ? '8자 이상으로 정해 주세요.' : !/[A-Za-z]/.test(a) || !/\d/.test(a) ? '영문과 숫자를 섞어 주세요.' : a !== b ? '두 칸의 비밀번호가 달라요.' : '';
+  if (bad) { $('#perr').innerHTML = errBox(bad); return; }
+  btn.disabled = true;
+  const { error } = await SB.auth.updateUser({ password: a });
+  if (error) { btn.disabled = false; $('#perr').innerHTML = errBox(/different from the old/i.test(error.message) ? '임시 비밀번호와 다른 비밀번호로 정해 주세요.' : cleanErr(error)); return; }
+  if (first) { try { await rpc('clear_must_change'); } catch (e) { btn.disabled = false; $('#perr').innerHTML = errBox(e); return; } enter(); }
+  else { closeSheet(); toast('비밀번호를 바꿨어요'); }
+}
+function showPw(){
+  document.getElementById('app').innerHTML = `<div class="auth"><div class="hero"><b>비밀번호를<br>바꿔 주세요</b><span>처음 로그인했어요. ${h(S.me.name)}님만 아는 비밀번호로 정해 주세요.</span></div>
+    <div style="padding:22px 0">${pwForm(true)}<button class="btn ghost" style="margin-top:8px" onclick="logout()">로그아웃</button></div></div>`;
+  $('#pbtn').onclick = () => savePw(true);
+}
+async function logout(){
+  try { await pushOff(true); } catch (e) {}
+  await SB.auth.signOut({ scope: 'local' });
+  S.me = null; S.cart = {}; S.items = null; S.home = null; location.hash = '';
+  showLogin();
+}
+
+function enter(){
+  document.getElementById('app').innerHTML = '<main id="view"></main>';
+  renderTabs();
+  const q = new URLSearchParams(location.search), go = q.get('go'), id = q.get('id');
+  if (go) { history.replaceState(null, '', location.pathname + (go === 'notice' && id ? '#notice/' + id : go === 'order' && id ? '#order/' + id : '#' + go)); }
+  if (!location.hash || location.hash === '#') location.hash = isMst() ? '#home' : '#a-notices';
+  else route();
+  if (isMst()) pushRelink();
+}
+
+/* ==========================================================
+   아래 탭 · 화면 이동
+   ========================================================== */
+function tabsDef(){
+  if (isMst()) return [['#home', 'home', '홈'], ['#notices', 'bell', '공지'], ['#orders', 'box', '발주'], ['#recipes', 'book', '레시피'], ['#me', 'user', '내 정보']];
+  if (isHq()) return [['#a-notices', 'bell', '공지'], ['#a-items', 'tag', '품목'], ['#a-recipes', 'book', '레시피'], ...(isAdm() ? [['#a-users', 'key', '계정']] : []), ['#me', 'user', '내 정보']];
+  return [];
+}
+function renderTabs(){
+  let t = document.getElementById('tabs');
+  const def = S.me ? tabsDef() : [];
+  if (!def.length) { if (t) t.remove(); return; }
+  if (!t) { t = document.createElement('nav'); t.id = 'tabs'; document.body.appendChild(t); }
+  const cur = '#' + (location.hash.slice(1).split('/')[0] || '');
+  const base = { '#notice': '#notices', '#order': '#orders', '#order-new': '#orders', '#recipe': '#recipes', '#a-notice': '#a-notices', '#a-recipe': '#a-recipes' };
+  const on = base[cur] || cur;
+  const unread = S.home ? (S.home.unread || 0) + (S.home.replies || 0) : 0;
+  t.innerHTML = `<div class="in">${def.map(([href, icon, label]) => `<a href="${href}" class="${on === href ? 'on' : ''}">${ic(icon)}<span>${label}</span>${href === '#notices' && unread ? `<span class="bd">${unread > 99 ? '99+' : unread}</span>` : ''}</a>`).join('')}</div>`;
+}
+const ROUTES = {};
+function route(){
+  if (!S.me) return;
+  closeSheet();
+  const [k, a] = location.hash.slice(1).split('/');
+  S.nav.push(location.hash); if (S.nav.length > 30) S.nav.shift();
+  const fn = ROUTES[k] || (isMst() ? ROUTES.home : ROUTES['a-notices']);
+  if (!fn) return;
+  if (k.startsWith('a-') && !isHq()) { location.hash = '#home'; return; }
+  if (['home', 'notices', 'notice', 'orders', 'order', 'order-new', 'recipes', 'recipe'].includes(k) && !isMst()) {
+    if (isHq() && (k === 'recipes' || k === 'recipe')) { /* 본사는 레시피 미리보기 허용 */ } else { location.hash = '#a-notices'; return; }
+  }
+  const c = document.querySelector('.composer'); if (c) c.remove();
+  const cb = document.querySelector('.cartbar'); if (cb) cb.remove();
+  renderTabs(); window.scrollTo(0, 0);
+  const tok = ++S.tok;
+  Promise.resolve(fn(a, tok)).catch(e => { if (tok === S.tok) setView(topbar('오류', '#home') + errBox(e)); });
+}
+window.addEventListener('hashchange', route);
+const live = tok => tok === S.tok;
+
+/* ==========================================================
+   점주: 홈
+   ========================================================== */
+const OST = { received: ['접수 대기', 'p-amb'], confirmed: ['접수 완료', 'p-blue'], shipped: ['발송', 'p-ok'], done: ['완료', 'p-grey'], rejected: ['반려', 'p-red'], canceled: ['취소', 'p-grey'] };
+const opill = s => { const x = OST[s] || [s, 'p-grey']; return `<span class="pill ${x[1]}">${x[0]}</span>`; };
+const orderRow = o => `<a class="row" href="#order/${o.id}"><div class="main"><div class="t"><span class="tx">${h(o.first || '발주')}${o.cnt > 1 ? ` 외 ${o.cnt - 1}건` : ''}</span></div>
+  <div class="s"><span>${h(o.at || '')}</span>${o.src === 'fcdaum' ? '<span>FC다움</span>' : ''}${o.invoice ? `<span>송장 ${h(o.invoice)}</span>` : ''}</div></div>
+  <div class="r">${opill(o.status)}<div style="margin-top:4px">${o.total ? won(o.total) + '원' : ''}</div></div></a>`;
+const noticeRow = n => `<a class="row ${n.read ? '' : 'unread'}" href="#notice/${n.id}">${n.read ? '' : '<span class="dot" aria-label="안 읽음"></span>'}
+  <div class="main"><div class="t">${n.pin ? '<span class="pill p-red">필독</span>' : ''}<span class="tx">${h(n.title)}</span></div>
+  <div class="s"><span>${h(n.at)}</span>${n.files ? `<span>${ic('clip')} ${n.files}</span>` : ''}${n.closed ? '<span>마감</span>' : ''}</div></div>
+  ${n.reply ? '<span class="pill p-blue">본사 답변</span>' : ''}</a>`;
+
+ROUTES.home = async (a, tok) => {
+  setView(loading());
+  const d = await rpc('mst_home'); if (!live(tok)) return;
+  S.home = d; renderTabs();
+  setView(`<div class="noren"><small>멘야마쯔리</small><b>${h(d.store || '우리 매장')}</b><div class="who">${h(d.me || '')} 점주님</div></div>
+    <div class="quick">
+      <a class="main" href="#order-new"><span class="l">필요한 물품</span><span class="n">발주하기</span></a>
+      <a href="#notices"><span class="n ${d.unread ? 'hot' : ''}">${d.unread || 0}</span><span class="l">안 읽은 공지</span></a>
+      <a href="#notices"><span class="n ${d.replies ? 'hot' : ''}">${d.replies || 0}</span><span class="l">본사 답변</span></a>
+    </div>
+    <div id="push-hint"></div>
+    <div class="sec"><h2>진행 중인 발주</h2><a href="#orders">전체 보기</a></div>
+    <div class="list">${(d.orders || []).length ? d.orders.map(o => orderRow({ ...o, src: 'own' })).join('') : '<div class="empty">진행 중인 발주가 없어요.</div>'}</div>
+    <div class="sec"><h2>공지</h2><a href="#notices">전체 보기</a></div>
+    <div class="list">${(d.notices || []).length ? d.notices.map(noticeRow).join('') : '<div class="empty">받은 공지가 없어요.</div>'}</div>`);
+  pushHint();
+};
+
+/* ==========================================================
+   점주: 공지
+   ========================================================== */
+ROUTES.notices = async (a, tok) => {
+  setView(`<div class="page-h"><h1>공지</h1></div>` + loading());
+  const list = await rpc('mst_notices'); if (!live(tok)) return;
+  const f = S.nf || 'all';
+  const shown = f === 'unread' ? list.filter(n => !n.read || n.reply) : list;
+  setView(`<div class="page-h"><h1>공지</h1><p>본사와 우리 매장만 보는 1:1 공간이에요.</p></div>
+    <div class="seg"><button class="${f === 'all' ? 'on' : ''}" onclick="S.nf='all';route()">전체 ${list.length}</button>
+    <button class="${f === 'unread' ? 'on' : ''}" onclick="S.nf='unread';route()">안 읽음·답변 ${list.filter(n => !n.read || n.reply).length}</button></div>
+    <div class="list">${shown.length ? shown.map(noticeRow).join('') : `<div class="empty">${f === 'unread' ? '모두 확인했어요.' : '받은 공지가 없어요.'}</div>`}</div>`);
+};
+
+ROUTES.notice = async (id, tok) => {
+  setView(topbar('공지', '#notices') + loading());
+  const n = await rpc('mst_notice_open', { p_id: +id }); if (!live(tok)) return;
+  S.home = null;
+  const files = await filesHtml('franchise-notice-files', n.files); if (!live(tok)) return;
+  renderNotice(n, files);
+};
+function renderNotice(n, files){
+  setView(topbar('공지', '#notices') + `<article class="art">
+    <h2>${n.pin ? '<span class="pill p-red" style="vertical-align:3px">필독</span> ' : ''}${h(n.title)}</h2>
+    <div class="meta"><span>${h(n.author || '본사')}</span><span>${h(n.at || '')}</span>${n.end ? `<span>${h(n.end)}까지</span>` : ''}${n.closed ? '<span>마감된 공지</span>' : ''}</div>
+    <div class="body">${rich(n.body || '')}</div>${files}
+    ${n.fc ? '<div class="note">FC다움에서 온 공지예요. 확인 응답과 댓글은 FC다움에서 남겨 주세요.</div>' : ''}
+    ${n.need_ack ? (n.acked ? '<div class="note">확인했다고 본사에 알렸어요.</div>' : '<button class="btn dark" style="margin-top:14px" id="ack">내용을 확인했어요</button>') : ''}
+    ${(n.msgs || []).length || n.talk ? `<section class="talk"><div class="hd"><span>본사와 대화</span><small>다른 매장에는 보이지 않아요</small></div>
+      <div class="msgs" id="msgs">${msgsHtml(n.msgs)}</div></section>` : ''}
+  </article>`);
+  const ack = $('#ack');
+  if (ack) ack.onclick = async () => { ack.disabled = true; try { const r = await rpc('mst_notice_ack', { p_id: n.id }); renderNotice(r, files); toast('본사에 확인을 알렸어요'); } catch (e) { ack.disabled = false; toast(cleanErr(e)); } };
+  const old = document.querySelector('.composer'); if (old) old.remove();
+  if (n.talk) {
+    view().style.paddingBottom = 'calc(90px + var(--safe-b))';
+    const c = document.createElement('div'); c.className = 'composer';
+    c.innerHTML = `<div class="in2"><textarea id="cm" rows="1" placeholder="본사에 남길 말" maxlength="1000"></textarea><button id="cms" disabled>보내기</button></div>`;
+    document.body.appendChild(c);
+    const ta = $('#cm'), bt = $('#cms');
+    ta.oninput = () => { bt.disabled = !ta.value.trim(); ta.style.height = '44px'; ta.style.height = Math.min(120, ta.scrollHeight) + 'px'; };
+    bt.onclick = async () => {
+      const v = ta.value.trim(); if (!v) return; bt.disabled = true;
+      try { const r = await rpc('mst_notice_comment', { p_id: n.id, p_body: v }); ta.value = ''; ta.style.height = '44px';
+        $('#msgs').innerHTML = msgsHtml(r.msgs); window.scrollTo(0, document.body.scrollHeight); }
+      catch (e) { toast(cleanErr(e)); bt.disabled = false; }
+    };
+  } else view().style.paddingBottom = '';
+}
+const msgsHtml = m => (m || []).length ? m.map(x => `<div class="msg ${x.side === 'hq' ? 'hq' : 'store'}"><span class="w">${h(x.side === 'hq' ? '본사' : x.who || '우리 매장')} · ${h(x.at)}</span>${rich(x.body)}</div>`).join('')
+  : '<div class="empty" style="padding:16px">궁금한 점을 남기면 본사가 답해 드려요.</div>';
+
+/* ==========================================================
+   점주: 발주
+   ========================================================== */
+ROUTES.orders = async (a, tok) => {
+  setView(`<div class="page-h"><h1>발주</h1></div>` + loading());
+  const list = await rpc('mst_orders'); if (!live(tok)) return;
+  const f = S.of || 'open', act = ['received', 'confirmed', 'shipped'];
+  const shown = f === 'open' ? list.filter(o => act.includes(o.status)) : list;
+  setView(`<div class="page-h"><h1>발주</h1><p>FC다움에서 넣은 발주도 함께 보여요.</p></div>
+    <a class="btn" href="#order-new" style="text-decoration:none;margin-bottom:12px">${ic('plus')}새 발주</a>
+    <div class="seg"><button class="${f === 'open' ? 'on' : ''}" onclick="S.of='open';route()">진행 중 ${list.filter(o => act.includes(o.status)).length}</button>
+    <button class="${f === 'all' ? 'on' : ''}" onclick="S.of='all';route()">전체 ${list.length}</button></div>
+    <div class="list">${shown.length ? shown.map(orderRow).join('') : `<div class="empty">${f === 'open' ? '진행 중인 발주가 없어요.' : '발주 내역이 없어요.'}</div>`}</div>`);
+};
+
+ROUTES['order-new'] = async (a, tok) => {
+  setView(topbar('새 발주', '#orders') + loading());
+  const items = await rpc('mst_items'); if (!live(tok)) return;
+  S.items = items;
+  Object.keys(S.cart).forEach(k => { if (!items.some(i => String(i.id) === k)) delete S.cart[k]; });
+  const cats = [...new Set(items.map(i => i.cat || '기타'))];
+  setView(topbar('새 발주', '#orders') + (items.length ? cats.map(c => `<div class="cat-h">${h(c)}</div><div class="list">${items.filter(i => (i.cat || '기타') === c).map(i => {
+      const q = S.cart[i.id] || 0;
+      return `<div class="it ${q ? 'on' : ''}" data-id="${i.id}"><div class="main"><div class="nm">${h(i.name)}</div>
+        <div class="pr">${i.price ? won(i.price) + '원' : '단가 미정'}${i.unit ? ' / ' + h(i.unit) : ''}${i.memo ? ' · ' + h(i.memo) : ''}</div></div>
+        <div class="step"><button data-d="-1" aria-label="빼기">−</button><input inputmode="numeric" pattern="[0-9]*" value="${q || ''}" placeholder="0" aria-label="${h(i.name)} 수량"><button data-d="1" aria-label="더하기">+</button></div></div>`;
+    }).join('')}</div>`).join('') : '<div class="empty"><b>발주할 수 있는 품목이 없어요</b>본사에 문의해 주세요.</div>'), true);
+  const v = view();
+  v.onclick = e => { const b = e.target.closest('[data-d]'); if (!b) return; const row = b.closest('.it'); setQty(row, (S.cart[row.dataset.id] || 0) + (+b.dataset.d)); };
+  v.oninput = e => { if (e.target.tagName !== 'INPUT') return; const row = e.target.closest('.it'); if (row) setQty(row, parseInt(e.target.value.replace(/\D/g, ''), 10) || 0, true); };
+  cartBar();
+};
+function setQty(row, q, typing){
+  q = Math.max(0, Math.min(9999, q)); const id = row.dataset.id;
+  if (q) S.cart[id] = q; else delete S.cart[id];
+  row.classList.toggle('on', !!q); if (!typing) row.querySelector('input').value = q || '';
+  cartBar();
+}
+function cartTotals(){
+  let n = 0, sum = 0, unknown = 0;
+  for (const [id, q] of Object.entries(S.cart)) { const it = (S.items || []).find(i => String(i.id) === id); if (!it) continue; n++; if (it.price) sum += it.price * q; else unknown++; }
+  return { n, sum, unknown };
+}
+function cartBar(){
+  let b = document.querySelector('.cartbar');
+  if (!b) { b = document.createElement('div'); b.className = 'cartbar'; document.body.appendChild(b); }
+  const t = cartTotals();
+  b.innerHTML = `<div class="in2"><div class="sum">${t.n ? `${t.n}개 품목${t.unknown ? ` · 단가 미정 ${t.unknown}` : ''}` : '수량을 넣어 주세요'}<b>${won(t.sum)}원</b></div>
+    <button class="btn" id="cart-go" ${t.n ? '' : 'disabled'}>발주 확인</button></div>`;
+  $('#cart-go').onclick = orderConfirm;
+}
+function orderConfirm(){
+  const t = cartTotals();
+  const lines = Object.entries(S.cart).map(([id, q]) => { const it = S.items.find(i => String(i.id) === id); return it ? { it, q } : null; }).filter(Boolean);
+  sheet(`<h3>발주 확인</h3><p class="sub">본사가 확인하면 '접수 완료'로 바뀌고 알림이 가요.</p>
+    <div class="list"><table class="items"><tbody>${lines.map(({ it, q }) => `<tr><td>${h(it.name)}</td><td class="q">${q}${h(it.unit ? ' ' + it.unit : '')}</td><td class="q">${it.price ? won(it.price * q) + '원' : '단가 미정'}</td></tr>`).join('')}</tbody>
+    <tfoot><tr><td>합계</td><td></td><td class="q">${won(t.sum)}원</td></tr></tfoot></table></div>
+    ${t.unknown ? '<p class="hint">단가 미정 품목은 합계에서 빠져 있어요. 본사가 확인 후 정산해요.</p>' : ''}
+    <div class="f"><label for="omemo">본사에 남길 말 (선택)</label><textarea class="in" id="omemo" maxlength="500" style="min-height:76px" placeholder="예: 금요일 전에 받고 싶어요"></textarea></div>
+    <div id="oerr"></div>
+    <div class="btns"><button class="btn ghost" onclick="closeSheet()">더 고르기</button><button class="btn" id="osend">발주 넣기</button></div>`);
+  $('#osend').onclick = async () => {
+    const b = $('#osend'); b.disabled = true; b.textContent = '보내는 중...';
+    try {
+      const r = await rpc('mst_order_create', { p: { items: lines.map(({ it, q }) => ({ id: it.id, qty: q })), memo: $('#omemo').value } });
+      S.cart = {}; closeSheet(); toast('발주를 넣었어요'); location.hash = '#order/' + r.id;
+    } catch (e) { b.disabled = false; b.textContent = '발주 넣기'; $('#oerr').innerHTML = errBox(e); }
+  };
+}
+
+ROUTES.order = async (id, tok) => {
+  setView(topbar('발주 내역', '#orders') + loading());
+  const o = await rpc('mst_order_open', { p_id: +id }); if (!live(tok)) return;
+  const flow = ['received', 'confirmed', 'shipped', 'done'], lab = ['접수 대기', '접수 완료', '발송', '완료'], at = flow.indexOf(o.status);
+  const sum = (o.items || []).reduce((s, i) => s + Number(i.amount || 0), 0);
+  setView(topbar('발주 내역', '#orders') + `
+    <div class="box" style="padding:16px 16px 14px;margin-top:4px">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><div><div style="font-weight:750;font-size:17px">${h(o.no || '')}</div>
+      <div style="color:var(--mut);font-size:13px">${h(o.at || '')}${o.src === 'fcdaum' ? ' · FC다움 발주' : ''}</div></div>${opill(o.status)}</div>
+      ${at >= 0 ? `<div class="steps">${lab.map((l, i) => `<div class="${i <= at ? 'done' : ''}">${l}</div>`).join('')}</div>`
+        : `<div class="note" style="margin-bottom:0">${o.status === 'rejected' ? '본사가 반려한 발주예요. 자세한 내용은 본사에 문의해 주세요.' : '취소된 발주예요.'}</div>`}
+    </div>
+    ${o.invoice ? `<div class="sec"><h2>배송</h2></div><div class="box"><div class="inv">${ic('truck')}<div class="n">${h(o.invoice)}<small>${h(o.courier || '롯데택배')}${o.shipped ? ' · ' + h(o.shipped) + ' 발송' : ''}</small></div>
+      <button class="btn sm ghost" onclick="copyText('${h(o.invoice)}')">${ic('copy')}복사</button></div>
+      <div style="padding:0 16px 14px"><a class="btn dark sm" style="width:100%;text-decoration:none" href="${h(CFG.track(o.invoice))}" target="_blank" rel="noopener">배송 조회</a></div></div>` : ''}
+    <div class="sec"><h2>품목 ${(o.items || []).length}개</h2></div>
+    <div class="list"><table class="items"><tbody>${(o.items || []).map(i => `<tr><td>${h(i.name)}${i.cat ? `<div style="color:var(--mut);font-size:12px">${h(i.cat)}</div>` : ''}</td>
+      <td class="q">${Number(i.qty)}${h(i.unit ? ' ' + i.unit : '')}</td><td class="q">${i.amount ? won(i.amount) + '원' : '-'}</td></tr>`).join('')}</tbody>
+      <tfoot><tr><td>합계</td><td></td><td class="q">${won(o.total || sum)}원</td></tr></tfoot></table></div>
+    ${o.memo ? `<div class="sec"><h2>남긴 말</h2></div><div class="box" style="padding:14px 16px;font-size:14px">${rich(o.memo)}</div>` : ''}
+    ${(o.logs || []).length ? `<div class="sec"><h2>처리 기록</h2></div><div class="box logs">${o.logs.map(l => `<div><time>${h(l.at)}</time><span>${h(l.act || '')}</span></div>`).join('')}</div>` : ''}
+    ${o.can_cancel ? '<button class="btn line" style="margin-top:18px" id="ocancel">발주 취소</button><p class="hint" style="text-align:center">본사가 접수하기 전까지만 취소할 수 있어요.</p>' : ''}`);
+  const c = $('#ocancel');
+  if (c) c.onclick = async () => {
+    if (!await confirmSheet('이 발주를 취소할까요?', '취소하면 본사에 알림이 가요. 다시 필요하면 새로 발주해 주세요.', '발주 취소', true)) return;
+    try { await rpc('mst_order_cancel', { p_id: o.id }); toast('발주를 취소했어요'); route(); } catch (e) { toast(cleanErr(e)); }
+  };
+};
+
+/* ==========================================================
+   레시피 (점주 · 본사 미리보기)
+   ========================================================== */
+ROUTES.recipes = async (a, tok) => {
+  setView(`<div class="page-h"><h1>레시피</h1></div>` + loading());
+  const list = await rpc('mst_recipes'); if (!live(tok)) return;
+  const cats = [...new Set(list.map(r => r.cat || '기타'))];
+  setView(`<div class="page-h"><h1>레시피</h1><p>본사가 올린 조리법이에요.</p></div>` + (list.length ? cats.map(c => `<div class="cat-h">${h(c)}</div><div class="list">${list.filter(r => (r.cat || '기타') === c).map(r =>
+    `<a class="row" href="#recipe/${r.id}"><div class="main"><div class="t"><span class="tx">${h(r.title)}</span></div><div class="s"><span>${h(r.at)}</span>${r.files ? `<span>${ic('clip')} ${r.files}</span>` : ''}</div></div>${ic('chev')}</a>`).join('')}</div>`).join('')
+    : '<div class="list"><div class="empty"><b>아직 올라온 레시피가 없어요</b>본사가 레시피를 올리면 여기에 보여요.</div></div>'));
+};
+ROUTES.recipe = async (id, tok) => {
+  setView(topbar('레시피', '#recipes') + loading());
+  const r = await rpc('mst_recipe_open', { p_id: +id }); if (!live(tok)) return;
+  const files = await filesHtml('mst-recipes', r.files); if (!live(tok)) return;
+  setView(topbar('레시피', isMst() ? '#recipes' : '#a-recipes') + `<article class="art"><h2>${h(r.title)}</h2><div class="meta">${r.cat ? `<span>${h(r.cat)}</span>` : ''}<span>${h(r.at)} 수정</span></div>
+    ${r.body ? `<div class="body">${rich(r.body)}</div>` : ''}${files}</article>`);
+};
+
+/* ==========================================================
+   내 정보 · 알림 · 설치
+   ========================================================== */
+const ua = navigator.userAgent;
+const isIOS = /iPhone|iPad|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const inApp = /KAKAOTALK|NAVER\(|Instagram|FBAN|FBAV|Line\/|DaumApps/i.test(ua);
+const standalone = () => window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+const pushOk = () => 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+const b64 = s => { const p = '='.repeat((4 - s.length % 4) % 4), r = atob((s + p).replace(/-/g, '+').replace(/_/g, '/')); return Uint8Array.from([...r].map(c => c.charCodeAt(0))); };
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); S.installEvt = e; });
+
+async function swReg(){ if (!('serviceWorker' in navigator)) return null; return (await navigator.serviceWorker.getRegistration('./')) || navigator.serviceWorker.register('sw.js', { scope: './' }); }
+async function pushState(){
+  if (inApp) return 'inapp';
+  if (isIOS && !standalone()) return 'install';
+  if (!pushOk()) return 'unsupported';
+  if (Notification.permission === 'denied') return 'denied';
+  const reg = await swReg(); const sub = reg && await reg.pushManager.getSubscription();
+  return sub && Notification.permission === 'granted' ? 'on' : 'off';
+}
+async function pushOn(){
+  const perm = await Notification.requestPermission();
+  if (perm !== 'granted') throw new Error('알림이 허용되지 않았어요. 휴대폰 설정에서 알림을 허용해 주세요.');
+  const reg = await navigator.serviceWorker.register('sw.js', { scope: './' }); await navigator.serviceWorker.ready;
+  let sub = await reg.pushManager.getSubscription();
+  if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64(CFG.vapid) });
+  const j = sub.toJSON();
+  await rpc('push_subscribe', { p: { endpoint: j.endpoint, p256dh: j.keys.p256dh, auth: j.keys.auth, ua: ua.slice(0, 200) } });
+}
+async function pushOff(silent){
+  if (!pushOk()) return;
+  const reg = await navigator.serviceWorker.getRegistration('./'); const sub = reg && await reg.pushManager.getSubscription();
+  if (!sub) return;
+  try { await SB.rpc('push_unsubscribe', { p_endpoint: sub.endpoint }); } catch (e) {}
+  await sub.unsubscribe(); if (!silent) toast('이 기기 알림을 껐어요');
+}
+async function pushRelink(){
+  try { if (!pushOk() || Notification.permission !== 'granted') return; const reg = await swReg(); const sub = reg && await reg.pushManager.getSubscription();
+    if (sub) { const j = sub.toJSON(); await rpc('push_subscribe', { p: { endpoint: j.endpoint, p256dh: j.keys.p256dh, auth: j.keys.auth, ua: ua.slice(0, 200) } }); } } catch (e) {}
+}
+async function pushHint(){
+  const el = $('#push-hint'); if (!el || !isMst()) return;
+  const st = await pushState();
+  if (st === 'on' || st === 'unsupported' || localStorage.getItem('mst-push-later') === '1') return;
+  const msg = st === 'install' ? '홈 화면에 추가하면 공지·발주 알림을 받을 수 있어요.' : st === 'inapp' ? '카카오톡·네이버 앱 안에서는 알림을 받을 수 없어요. 사파리나 크롬으로 열어 주세요.'
+    : st === 'denied' ? '알림이 꺼져 있어요. 휴대폰 설정에서 이 앱의 알림을 허용해 주세요.' : '새 공지와 발주 진행을 알림으로 받아 보세요.';
+  el.innerHTML = `<div class="note" style="display:flex;gap:10px;align-items:center"><span style="flex:1">${msg}</span>
+    ${st === 'off' ? '<button class="btn sm dark" id="ph-on">알림 켜기</button>' : '<a class="btn sm ghost" href="#me" style="text-decoration:none">방법 보기</a>'}
+    <button aria-label="닫기" style="color:var(--mut);padding:4px" onclick="localStorage.setItem('mst-push-later','1');this.closest('.note').remove()">✕</button></div>`;
+  const b = $('#ph-on'); if (b) b.onclick = async () => { b.disabled = true; try { await pushOn(); toast('알림을 켰어요'); el.innerHTML = ''; } catch (e) { b.disabled = false; toast(cleanErr(e)); } };
+}
+
+ROUTES.me = async (a, tok) => {
+  const st = isMst() ? await pushState() : null; if (!live(tok)) return;
+  const roleName = { mst: '가맹점주', admin: '관리자', hq: '본사' }[S.me.role] || S.me.role;
+  const store = isMst() && S.home ? S.home.store : '';
+  const pushTxt = { on: '이 기기에서 알림을 받고 있어요.', off: '이 기기는 알림이 꺼져 있어요.', install: '아이폰은 홈 화면에 추가한 앱에서만 알림을 받을 수 있어요.',
+    inapp: '카카오톡·네이버 앱 안에서는 알림을 받을 수 없어요. 사파리나 크롬으로 열어 주세요.', denied: '휴대폰 설정에서 이 앱의 알림이 막혀 있어요. 설정에서 허용해 주세요.', unsupported: '이 브라우저는 알림을 지원하지 않아요.' }[st];
+  setView(`<div class="page-h"><h1>내 정보</h1></div>
+    <div class="list"><div class="kv"><span>이름</span><b>${h(S.me.name)}</b></div><div class="kv"><span>아이디</span><b>${h(S.me.id)}</b></div>
+    <div class="kv"><span>구분</span><b>${h(roleName)}${store ? ' · ' + h(store) : ''}</b></div></div>
+    ${isMst() ? `<div class="sec"><h2>알림</h2></div><div class="box" style="padding:14px 16px"><p style="margin:0 0 10px;font-size:14px">${pushTxt}</p>
+      ${st === 'off' ? '<button class="btn dark" id="pon">알림 켜기</button>' : st === 'on' ? '<button class="btn ghost" id="poff">이 기기 알림 끄기</button>' : ''}</div>` : `<div class="note">관리자·본사 알림은 워크스페이스에서 받아요.</div>`}
+    ${standalone() ? '' : `<div class="sec"><h2>홈 화면에 추가</h2></div><div class="box" style="padding:14px 16px;font-size:14px;line-height:1.7">
+      ${S.installEvt ? '<button class="btn dark" id="inst">앱으로 설치하기</button>' : isIOS ? '사파리 아래쪽 <b>공유 버튼</b>을 누르고 <b>홈 화면에 추가</b>를 고르면 앱처럼 쓸 수 있어요.' : '브라우저 메뉴(⋮)에서 <b>홈 화면에 추가</b> 또는 <b>앱 설치</b>를 눌러 주세요.'}</div>`}
+    <div class="sec"><h2>계정</h2></div>
+    <div class="list"><button class="row" id="chpw"><div class="main"><div class="t">비밀번호 바꾸기</div></div>${ic('chev')}</button>
+    <button class="row" onclick="logout()"><div class="main"><div class="t" style="color:var(--red)">로그아웃</div></div></button></div>
+    <p class="hint" style="text-align:center;margin-top:20px">멘야마쯔리 파트너</p>`);
+  const pon = $('#pon'); if (pon) pon.onclick = async () => { pon.disabled = true; try { await pushOn(); toast('알림을 켰어요'); route(); } catch (e) { pon.disabled = false; toast(cleanErr(e)); } };
+  const poff = $('#poff'); if (poff) poff.onclick = async () => { await pushOff(); route(); };
+  const inst = $('#inst'); if (inst) inst.onclick = async () => { S.installEvt.prompt(); await S.installEvt.userChoice; S.installEvt = null; route(); };
+  $('#chpw').onclick = () => { sheet(`<h3>비밀번호 바꾸기</h3>${pwForm(false)}`); $('#pbtn').onclick = () => savePw(false); };
+};
+</script>
+<script>
+'use strict';
+/* ==========================================================
+   관리 (관리자·본사): 파일 올리기 공통
+   ========================================================== */
+async function uploadFile(bucket, prefix, file){
+  if (file.size > 52428800 && bucket === 'franchise-notice-files') throw new Error(`${file.name}: 50MB까지 올릴 수 있어요.`);
+  if (file.size > 104857600) throw new Error(`${file.name}: 100MB까지 올릴 수 있어요.`);
+  const dot = file.name.lastIndexOf('.'), ext = dot > 0 ? file.name.slice(dot).toLowerCase().replace(/[^.a-z0-9]/g, '') : '';
+  const path = `${prefix}/${crypto.randomUUID()}/file${ext}`;
+  const { error } = await SB.storage.from(bucket).upload(path, file, { contentType: file.type || 'application/octet-stream', upsert: false });
+  if (error) throw new Error(`${file.name}: 올리지 못했어요 (${cleanErr(error)})`);
+  return { name: file.name, path, size: file.size, mime: file.type || '' };
+}
+async function removeFiles(bucket, paths){ if (paths && paths.length) { try { await SB.storage.from(bucket).remove(paths); } catch (e) {} } }
+function fileListHtml(files){
+  return files.map((f, i) => `<div class="up">${ic('file')}<span>${h(f.name)}</span><small style="color:var(--mut)">${kb(f.size)}</small><button data-rm="${i}">빼기</button></div>`).join('');
+}
+function bindFiles(boxSel, inputSel, bucket, prefix, state){
+  const box = $(boxSel), inp = $(inputSel);
+  const draw = () => { box.innerHTML = fileListHtml(state.files); };
+  box.onclick = e => { const b = e.target.closest('[data-rm]'); if (!b) return; const f = state.files.splice(+b.dataset.rm, 1)[0];
+    if (f && state.fresh.includes(f.path)) { removeFiles(bucket, [f.path]); state.fresh = state.fresh.filter(p => p !== f.path); } draw(); };
+  inp.onchange = async () => {
+    const list = [...inp.files]; inp.value = '';
+    for (const file of list) {
+      const tmp = { name: file.name + ' (올리는 중...)', size: file.size, path: '' }; state.files.push(tmp); draw();
+      try { const f = await uploadFile(bucket, prefix, file); Object.assign(tmp, f); state.fresh.push(f.path); }
+      catch (e) { state.files.splice(state.files.indexOf(tmp), 1); toast(cleanErr(e)); }
+      draw();
+    }
+  };
+  draw();
+}
+
+/* ==========================================================
+   관리: 공지
+   ========================================================== */
+const NST = { active: ['게시 중', 'p-ok'], stopped: ['게시 중지', 'p-grey'], closed: ['마감', 'p-grey'], draft: ['임시', 'p-grey'], scheduled: ['예약', 'p-blue'] };
+ROUTES['a-notices'] = async (a, tok) => {
+  setView(`<div class="page-h"><h1>가맹점 공지</h1></div>` + loading());
+  const list = await rpc('mst_admin_notices'); if (!live(tok)) return;
+  setView(`<div class="page-h"><h1>가맹점 공지</h1><p>여기서 올린 공지는 대상 매장 점주에게만 보여요. 읽음 확인과 답변은 워크스페이스에서 해요.</p></div>
+    <a class="btn" href="#a-notice/new" style="text-decoration:none;margin-bottom:14px">${ic('plus')}새 공지 쓰기</a>
+    <div class="list">${list.length ? list.map(n => { const s = NST[n.status] || [n.status, 'p-grey'];
+      return `<a class="row" href="#a-notice/${n.id}"><div class="main"><div class="t">${n.pin ? '<span class="pill p-red">필독</span>' : ''}<span class="tx">${h(n.title)}</span></div>
+        <div class="stat"><span>${h(n.at)}</span><span>읽음 <b>${n.read}/${n.targets}</b></span>${n.ack ? `<span>확인 <b>${n.acked}/${n.targets}</b></span>` : ''}${n.pending ? `<span style="color:var(--red)">답변 대기 <b style="color:var(--red)">${n.pending}</b></span>` : ''}</div></div>
+        <span class="pill ${s[1]}">${s[0]}</span></a>`; }).join('') : '<div class="empty"><b>아직 올린 공지가 없어요</b>새 공지를 써서 가맹점에 보내 보세요.</div>'}</div>`);
+};
+
+ROUTES['a-notice'] = async (id, tok) => {
+  const isNew = id === 'new';
+  setView(topbar(isNew ? '새 공지' : '공지 수정', '#a-notices') + loading());
+  const [ad, n] = await Promise.all([rpc('mst_admin_data'), isNew ? null : rpc('mst_admin_notice_get', { p_id: +id })]); if (!live(tok)) return;
+  const stores = ad.stores || [];
+  const st = { sel: new Set((n ? n.stores : []).map(Number)), files: n ? n.files.slice() : [], fresh: [], q: '' };
+  setView(topbar(isNew ? '새 공지' : '공지 수정', '#a-notices') + `
+    ${n && n.status !== 'active' ? `<div class="note">${NST[n.status] ? NST[n.status][0] : n.status} 상태예요. 점주 앱에서 ${n.status === 'stopped' ? '보이지 않아요' : '마감으로 보여요'}.</div>` : ''}
+    <div class="f"><label for="nt">제목</label><input class="in" id="nt" maxlength="120" value="${h(n ? n.title : '')}" placeholder="예: 12월 신메뉴 출시 안내"></div>
+    <div class="f"><label for="nb">내용</label><textarea class="in" id="nb" style="min-height:200px" placeholder="점주님께 전할 내용">${h(n ? n.body : '')}</textarea></div>
+    <div class="f"><label>받을 매장 <span id="scnt" style="color:var(--red)"></span></label>
+      <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap">
+        <button class="chip" id="s-fc">가맹점 전체</button><button class="chip" id="s-acc">계정 있는 매장</button><button class="chip" id="s-none">모두 해제</button></div>
+      <input class="in" id="sq" placeholder="매장 이름 찾기" style="height:42px;margin-bottom:8px">
+      <div class="chips" id="schips"></div>
+      <p class="hint">'계정 n'은 이 앱을 쓰는 점주 수예요. 계정이 없는 매장은 공지를 받아도 볼 사람이 없어요.</p></div>
+    <div class="f"><label>설정</label><div class="list">
+      <label class="sw"><span>필독<small>맨 위에 고정하고 '필독 공지'로 알림</small></span><input type="checkbox" class="tg" id="o-pin" ${n && n.pin ? 'checked' : ''}></label>
+      <label class="sw"><span>댓글 받기<small>점주가 본사와 1:1로 대화할 수 있어요</small></span><input type="checkbox" class="tg" id="o-talk" ${!n || n.talk ? 'checked' : ''}></label>
+      <label class="sw"><span>확인 요청<small>점주가 '내용을 확인했어요'를 눌러야 해요</small></span><input type="checkbox" class="tg" id="o-ack" ${n && n.ack ? 'checked' : ''}></label>
+    </div></div>
+    <div class="f"><label for="ne">마감일 (선택)</label><input class="in" type="date" id="ne" value="${h(n && n.end ? n.end : '')}"><p class="hint">마감일이 지나면 점주 앱에 '마감'으로 표시돼요.</p></div>
+    <div class="f"><label>첨부 (사진·영상·문서, 10개까지)</label><label class="filebtn">${ic('clip')}파일 고르기<input type="file" id="nf" multiple hidden></label><div id="nfl"></div></div>
+    <div id="nerr"></div>
+    <button class="btn" id="nsave" style="margin-top:6px">${isNew ? '공지 올리기' : '저장하기'}</button>
+    ${!isNew ? `<div class="btns">${n.status === 'active' ? '<button class="btn ghost" id="nstop">게시 중지</button>' : '<button class="btn ghost" id="nresume">다시 게시</button>'}</div>
+      <p class="hint" style="text-align:center">수정하면 새로 추가한 매장에만 알림이 가요.</p>` : ''}`);
+
+  const draw = () => {
+    const q = st.q.trim();
+    $('#schips').innerHTML = stores.filter(s => !q || s.name.includes(q)).map(s => `<button class="chip ${st.sel.has(s.id) ? 'on' : ''}" data-s="${s.id}">${h(s.name)}${s.accounts ? ` <small>계정 ${s.accounts}</small>` : ''}${s.type === '직영' ? ' <small>직영</small>' : ''}</button>`).join('') || '<span class="hint">찾는 매장이 없어요.</span>';
+    $('#scnt').textContent = st.sel.size ? st.sel.size + '곳' : '';
+  };
+  $('#schips').onclick = e => { const b = e.target.closest('[data-s]'); if (!b) return; const v = +b.dataset.s; st.sel.has(v) ? st.sel.delete(v) : st.sel.add(v); draw(); };
+  $('#sq').oninput = e => { st.q = e.target.value; draw(); };
+  $('#s-fc').onclick = () => { stores.filter(s => s.type !== '직영').forEach(s => st.sel.add(s.id)); draw(); };
+  $('#s-acc').onclick = () => { stores.filter(s => s.accounts > 0).forEach(s => st.sel.add(s.id)); draw(); };
+  $('#s-none').onclick = () => { st.sel.clear(); draw(); };
+  draw();
+  bindFiles('#nfl', '#nf', 'franchise-notice-files', 'ws', st);
+
+  $('#nsave').onclick = async () => {
+    const b = $('#nsave');
+    if (st.files.some(f => !f.path)) { toast('파일을 올리는 중이에요. 잠시만 기다려 주세요.'); return; }
+    if (!st.sel.size) { $('#nerr').innerHTML = errBox('받을 매장을 하나 이상 골라 주세요.'); return; }
+    if (isNew && !await confirmSheet(`${st.sel.size}개 매장에 공지를 올릴까요?`, '올리면 해당 매장 점주에게 바로 알림이 가요.', '공지 올리기')) return;
+    b.disabled = true;
+    try {
+      const r = await rpc('mst_admin_notice_save', { p: { id: isNew ? null : +id, title: $('#nt').value, body: $('#nb').value, pin: $('#o-pin').checked, talk: $('#o-talk').checked,
+        ack: $('#o-ack').checked, end: $('#ne').value, stores: [...st.sel], files: st.files.map(f => ({ name: f.name, path: f.path, size: f.size, mime: f.mime || '' })) } });
+      await removeFiles('franchise-notice-files', r.removed);
+      st.fresh = [];
+      toast(isNew ? '공지를 올렸어요' : '저장했어요'); location.hash = '#a-notices';
+    } catch (e) { b.disabled = false; $('#nerr').innerHTML = errBox(e); }
+  };
+  const setStatus = async (s, msg) => { try { await rpc('mst_admin_notice_status', { p_id: +id, p_status: s }); toast(msg); route(); } catch (e) { toast(cleanErr(e)); } };
+  const stop = $('#nstop'); if (stop) stop.onclick = async () => { if (await confirmSheet('게시를 중지할까요?', '점주 앱에서 이 공지가 사라져요. 다시 게시할 수 있어요.', '게시 중지', true)) setStatus('stopped', '게시를 중지했어요'); };
+  const res = $('#nresume'); if (res) res.onclick = () => setStatus('active', '다시 게시했어요');
+  // 저장 안 하고 나가면 방금 올린 파일 정리
+  const leave = () => { if (st.fresh.length) removeFiles('franchise-notice-files', st.fresh); window.removeEventListener('hashchange', leave); };
+  window.addEventListener('hashchange', leave);
+};
+
+/* ==========================================================
+   관리: 품목
+   ========================================================== */
+ROUTES['a-items'] = async (a, tok) => {
+  setView(`<div class="page-h"><h1>발주 품목</h1></div>` + loading());
+  const list = await rpc('mst_admin_items'); if (!live(tok)) return;
+  drawItems(list);
+};
+function drawItems(list){
+  const cats = [...new Set(list.map(i => i.cat || '기타'))];
+  const noPrice = list.filter(i => i.active && !i.price).length;
+  setView(`<div class="page-h"><h1>발주 품목</h1><p>점주가 발주할 때 보는 품목과 단가예요.</p></div>
+    ${noPrice ? `<div class="err">판매 중인 품목 중 ${noPrice}개가 단가 미정이에요. 단가를 넣어 주세요.</div>` : ''}
+    <button class="btn" id="inew" style="margin-bottom:6px">${ic('plus')}새 품목</button>
+    ${cats.map(c => `<div class="cat-h">${h(c)}</div><div class="list">${list.filter(i => (i.cat || '기타') === c).map(i => `<button class="row" data-i="${i.id}">
+      <div class="main"><div class="t"><span class="tx" style="${i.active ? '' : 'color:var(--mut)'}">${h(i.name)}</span></div>
+      <div class="s"><span>${i.unit ? h(i.unit) : '단위 없음'}</span>${i.code ? `<span>${h(i.code)}</span>` : ''}${i.memo ? `<span>${h(i.memo)}</span>` : ''}</div></div>
+      <div class="r">${i.active ? (i.price ? `<b>${won(i.price)}원</b>` : '<span class="pill p-red">단가 미정</span>') : '<span class="pill p-grey">판매 중지</span>'}</div></button>`).join('')}</div>`).join('')}`);
+  view().onclick = e => { const b = e.target.closest('[data-i]'); if (b) itemSheet(list, list.find(i => i.id === +b.dataset.i)); };
+  $('#inew').onclick = () => itemSheet(list, null);
+}
+function itemSheet(list, it){
+  const cats = [...new Set(list.map(i => i.cat).filter(Boolean))];
+  sheet(`<h3>${it ? '품목 수정' : '새 품목'}</h3>
+    <div class="f"><label for="ic">분류</label><input class="in" id="ic" list="icl" value="${h(it ? it.cat : '')}" placeholder="예: 식자재"><datalist id="icl">${cats.map(c => `<option value="${h(c)}">`).join('')}</datalist></div>
+    <div class="f"><label for="in">품목 이름</label><input class="in" id="in" value="${h(it ? it.name : '')}"></div>
+    <div style="display:flex;gap:8px"><div class="f" style="flex:1"><label for="iu">단위</label><input class="in" id="iu" value="${h(it ? it.unit : '')}" placeholder="box, 개"></div>
+    <div class="f" style="flex:1.4"><label for="ip">단가 (원)</label><input class="in" id="ip" inputmode="numeric" value="${it && it.price ? it.price : ''}" placeholder="0"></div></div>
+    <div class="f"><label for="im">점주에게 보일 메모 (선택)</label><input class="in" id="im" maxlength="200" value="${h(it ? it.memo : '')}" placeholder="예: 1box = 1kg×10"></div>
+    <div style="display:flex;gap:8px"><div class="f" style="flex:1"><label for="is">순서</label><input class="in" id="is" inputmode="numeric" value="${it ? it.sort : ''}" placeholder="자동"></div>
+    <div class="f" style="flex:1.4"><label>판매</label><div class="list"><label class="sw" style="padding:9px 14px"><span>판매 중</span><input type="checkbox" class="tg" id="ia" ${!it || it.active ? 'checked' : ''}></label></div></div></div>
+    <div id="ierr"></div><div class="btns"><button class="btn ghost" onclick="closeSheet()">닫기</button><button class="btn" id="isave">저장</button></div>`);
+  $('#ip').oninput = e => { e.target.value = e.target.value.replace(/\D/g, ''); };
+  $('#isave').onclick = async () => {
+    const b = $('#isave'); b.disabled = true;
+    try { const r = await rpc('mst_admin_item_save', { p: { id: it ? it.id : null, cat: $('#ic').value, name: $('#in').value, unit: $('#iu').value, price: $('#ip').value,
+        memo: $('#im').value, sort: $('#is').value, active: $('#ia').checked } }); closeSheet(); toast('저장했어요'); drawItems(r); }
+    catch (e) { b.disabled = false; $('#ierr').innerHTML = errBox(e); }
+  };
+}
+
+/* ==========================================================
+   관리: 레시피
+   ========================================================== */
+ROUTES['a-recipes'] = async (a, tok) => {
+  setView(`<div class="page-h"><h1>레시피</h1></div>` + loading());
+  const list = await rpc('mst_admin_recipes'); if (!live(tok)) return;
+  S.arec = list;
+  const cats = [...new Set(list.map(r => r.cat || '기타'))];
+  setView(`<div class="page-h"><h1>레시피</h1><p>'공개'로 둔 레시피만 점주 앱에 보여요.</p></div>
+    <a class="btn" href="#a-recipe/new" style="text-decoration:none;margin-bottom:6px">${ic('plus')}새 레시피</a>
+    ${list.length ? cats.map(c => `<div class="cat-h">${h(c)}</div><div class="list">${list.filter(r => (r.cat || '기타') === c).map(r => `<a class="row" href="#a-recipe/${r.id}">
+      <div class="main"><div class="t"><span class="tx">${h(r.title)}</span></div><div class="s"><span>${h(r.at)}${r.by ? ' · ' + h(r.by) : ''}</span>${r.files.length ? `<span>${ic('clip')} ${r.files.length}</span>` : ''}</div></div>
+      <span class="pill ${r.published ? 'p-ok' : 'p-grey'}">${r.published ? '공개' : '비공개'}</span></a>`).join('')}</div>`).join('')
+      : '<div class="list"><div class="empty"><b>아직 레시피가 없어요</b>사진이나 영상과 함께 올려 보세요.</div></div>'}`);
+};
+ROUTES['a-recipe'] = async (id, tok) => {
+  const isNew = id === 'new';
+  setView(topbar(isNew ? '새 레시피' : '레시피 수정', '#a-recipes') + loading());
+  const list = S.arec && !isNew ? S.arec : await rpc('mst_admin_recipes'); if (!live(tok)) return;
+  S.arec = list;
+  const r = isNew ? null : list.find(x => x.id === +id);
+  if (!isNew && !r) { setView(topbar('레시피', '#a-recipes') + errBox('레시피를 찾을 수 없어요.')); return; }
+  const cats = [...new Set(list.map(x => x.cat).filter(Boolean))];
+  const st = { files: r ? r.files.slice() : [], fresh: [] };
+  setView(topbar(isNew ? '새 레시피' : '레시피 수정', '#a-recipes', !isNew && r.published ? `<a class="act" href="#recipe/${r.id}" style="text-decoration:none">미리보기</a>` : '') + `
+    <div class="f"><label for="rc">분류</label><input class="in" id="rc" list="rcl" value="${h(r ? r.cat : '')}" placeholder="예: 라멘, 사이드, 소스"><datalist id="rcl">${cats.map(c => `<option value="${h(c)}">`).join('')}</datalist></div>
+    <div class="f"><label for="rt">레시피 이름</label><input class="in" id="rt" maxlength="100" value="${h(r ? r.title : '')}" placeholder="예: 돈코츠 라멘"></div>
+    <div class="f"><label for="rb">만드는 법</label><textarea class="in" id="rb" style="min-height:220px" placeholder="재료, 양, 순서를 적어 주세요">${h(r ? r.body : '')}</textarea></div>
+    <div class="f"><label>사진·영상·문서 (20개까지)</label><label class="filebtn">${ic('clip')}파일 고르기<input type="file" id="rf" multiple hidden></label><div id="rfl"></div></div>
+    <div class="f"><div class="list"><label class="sw"><span>공개<small>켜면 모든 가맹점 점주가 볼 수 있어요</small></span><input type="checkbox" class="tg" id="rp" ${r && r.published ? 'checked' : ''}></label></div></div>
+    <div class="f"><label for="rs">순서 (선택)</label><input class="in" id="rs" inputmode="numeric" value="${r ? r.sort : ''}" placeholder="자동"></div>
+    <div id="rerr"></div><button class="btn" id="rsave">저장하기</button>
+    ${r ? '<div class="btns"><button class="btn ghost" id="rdel" style="color:var(--red)">레시피 삭제</button></div>' : ''}`);
+  bindFiles('#rfl', '#rf', 'mst-recipes', 'r', st);
+  $('#rsave').onclick = async () => {
+    const b = $('#rsave');
+    if (st.files.some(f => !f.path)) { toast('파일을 올리는 중이에요. 잠시만 기다려 주세요.'); return; }
+    b.disabled = true;
+    try {
+      const x = await rpc('mst_admin_recipe_save', { p: { id: r ? r.id : null, cat: $('#rc').value, title: $('#rt').value, body: $('#rb').value, published: $('#rp').checked,
+        sort: $('#rs').value, files: st.files.map(f => ({ name: f.name, path: f.path, size: f.size, mime: f.mime || '' })) } });
+      await removeFiles('mst-recipes', x.removed); st.fresh = []; S.arec = null;
+      toast('저장했어요'); location.hash = '#a-recipes';
+    } catch (e) { b.disabled = false; $('#rerr').innerHTML = errBox(e); }
+  };
+  const del = $('#rdel');
+  if (del) del.onclick = async () => {
+    if (!await confirmSheet('레시피를 삭제할까요?', '첨부 파일도 함께 지워지고 되돌릴 수 없어요.', '삭제', true)) return;
+    try { const x = await rpc('mst_admin_recipe_delete', { p_id: r.id }); await removeFiles('mst-recipes', x.removed); S.arec = null; toast('삭제했어요'); location.hash = '#a-recipes'; }
+    catch (e) { toast(cleanErr(e)); }
+  };
+  const leave = () => { if (st.fresh.length) removeFiles('mst-recipes', st.fresh); window.removeEventListener('hashchange', leave); };
+  window.addEventListener('hashchange', leave);
+};
+
+/* ==========================================================
+   관리: 가맹점주 계정 (관리자만)
+   ========================================================== */
+async function adminUsers(body){
+  const { data, error } = await SB.functions.invoke('admin-users', { body: { ...body, scope: 'mst' } });
+  if (error) { let m = error.message; try { const j = await error.context.json(); m = j.error || m; } catch (e) {} throw new Error(m); }
+  if (data && data.ok === false) throw new Error(data.error);
+  return data;
+}
+const tempPw = () => { const c = 'abcdefghjkmnpqrstuvwxyz23456789'; let s = ''; const r = crypto.getRandomValues(new Uint32Array(8)); r.forEach(x => s += c[x % c.length]); return s.slice(0, 4) + s.slice(4).replace(/[a-z]/g, d => String(d.charCodeAt(0) % 10)); };
+const guide = (id, pw) => `[멘야마쯔리 파트너]\n주소: ${location.origin}\n아이디: ${id}\n임시 비밀번호: ${pw}\n\n처음 로그인하면 비밀번호를 바꿔 주세요.\n휴대폰 홈 화면에 추가하면 앱처럼 쓸 수 있어요.`;
+function guideSheet(title, id, pw){
+  const t = guide(id, pw);
+  sheet(`<h3>${h(title)}</h3><p class="sub">아래 안내를 점주님께 보내 주세요. 임시 비밀번호는 이 창을 닫으면 다시 볼 수 없어요.</p>
+    <div class="copybox">${h(t)}</div>
+    <div class="btns"><button class="btn ghost" id="gcopy">${ic('copy')}복사</button>${navigator.share ? '<button class="btn dark" id="gshare">문자·카톡으로 보내기</button>' : ''}</div>
+    <button class="btn ghost" style="margin-top:8px" onclick="closeSheet();route()">닫기</button>`);
+  $('#gcopy').onclick = () => copyText(t);
+  const s = $('#gshare'); if (s) s.onclick = () => navigator.share({ text: t }).catch(() => {});
+}
+
+ROUTES['a-users'] = async (a, tok) => {
+  if (!isAdm()) { location.hash = '#a-notices'; return; }
+  setView(`<div class="page-h"><h1>가맹점주 계정</h1></div>` + loading());
+  const d = await rpc('mst_admin_data'); if (!live(tok)) return;
+  const us = d.users || [], stores = d.stores || [];
+  setView(`<div class="page-h"><h1>가맹점주 계정</h1><p>여기서 만든 계정은 이 앱에만 들어올 수 있어요. 워크스페이스 사용자 목록에는 보이지 않아요.</p></div>
+    <button class="btn" id="unew" style="margin-bottom:14px">${ic('plus')}계정 만들기</button>
+    <div class="list">${us.length ? us.map(u => `<button class="row" data-u="${u.uid}"><div class="main"><div class="t"><span class="tx" style="${u.active ? '' : 'color:var(--mut)'}">${h(u.store || '매장 없음')} · ${h(u.name)}</span></div>
+      <div class="s"><span>${h(u.id)}</span>${u.phone ? `<span>${h(u.phone)}</span>` : ''}<span>${h(u.created)} 생성</span></div></div>
+      ${!u.active ? '<span class="pill p-grey">사용 중지</span>' : u.first ? '<span class="pill p-amb">첫 로그인 전</span>' : '<span class="pill p-ok">사용 중</span>'}</button>`).join('')
+      : '<div class="empty"><b>아직 가맹점주 계정이 없어요</b>매장을 골라 첫 계정을 만들어 보세요.</div>'}</div>`);
+  $('#unew').onclick = () => userSheet(stores, null);
+  view().onclick = e => { const b = e.target.closest('[data-u]'); if (b) userSheet(stores, us.find(u => u.uid === b.dataset.u)); };
+};
+function userSheet(stores, u){
+  const opts = stores.map(s => `<option value="${s.id}" ${u && u.store_id === s.id ? 'selected' : ''}>${h(s.name)}${s.type === '직영' ? ' (직영)' : ''}${s.accounts ? ` · 계정 ${s.accounts}` : ''}</option>`).join('');
+  if (!u) {
+    const pw = tempPw();
+    sheet(`<h3>계정 만들기</h3>
+      <div class="f"><label for="us">매장</label><select class="in" id="us"><option value="">매장을 골라 주세요</option>${opts}</select></div>
+      <div class="f"><label for="uid">아이디</label><input class="in" id="uid" autocapitalize="none" spellcheck="false" placeholder="예: sangmu"><p class="hint">영문 소문자·숫자로 2~30자. 매장 이름을 영어로 쓰면 기억하기 쉬워요.</p></div>
+      <div class="f"><label for="un">점주 이름</label><input class="in" id="un"></div>
+      <div class="f"><label for="up">연락처 (선택)</label><input class="in" id="up" inputmode="tel"></div>
+      <div class="f"><label for="upw">임시 비밀번호</label><input class="in" id="upw" value="${pw}"></div>
+      <div id="uerr"></div><div class="btns"><button class="btn ghost" onclick="closeSheet()">닫기</button><button class="btn" id="usave">만들기</button></div>`);
+    $('#us').onchange = e => { const s = stores.find(x => x.id === +e.target.value); if (s && !$('#un').value && s.owner) $('#un').value = s.owner; };
+    $('#usave').onclick = async () => {
+      const b = $('#usave'), id = $('#uid').value.trim().toLowerCase(), p = $('#upw').value;
+      b.disabled = true;
+      try { await adminUsers({ action: 'create', store_id: +$('#us').value || null, login_id: id, name: $('#un').value, phone: $('#up').value, password: p });
+        guideSheet('계정을 만들었어요', id, p); }
+      catch (e) { b.disabled = false; $('#uerr').innerHTML = errBox(e); }
+    };
+    return;
+  }
+  sheet(`<h3>${h(u.store || '')} · ${h(u.name)}</h3><p class="sub">아이디 ${h(u.id)}${u.first ? ' · 아직 첫 로그인을 하지 않았어요' : ''}${u.stopped ? ` · ${h(u.stopped)} 사용 중지` : ''}</p>
+    <div class="f"><label for="us">매장</label><select class="in" id="us">${opts}</select></div>
+    <div class="f"><label for="un">점주 이름</label><input class="in" id="un" value="${h(u.name)}"></div>
+    <div class="f"><label for="up">연락처</label><input class="in" id="up" inputmode="tel" value="${h(u.phone)}"></div>
+    <div id="uerr"></div><button class="btn" id="usave">저장</button>
+    <div class="btns"><button class="btn ghost" id="ureset">비밀번호 초기화</button><button class="btn ghost" id="uact" style="color:${u.active ? 'var(--red)' : 'var(--ok)'}">${u.active ? '사용 중지' : '다시 사용'}</button></div>`);
+  $('#usave').onclick = async () => {
+    const b = $('#usave'); b.disabled = true;
+    try { await adminUsers({ action: 'update', id: u.uid, name: $('#un').value, phone: $('#up').value, store_id: +$('#us').value }); closeSheet(); toast('저장했어요'); route(); }
+    catch (e) { b.disabled = false; $('#uerr').innerHTML = errBox(e); }
+  };
+  $('#ureset').onclick = async () => {
+    if (!await confirmSheet('비밀번호를 초기화할까요?', '새 임시 비밀번호를 만들어요. 점주님은 다음 로그인 때 비밀번호를 다시 정해요.', '초기화')) return;
+    const p = tempPw();
+    try { await adminUsers({ action: 'reset_password', id: u.uid, password: p }); guideSheet('비밀번호를 초기화했어요', u.id, p); } catch (e) { toast(cleanErr(e)); }
+  };
+  $('#uact').onclick = async () => {
+    if (u.active && !await confirmSheet('이 계정을 사용 중지할까요?', '바로 로그인할 수 없게 돼요. 폐점·양도 때 써 주세요. 다시 사용으로 되돌릴 수 있어요.', '사용 중지', true)) return;
+    try { await adminUsers({ action: 'set_active', id: u.uid, active: !u.active }); closeSheet(); toast(u.active ? '사용 중지했어요' : '다시 사용하게 했어요'); route(); } catch (e) { toast(cleanErr(e)); }
+  };
+}
+
+/* ==========================================================
+   시작
+   ========================================================== */
+(async function boot(){
+  if (!SB) { document.getElementById('app').innerHTML = '<div class="auth"><div style="padding:60px 0">' + errBox('서버에 연결하지 못했어요. 인터넷 연결을 확인하고 새로고침해 주세요.') + '</div></div>'; return; }
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js', { scope: './' }).catch(() => {});
+    navigator.serviceWorker.addEventListener('message', e => {
+      if (e.data && e.data.type === 'open') { const u = new URL(e.data.url), q = u.searchParams, go = q.get('go'), id = q.get('id');
+        location.hash = go === 'notice' && id ? '#notice/' + id : go === 'order' && id ? '#order/' + id : '#' + (go || 'home'); }
+    });
+  }
+  SB.auth.onAuthStateChange((ev) => { if (ev === 'SIGNED_OUT' && S.me) { S.me = null; showLogin(); } });
+  const { data } = await SB.auth.getSession();
+  await start(data && data.session);
+})();
+</script>
+</body>
+</html>
