@@ -231,6 +231,50 @@ table.items tfoot td{font-weight:800;border-top:1px solid var(--ink)}
 .row .s svg.i,.stat svg.i{width:14px;height:14px;vertical-align:-2px}
 .stat{flex-wrap:wrap;column-gap:12px;row-gap:0} .stat span{white-space:nowrap}
 a.file{color:var(--ink);text-decoration:none}
+
+/* ---------- PC·태블릿 가로 (900px 이상) ---------- */
+#tabs .brand,#tabs .who{display:none}
+.cols{display:block} .catgrid{display:block} .form2{display:block}
+@media (min-width:900px){
+  body{font-size:15.5px}
+  #app{max-width:none;margin:0;padding-left:248px}
+  #view{max-width:1080px;margin:0 auto;padding:0 44px 64px}
+  #view.has-bar{padding-bottom:150px}
+  #tabs{top:0;bottom:0;right:auto;width:248px;border-top:0;border-right:1px solid var(--line);background:#fff;padding:0 0 20px;display:flex;flex-direction:column}
+  #tabs .brand{display:block;background:var(--red);color:#fff;padding:26px 22px 34px;position:relative;margin-bottom:14px}
+  #tabs .brand::after{content:"";position:absolute;left:0;right:0;bottom:0;height:12px;
+    background:linear-gradient(90deg,transparent calc(33.33% - 1.5px),#fff calc(33.33% - 1.5px),#fff calc(33.33% + 1.5px),transparent calc(33.33% + 1.5px),
+    transparent calc(66.66% - 1.5px),#fff calc(66.66% - 1.5px),#fff calc(66.66% + 1.5px),transparent calc(66.66% + 1.5px))}
+  #tabs .brand small{display:block;font-size:12px;opacity:.8} #tabs .brand b{display:block;font-size:22px;font-weight:850;letter-spacing:-.04em;line-height:1.2}
+  #tabs .in{flex-direction:column;height:auto;max-width:none;gap:2px;padding:0 12px;margin:0}
+  #tabs a{flex:none;flex-direction:row;justify-content:flex-start;gap:12px;height:46px;padding:0 14px;border-radius:12px;font-size:15px;color:var(--ink2)}
+  #tabs a:hover{background:#f4f6f1} #tabs a.on{background:var(--bg);color:var(--ink);font-weight:750}
+  #tabs a .bd{position:static;margin-left:auto}
+  #tabs .who{display:block;margin-top:auto;padding:14px 26px 0;font-size:13px;color:var(--mut);border-top:1px solid var(--line)}
+  #tabs .who b{display:block;color:var(--ink);font-size:14px}
+  .top{margin:0 -44px 12px;padding:18px 34px}
+  .page-h{padding:44px 4px 16px} .page-h h1{font-size:30px}
+  .noren{margin:0 -44px 26px;padding:44px 48px 60px} .noren b{font-size:46px}
+  .quick{gap:12px} .quick a{min-height:104px;padding:18px} .quick a .n{font-size:30px} .quick a.main .n{font-size:22px}
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start}
+  .catgrid{display:grid;grid-template-columns:1fr 1fr;gap:0 20px;align-items:start}
+  .form2{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:28px;align-items:start}
+  .form2 .chips{max-height:360px}
+  .art{max-width:780px}
+  .page-h + .btn,.page-h + a.btn,.page-h ~ .btn#unew,.page-h ~ .btn#inew{width:auto;padding:0 26px}
+  .seg{max-width:420px}
+  .cartbar{left:248px;bottom:0;padding:14px 44px 18px}
+  .cartbar .in2{max-width:992px}
+  .composer{left:248px}
+  .composer .in2{max-width:780px}
+  #toast{bottom:30px;left:calc(50% + 124px)}
+  .sheet-bg{align-items:center}
+  .sheet{border-radius:20px;max-width:520px;padding:14px 26px 24px;max-height:86vh}
+  .sheet .grab{display:none}
+  .auth{max-width:460px;margin:0 auto;padding:0}
+  .auth .hero{margin:0;border-radius:0 0 4px 4px}
+  .row:hover{background:#f8faf5}
+}
 </style>
 </head>
 <body>
@@ -446,7 +490,7 @@ function renderTabs(){
   const base = { '#notice': '#notices', '#order': '#orders', '#order-new': '#orders', '#recipe': '#recipes', '#a-notice': '#a-notices', '#a-recipe': '#a-recipes' };
   const on = base[cur] || cur;
   const unread = S.home ? (S.home.unread || 0) + (S.home.replies || 0) : 0;
-  t.innerHTML = `<div class="in">${def.map(([href, icon, label]) => `<a href="${href}" class="${on === href ? 'on' : ''}">${ic(icon)}<span>${label}</span>${href === '#notices' && unread ? `<span class="bd">${unread > 99 ? '99+' : unread}</span>` : ''}</a>`).join('')}</div>`;
+  t.innerHTML = `<div class="brand"><small>멘야마쯔리</small><b>파트너</b></div><div class="in">${def.map(([href, icon, label]) => `<a href="${href}" class="${on === href ? 'on' : ''}">${ic(icon)}<span>${label}</span>${href === '#notices' && unread ? `<span class="bd">${unread > 99 ? '99+' : unread}</span>` : ''}</a>`).join('')}</div><div class="who"><b>${h(S.me.name)}</b>${isMst() ? (S.home && S.home.store ? h(S.home.store) + ' 점주' : '가맹점주') : (isAdm() ? '관리자' : '본사')}</div>`;
 }
 const ROUTES = {};
 function route(){
@@ -493,10 +537,10 @@ ROUTES.home = async (a, tok) => {
       <a href="#notices"><span class="n ${d.replies ? 'hot' : ''}">${d.replies || 0}</span><span class="l">본사 답변</span></a>
     </div>
     <div id="push-hint"></div>
-    <div class="sec"><h2>진행 중인 발주</h2><a href="#orders">전체 보기</a></div>
-    <div class="list">${(d.orders || []).length ? d.orders.map(o => orderRow({ ...o, src: 'own' })).join('') : '<div class="empty">진행 중인 발주가 없어요.</div>'}</div>
-    <div class="sec"><h2>공지</h2><a href="#notices">전체 보기</a></div>
-    <div class="list">${(d.notices || []).length ? d.notices.map(noticeRow).join('') : '<div class="empty">받은 공지가 없어요.</div>'}</div>`);
+    <div class="cols"><div><div class="sec"><h2>진행 중인 발주</h2><a href="#orders">전체 보기</a></div>
+    <div class="list">${(d.orders || []).length ? d.orders.map(o => orderRow({ ...o, src: 'own' })).join('') : '<div class="empty">진행 중인 발주가 없어요.</div>'}</div></div>
+    <div><div class="sec"><h2>공지</h2><a href="#notices">전체 보기</a></div>
+    <div class="list">${(d.notices || []).length ? d.notices.map(noticeRow).join('') : '<div class="empty">받은 공지가 없어요.</div>'}</div></div></div>`);
   pushHint();
 };
 
@@ -573,12 +617,12 @@ ROUTES['order-new'] = async (a, tok) => {
   S.items = items;
   Object.keys(S.cart).forEach(k => { if (!items.some(i => String(i.id) === k)) delete S.cart[k]; });
   const cats = [...new Set(items.map(i => i.cat || '기타'))];
-  setView(topbar('새 발주', '#orders') + (items.length ? cats.map(c => `<div class="cat-h">${h(c)}</div><div class="list">${items.filter(i => (i.cat || '기타') === c).map(i => {
+  setView(topbar('새 발주', '#orders') + (items.length ? '<div class="catgrid">' + cats.map(c => `<div><div class="cat-h">${h(c)}</div><div class="list">${items.filter(i => (i.cat || '기타') === c).map(i => {
       const q = S.cart[i.id] || 0;
       return `<div class="it ${q ? 'on' : ''}" data-id="${i.id}"><div class="main"><div class="nm">${h(i.name)}</div>
         <div class="pr">${i.price ? won(i.price) + '원' : '단가 미정'}${i.unit ? ' / ' + h(i.unit) : ''}${i.memo ? ' · ' + h(i.memo) : ''}</div></div>
         <div class="step"><button data-d="-1" aria-label="빼기">−</button><input inputmode="numeric" pattern="[0-9]*" value="${q || ''}" placeholder="0" aria-label="${h(i.name)} 수량"><button data-d="1" aria-label="더하기">+</button></div></div>`;
-    }).join('')}</div>`).join('') : '<div class="empty"><b>발주할 수 있는 품목이 없어요</b>본사에 문의해 주세요.</div>'), true);
+    }).join('')}</div></div>`).join('') + '</div>' : '<div class="empty"><b>발주할 수 있는 품목이 없어요</b>본사에 문의해 주세요.</div>'), true);
   const v = view();
   v.onclick = e => { const b = e.target.closest('[data-d]'); if (!b) return; const row = b.closest('.it'); setQty(row, (S.cart[row.dataset.id] || 0) + (+b.dataset.d)); };
   v.oninput = e => { if (e.target.tagName !== 'INPUT') return; const row = e.target.closest('.it'); if (row) setQty(row, parseInt(e.target.value.replace(/\D/g, ''), 10) || 0, true); };
@@ -658,8 +702,8 @@ ROUTES.recipes = async (a, tok) => {
   setView(`<div class="page-h"><h1>레시피</h1></div>` + loading());
   const list = await rpc('mst_recipes'); if (!live(tok)) return;
   const cats = [...new Set(list.map(r => r.cat || '기타'))];
-  setView(`<div class="page-h"><h1>레시피</h1><p>본사가 올린 조리법이에요.</p></div>` + (list.length ? cats.map(c => `<div class="cat-h">${h(c)}</div><div class="list">${list.filter(r => (r.cat || '기타') === c).map(r =>
-    `<a class="row" href="#recipe/${r.id}"><div class="main"><div class="t"><span class="tx">${h(r.title)}</span></div><div class="s"><span>${h(r.at)}</span>${r.files ? `<span>${ic('clip')} ${r.files}</span>` : ''}</div></div>${ic('chev')}</a>`).join('')}</div>`).join('')
+  setView(`<div class="page-h"><h1>레시피</h1><p>본사가 올린 조리법이에요.</p></div>` + (list.length ? '<div class="catgrid">' + cats.map(c => `<div><div class="cat-h">${h(c)}</div><div class="list">${list.filter(r => (r.cat || '기타') === c).map(r =>
+    `<a class="row" href="#recipe/${r.id}"><div class="main"><div class="t"><span class="tx">${h(r.title)}</span></div><div class="s"><span>${h(r.at)}</span>${r.files ? `<span>${ic('clip')} ${r.files}</span>` : ''}</div></div>${ic('chev')}</a>`).join('')}</div></div>`).join('') + '</div>'
     : '<div class="list"><div class="empty"><b>아직 올라온 레시피가 없어요</b>본사가 레시피를 올리면 여기에 보여요.</div></div>'));
 };
 ROUTES.recipe = async (id, tok) => {
@@ -803,9 +847,10 @@ ROUTES['a-notice'] = async (id, tok) => {
   const st = { sel: new Set((n ? n.stores : []).map(Number)), files: n ? n.files.slice() : [], fresh: [], q: '' };
   setView(topbar(isNew ? '새 공지' : '공지 수정', '#a-notices') + `
     ${n && n.status !== 'active' ? `<div class="note">${NST[n.status] ? NST[n.status][0] : n.status} 상태예요. 점주 앱에서 ${n.status === 'stopped' ? '보이지 않아요' : '마감으로 보여요'}.</div>` : ''}
-    <div class="f"><label for="nt">제목</label><input class="in" id="nt" maxlength="120" value="${h(n ? n.title : '')}" placeholder="예: 12월 신메뉴 출시 안내"></div>
+    <div class="form2"><div><div class="f"><label for="nt">제목</label><input class="in" id="nt" maxlength="120" value="${h(n ? n.title : '')}" placeholder="예: 12월 신메뉴 출시 안내"></div>
     <div class="f"><label for="nb">내용</label><textarea class="in" id="nb" style="min-height:200px" placeholder="점주님께 전할 내용">${h(n ? n.body : '')}</textarea></div>
-    <div class="f"><label>받을 매장 <span id="scnt" style="color:var(--red)"></span></label>
+    <div class="f"><label>첨부 (사진·영상·문서, 10개까지)</label><label class="filebtn">${ic('clip')}파일 고르기<input type="file" id="nf" multiple hidden></label><div id="nfl"></div></div></div>
+    <div><div class="f"><label>받을 매장 <span id="scnt" style="color:var(--red)"></span></label>
       <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap">
         <button class="chip" id="s-fc">가맹점 전체</button><button class="chip" id="s-acc">계정 있는 매장</button><button class="chip" id="s-none">모두 해제</button></div>
       <input class="in" id="sq" placeholder="매장 이름 찾기" style="height:42px;margin-bottom:8px">
@@ -816,8 +861,7 @@ ROUTES['a-notice'] = async (id, tok) => {
       <label class="sw"><span>댓글 받기<small>점주가 본사와 1:1로 대화할 수 있어요</small></span><input type="checkbox" class="tg" id="o-talk" ${!n || n.talk ? 'checked' : ''}></label>
       <label class="sw"><span>확인 요청<small>점주가 '내용을 확인했어요'를 눌러야 해요</small></span><input type="checkbox" class="tg" id="o-ack" ${n && n.ack ? 'checked' : ''}></label>
     </div></div>
-    <div class="f"><label for="ne">마감일 (선택)</label><input class="in" type="date" id="ne" value="${h(n && n.end ? n.end : '')}"><p class="hint">마감일이 지나면 점주 앱에 '마감'으로 표시돼요.</p></div>
-    <div class="f"><label>첨부 (사진·영상·문서, 10개까지)</label><label class="filebtn">${ic('clip')}파일 고르기<input type="file" id="nf" multiple hidden></label><div id="nfl"></div></div>
+    <div class="f"><label for="ne">마감일 (선택)</label><input class="in" type="date" id="ne" value="${h(n && n.end ? n.end : '')}"><p class="hint">마감일이 지나면 점주 앱에 '마감'으로 표시돼요.</p></div></div></div>
     <div id="nerr"></div>
     <button class="btn" id="nsave" style="margin-top:6px">${isNew ? '공지 올리기' : '저장하기'}</button>
     ${!isNew ? `<div class="btns">${n.status === 'active' ? '<button class="btn ghost" id="nstop">게시 중지</button>' : '<button class="btn ghost" id="nresume">다시 게시</button>'}</div>
@@ -872,10 +916,10 @@ function drawItems(list){
   setView(`<div class="page-h"><h1>발주 품목</h1><p>점주가 발주할 때 보는 품목과 단가예요.</p></div>
     ${noPrice ? `<div class="err">판매 중인 품목 중 ${noPrice}개가 단가 미정이에요. 단가를 넣어 주세요.</div>` : ''}
     <button class="btn" id="inew" style="margin-bottom:6px">${ic('plus')}새 품목</button>
-    ${cats.map(c => `<div class="cat-h">${h(c)}</div><div class="list">${list.filter(i => (i.cat || '기타') === c).map(i => `<button class="row" data-i="${i.id}">
+    <div class="catgrid">${cats.map(c => `<div><div class="cat-h">${h(c)}</div><div class="list">${list.filter(i => (i.cat || '기타') === c).map(i => `<button class="row" data-i="${i.id}">
       <div class="main"><div class="t"><span class="tx" style="${i.active ? '' : 'color:var(--mut)'}">${h(i.name)}</span></div>
       <div class="s"><span>${i.unit ? h(i.unit) : '단위 없음'}</span>${i.code ? `<span>${h(i.code)}</span>` : ''}${i.memo ? `<span>${h(i.memo)}</span>` : ''}</div></div>
-      <div class="r">${i.active ? (i.price ? `<b>${won(i.price)}원</b>` : '<span class="pill p-red">단가 미정</span>') : '<span class="pill p-grey">판매 중지</span>'}</div></button>`).join('')}</div>`).join('')}`);
+      <div class="r">${i.active ? (i.price ? `<b>${won(i.price)}원</b>` : '<span class="pill p-red">단가 미정</span>') : '<span class="pill p-grey">판매 중지</span>'}</div></button>`).join('')}</div></div>`).join('')}</div>`);
   view().onclick = e => { const b = e.target.closest('[data-i]'); if (b) itemSheet(list, list.find(i => i.id === +b.dataset.i)); };
   $('#inew').onclick = () => itemSheet(list, null);
 }
@@ -909,9 +953,9 @@ ROUTES['a-recipes'] = async (a, tok) => {
   const cats = [...new Set(list.map(r => r.cat || '기타'))];
   setView(`<div class="page-h"><h1>레시피</h1><p>'공개'로 둔 레시피만 점주 앱에 보여요.</p></div>
     <a class="btn" href="#a-recipe/new" style="text-decoration:none;margin-bottom:6px">${ic('plus')}새 레시피</a>
-    ${list.length ? cats.map(c => `<div class="cat-h">${h(c)}</div><div class="list">${list.filter(r => (r.cat || '기타') === c).map(r => `<a class="row" href="#a-recipe/${r.id}">
+    ${list.length ? '<div class="catgrid">' + cats.map(c => `<div><div class="cat-h">${h(c)}</div><div class="list">${list.filter(r => (r.cat || '기타') === c).map(r => `<a class="row" href="#a-recipe/${r.id}">
       <div class="main"><div class="t"><span class="tx">${h(r.title)}</span></div><div class="s"><span>${h(r.at)}${r.by ? ' · ' + h(r.by) : ''}</span>${r.files.length ? `<span>${ic('clip')} ${r.files.length}</span>` : ''}</div></div>
-      <span class="pill ${r.published ? 'p-ok' : 'p-grey'}">${r.published ? '공개' : '비공개'}</span></a>`).join('')}</div>`).join('')
+      <span class="pill ${r.published ? 'p-ok' : 'p-grey'}">${r.published ? '공개' : '비공개'}</span></a>`).join('')}</div></div>`).join('') + '</div>'
       : '<div class="list"><div class="empty"><b>아직 레시피가 없어요</b>사진이나 영상과 함께 올려 보세요.</div></div>'}`);
 };
 ROUTES['a-recipe'] = async (id, tok) => {
