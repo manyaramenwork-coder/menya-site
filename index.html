@@ -1619,6 +1619,7 @@ PATHS.partner = 'M3 21h18 M5 21V8l7-5 7 5v13 M9 12h2 M13 12h2 M9 16h2 M13 16h2';
     if (error) throw error;
     if (!p) return stop('계정 정보가 아직 등록되지 않았어요. 관리자에게 문의하세요.');
     if (p.active === false) return stop('사용이 중지된 계정이에요. 관리자에게 문의하세요.');
+    if (p.role === 'mst') return stop('가맹점주 계정은 멘야마쯔리 파트너 앱(store.menyamatsuri.work)을 이용해 주세요.');
     const id = p.login_id || String(session.user.email || '').replace(CFG.idDomain, '');
     const u = { id: id, name: p.name || id, title: p.title || '', org: p.dept || '', role: p.role, storeId: p.store_id, status: '사용', uid: session.user.id };
     SESSION = { token: session.access_token, user: u, mustChange: !!p.must_change };
@@ -5641,6 +5642,8 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
     setTimeout(() => {
       if (/^ap-/.test(p) && window.apOpen) apOpen(id);
       else if (p === 'notice' && window.ntOpen) ntOpen(id);
+      else if (p === 'fn-notice' && window.fnOpen) fnOpen(id, 'talk');
+      else if (p === 'mp-orders' && window.mpOpen) mpOpen(id);
     }, 600);
   }
   let pending = new URLSearchParams(location.search).get('go') ? location.href : null;
@@ -7822,7 +7825,7 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
   /* ---------- 목록 ---------- */
   function shell(){
     document.getElementById('main').innerHTML = simpleHero(['가맹점 관리', '가맹점 공지'], 'FRANCHISE NOTICE', '가맹점 공지',
-      'FC다움 스마트공지를 10분마다 가져와요. 공지 작성과 매장 댓글 답글은 지금처럼 FC다움에서 해 주세요.') +
+      'FC다움 스마트공지(10분마다)와 파트너 앱 공지를 함께 보여요. 파트너 앱 공지는 스토어 앱 관리 탭에서 쓰고, 매장 답변은 여기서 바로 해요.') +
       `<div id="fnn-body"><section class="card"><div class="fnn-empty">불러오는 중...</div></section></div>` + pageFoot();
   }
   async function pageList(){
@@ -7886,7 +7889,7 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
     const st = ST[n.status] || [n.status, ''];
     const F = n.files.map((f, i) => Object.assign({ i }, f)), imgs = F.filter(f => f.kind === 'image' && f.path), others = F.filter(f => !(f.kind === 'image' && f.path));
     box.innerHTML = `
-      <div class="fnn-dtop"><button type="button" class="fnn-back" onclick="fnBack()">‹ 가맹점 공지</button><a class="btn ghost fnn-ext" href="${FC_URL}" target="_blank" rel="noopener">FC다움에서 열기 ${ic('arrow')}</a></div>
+      <div class="fnn-dtop"><button type="button" class="fnn-back" onclick="fnBack()">‹ 가맹점 공지</button>${n.source === 'workspace' ? '<span class="fnn-ext" style="text-decoration:none">파트너 앱 공지</span>' : `<a class="btn ghost fnn-ext" href="${FC_URL}" target="_blank" rel="noopener">FC다움에서 열기 ${ic('arrow')}</a>`}</div>
       <section class="card fnn-art">
         <h2 class="fnn-h">${n.pinned && n.status === 'active' ? '<em class="fnn-pin">필독</em>' : ''}${h(n.title)}</h2>
         <div class="fnn-meta">${h(n.at)} · ${h(n.author || '')} · ${n.targets.length}개 매장 · <span class="fnn-st ${st[1]}">${st[0]}</span>${n.end ? ` · 마감 ${h(n.end)}` : ''}${(n.tags || []).length ? ` · ${n.tags.map(t => '#' + h(t)).join(' ')}` : ''}</div>
@@ -7931,14 +7934,14 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
       return;
     }
     if (!n.threads.length) { el.innerHTML = `<div class="fnn-empty">이 공지에는 매장 댓글이 없어요.</div>`; return; }
-    el.innerHTML = `<p class="fnn-note">매장마다 따로 대화해요. 답글은 FC다움에서 남기면 10분 안에 여기에도 보여요.</p>` + n.threads.map(t => {
+    el.innerHTML = `${n.source === 'workspace' ? '<p class="fnn-note">파트너 앱 공지예요. 매장마다 1:1로 대화하고, 여기서 답변하면 그 매장 점주에게만 보여요.</p>' : '<p class="fnn-note">매장마다 따로 대화해요. 답글은 FC다움에서 남기면 10분 안에 여기에도 보여요.</p>'}` + n.threads.map(t => {
       const open = FN.open === t.tkey, all = FN.all[t.tkey], msgs = all ? t.msgs : t.msgs.slice(-3);
       return `<div class="fnn-th ${open ? 'open' : ''}"><button type="button" class="fnn-thh" aria-expanded="${open}" onclick="fnTalk('${h(t.tkey)}',1)">
           <span class="m"><span><b>${h(t.store)}</b> <em class="${t.pend ? 'new' : ''}">${t.pend ? '본사 답글 전' : '답글 완료'}</em></span><small>${h(t.preview)}</small></span>
           <span class="d">${h(t.last)}<br>댓글 ${t.msgs.length}</span><span class="ar" aria-hidden="true">▾</span></button>
         ${open ? `<div class="fnn-msgs">${!all && t.msgs.length > 3 ? `<button type="button" class="fnn-old" onclick="fnAll('${h(t.tkey)}')">이전 대화 ${t.msgs.length - 3}개 보기</button>` : ''}
           ${msgs.map(m => `<div class="fnn-msg ${m.side}"><span>${m.side === 'store' ? h(t.store) + ' · ' : '본사 · '}${h(m.who)} · ${h(m.at)}</span><p>${h(m.body)}</p></div>`).join('')}
-          <a class="fnn-reply" href="${FC_URL}" target="_blank" rel="noopener">FC다움에서 답글 남기기 ↗</a></div>` : ''}</div>`;
+          ${n.source === 'workspace' ? `<div class="fnn-rbox"><textarea id="fnr-${h(t.tkey)}" maxlength="1000" placeholder="${h(t.store)}에 답변 (이 매장에만 보여요)"></textarea><button type="button" onclick="fnReply(${n.id},'${h(t.tkey)}')">보내기</button></div>` : `<a class="fnn-reply" href="${FC_URL}" target="_blank" rel="noopener">FC다움에서 답글 남기기 ↗</a>`}</div>` : ''}</div>`;
     }).join('');
   }
   window.fnFilt = k => { FN.filt = k; drawPanel(); };
@@ -8144,5 +8147,163 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
   document.head.appendChild(st);
 })();
 </script>
+<script>
+/* ==========================================================
+   멘야마쯔리 파트너(가맹점 앱) 연동 (2026-11-12)
+   - 가맹점 관리 > 파트너 앱 발주: 앱에서 들어온 발주 처리 (접수 → 발송·송장 → 완료 / 반려)
+   - 가맹점 공지: 파트너 앱 공지는 여기서 매장별 1:1 답변 (FC다움 공지는 지금처럼 FC다움에서)
+   - 가맹점주(mst) 계정은 워크스페이스 로그인 차단 (로그인 화면에서 처리)
+   - 데이터: mst_hq_orders() · mst_hq_order_set(p) · mst_hq_notice_reply(...) — 관리자·본사만
+   ========================================================== */
+(function(){
+  const PAGE = 'mp-orders', STORE_URL = 'https://store.menyamatsuri.work';
+  const h = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const won = n => Number(n || 0).toLocaleString('ko-KR');
+  const can = () => !!(typeof SESSION !== 'undefined' && SESSION.user && (SESSION.user.role === 'admin' || SESSION.user.role === 'hq'));
+  const ST = { received: ['접수 대기', 'new'], confirmed: ['접수 완료', 'ing'], shipped: ['발송', 'ship'], done: ['완료', 'done'], rejected: ['반려', 'off'], canceled: ['점주 취소', 'off'] };
+  const COURIERS = ['롯데택배', 'CJ대한통운', '한진택배', '우체국택배', '로젠택배', '직접 배송'];
+  const MP = { list: null, tab: 'todo', q: '', open: null, at: 0 };
+
+  async function load(force){
+    if (!window.SB || !can()) return [];
+    if (!force && MP.list && Date.now() - MP.at < 60000) return MP.list;
+    const { data, error } = await SB.rpc('mst_hq_orders'); if (error) throw error;
+    MP.list = data || []; MP.at = Date.now(); badge(); return MP.list;
+  }
+  const todo = () => (MP.list || []).filter(o => o.status === 'received' || o.status === 'confirmed');
+
+  /* ---------- 메뉴: 가맹점 관리 아래 '파트너 앱 발주' ---------- */
+  function badge(){
+    const a = document.querySelector('#side .sub.js-fn-menu a[data-p="' + PAGE + '"]'); if (!a) return;
+    a.querySelector('.mp-badge')?.remove();
+    const n = (MP.list || []).filter(o => o.status === 'received').length;
+    if (n) a.insertAdjacentHTML('beforeend', `<span class="nt-badge mm-sub-badge mp-badge">${n}</span>`);
+  }
+  function fixMenu(active){
+    const sub = document.querySelector('#side .sub.js-fn-menu'); if (!sub || !can()) return;
+    if (!sub.querySelector(`a[data-p="${PAGE}"]`)) sub.insertAdjacentHTML('beforeend', `<a role="button" tabindex="0" data-p="${PAGE}" onclick="go('${PAGE}')">파트너 앱 발주</a>`);
+    if (active === PAGE) {
+      sub.classList.add('open'); sub.previousElementSibling && sub.previousElementSibling.classList.add('open');
+      sub.querySelectorAll('a').forEach(a => a.classList.toggle('on', a.dataset.p === PAGE));
+    }
+    badge();
+  }
+  const renderSideMp = renderSide;
+  renderSide = function(active){ const r = renderSideMp.apply(this, arguments); try { fixMenu(active); } catch (e) { console.warn('파트너 앱 메뉴 실패', e); } return r; };
+  const goMp = go;
+  go = function(p, t){
+    if (p === PAGE) {
+      if (!can()) { toast('관리자·본사 계정만 볼 수 있어요.'); return goMp('dash'); }
+      closeSide(); window.__curPage = p; renderSide(p); MP.open = null; page(); window.scrollTo(0, 0); return;
+    }
+    return goMp(p, t);
+  };
+  window.mpOpen = id => { MP.open = id; MP.tab = 'all'; if (window.__curPage !== PAGE) go(PAGE); else draw(); setTimeout(() => document.getElementById('mp-o-' + id)?.scrollIntoView({ block: 'start' }), 300); };
+
+  /* ---------- 화면 ---------- */
+  async function page(){
+    document.getElementById('main').innerHTML = simpleHero(['가맹점 관리', '파트너 앱 발주'], 'PARTNER ORDERS', '파트너 앱 발주',
+      '점주님이 멘야마쯔리 파트너 앱에서 넣은 발주예요. 접수하고, 롯데택배로 보낸 뒤 송장번호를 넣으면 점주 앱에 바로 보이고 알림이 가요.') +
+      `<div id="mp-body"><section class="card"><div class="mp-empty">불러오는 중...</div></section></div>` + pageFoot();
+    try { await load(true); } catch (e) { document.getElementById('mp-body').innerHTML = `<section class="card"><div class="mp-empty">불러오지 못했어요: ${h(e.message || e)}</div></section>`; return; }
+    draw();
+  }
+  function draw(){
+    const box = document.getElementById('mp-body'); if (!box) return;
+    const L = MP.list || [], q = MP.q.replace(/\s/g, '');
+    const tabs = [['todo', '처리할 발주', todo().length], ['ship', '발송·완료', L.filter(o => o.status === 'shipped' || o.status === 'done').length], ['all', '전체', L.length]];
+    const shown = L.filter(o => (MP.tab === 'all' || (MP.tab === 'todo' ? ['received', 'confirmed'].includes(o.status) : ['shipped', 'done'].includes(o.status)))
+      && (!q || (o.store + o.no + o.items.map(i => i.name).join('')).replace(/\s/g, '').includes(q)));
+    const nNew = L.filter(o => o.status === 'received').length, nShip = L.filter(o => o.status === 'confirmed').length;
+    box.innerHTML = `
+      <div class="data-note"><span class="status-dot"></span><span>접수 대기 ${nNew}건 · 발송 대기 ${nShip}건</span><span class="tag">점주 앱과 바로 연동</span>
+        <button class="btn ghost mp-ref" onclick="mpReload()">새로고침</button></div>
+      <section class="card"><div class="mp-bar"><div class="fnn-tabs" role="tablist">${tabs.map(([k, t, n]) => `<button type="button" role="tab" aria-selected="${MP.tab === k}" class="${MP.tab === k ? 'on' : ''}" onclick="mpTab('${k}')">${t} ${n}</button>`).join('')}</div>
+        <input type="search" class="fnn-q" placeholder="매장·품목·발주번호" value="${h(MP.q)}" oninput="mpQ(this.value)"></div>
+        <div class="mp-list">${shown.length ? shown.map(card).join('') : `<div class="mp-empty">${MP.tab === 'todo' ? '처리할 발주가 없어요.' : '해당하는 발주가 없어요.'}</div>`}</div></section>`;
+  }
+  function card(o){
+    const s = ST[o.status] || [o.status, ''], open = MP.open === o.id || ['received', 'confirmed'].includes(o.status);
+    const items = o.items.map(i => `<tr><td>${h(i.name)}</td><td class="n">${Number(i.qty)}${h(i.unit ? ' ' + i.unit : '')}</td><td class="n">${i.amount ? won(i.amount) + '원' : '<span class="mp-na">단가 미정</span>'}</td></tr>`).join('');
+    let act = '';
+    if (o.status === 'received') act = `<div class="mp-act"><button class="btn primary" onclick="mpSet(${o.id},'confirmed')">접수하기</button><button class="btn ghost" onclick="mpReject(${o.id})">반려</button></div>`;
+    else if (o.status === 'confirmed' || o.status === 'shipped') act = `<div class="mp-act mp-ship">
+        <select id="mp-c-${o.id}">${COURIERS.map(c => `<option ${(o.courier || '롯데택배') === c ? 'selected' : ''}>${c}</option>`).join('')}</select>
+        <input id="mp-i-${o.id}" inputmode="numeric" placeholder="송장번호" value="${h(o.invoice || '')}">
+        ${o.status === 'confirmed' ? `<button class="btn primary" onclick="mpShip(${o.id})">발송 처리</button>` : `<button class="btn ghost" onclick="mpShip(${o.id},1)">송장 저장</button><button class="btn primary" onclick="mpSet(${o.id},'done')">완료 처리</button>`}</div>`;
+    return `<article class="mp-o ${open ? 'open' : ''} ${o.status}" id="mp-o-${o.id}">
+      <button type="button" class="mp-h" onclick="mpToggle(${o.id})"><span class="mp-st ${s[1]}">${s[0]}</span><b>${h(o.store)}</b>
+        <span class="mp-sum">${h(o.items[0] ? o.items[0].name : '')}${o.items.length > 1 ? ` 외 ${o.items.length - 1}건` : ''}</span><span class="mp-tot">${won(o.total)}원</span><span class="mp-at">${h(o.at)}</span></button>
+      ${open ? `<div class="mp-d"><div class="mp-meta">${h(o.no)} · ${h(o.by || '')}${o.invoice ? ` · ${h(o.courier || '')} ${h(o.invoice)}` : ''}${o.handled ? ` · 처리 ${h(o.handled)}` : ''}</div>
+        <table class="mp-t"><tbody>${items}</tbody><tfoot><tr><td>합계</td><td></td><td class="n">${won(o.total)}원</td></tr></tfoot></table>
+        ${o.memo ? `<div class="mp-memo"><b>점주 메모</b>${h(o.memo)}</div>` : ''}
+        ${act}
+        <details class="mp-log"><summary>처리 기록 ${o.logs.length}</summary>${o.logs.map(l => `<div><time>${h(l.at)}</time>${h(l.act)} · ${h(l.who || '')}${l.note ? ` · ${h(l.note)}` : ''}</div>`).join('')}</details></div>` : ''}
+    </article>`;
+  }
+  window.mpReload = async () => { try { await load(true); draw(); } catch (e) { toast('불러오지 못했어요'); } };
+  window.mpTab = k => { MP.tab = k; draw(); };
+  let qT = 0; window.mpQ = v => { clearTimeout(qT); qT = setTimeout(() => { MP.q = v.trim(); draw(); }, 200); };
+  window.mpToggle = id => { MP.open = MP.open === id ? null : id; draw(); };
+  async function setOrder(p, msg){
+    const { error } = await SB.rpc('mst_hq_order_set', { p });
+    if (error) { toast(error.message); return false; }
+    toast(msg); await load(true); draw(); return true;
+  }
+  window.mpSet = (id, status) => setOrder({ id, status }, status === 'confirmed' ? '접수했어요. 점주에게 알림이 가요.' : status === 'done' ? '완료 처리했어요' : '처리했어요');
+  window.mpShip = (id, onlyInv) => {
+    const inv = (document.getElementById('mp-i-' + id).value || '').trim(), cr = document.getElementById('mp-c-' + id).value;
+    if (!inv && cr !== '직접 배송') { toast('송장번호를 넣어 주세요'); document.getElementById('mp-i-' + id).focus(); return; }
+    return setOrder(Object.assign({ id, courier: cr, invoice: inv }, onlyInv ? {} : { status: 'shipped' }), onlyInv ? '송장번호를 저장했어요' : '발송 처리했어요. 점주에게 송장번호와 함께 알림이 가요.');
+  };
+  window.mpReject = id => {
+    const why = prompt('반려 사유를 적어 주세요. 점주 앱 처리 기록에 남아요.');
+    if (why === null) return;
+    return setOrder({ id, status: 'rejected', memo: why }, '반려했어요');
+  };
+
+  /* ---------- 가맹점 공지: 파트너 앱 공지는 여기서 답변 ---------- */
+  window.fnReply = async (nid, tkey) => {
+    const ta = document.getElementById('fnr-' + tkey), v = (ta && ta.value || '').trim();
+    if (!v) { toast('답변을 입력해 주세요'); return; }
+    ta.disabled = true;
+    const { error } = await SB.rpc('mst_hq_notice_reply', { p_notice: nid, p_store: +tkey, p_body: v });
+    if (error) { ta.disabled = false; toast(error.message); return; }
+    toast('답변을 보냈어요. 점주에게 알림이 가요.');
+    if (window.fnOpen) fnOpen(nid, 'talk', tkey);
+  };
+
+  // 2분마다 새 발주 확인 (화면이 보일 때만)
+  setInterval(() => { if (!document.hidden && can()) load(true).then(() => { if (window.__curPage === PAGE && !document.querySelector('.mp-ship input:focus')) draw(); }).catch(() => {}); }, 120000);
+  setTimeout(() => { if (can()) load().catch(() => {}); try { fixMenu(window.__curPage); } catch (e) {} }, 1800);
+
+  const st = document.createElement('style');
+  st.textContent = `
+  .mp-empty{text-align:center;color:#909b84;font-size:13px;padding:36px 10px}
+  .mp-ref{margin-left:auto;min-height:34px;font-size:12px;padding:6px 12px}
+  .mp-bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:6px}
+  .mp-o{border-top:1px solid #f0f2ec}.mp-o:first-child{border-top:0}
+  .mp-h{display:flex;align-items:center;gap:12px;width:100%;border:0;background:none;padding:13px 4px;text-align:left;font:inherit;color:#232621;cursor:pointer}
+  .mp-h:hover{background:#fafbf7}.mp-h b{width:96px;flex:none;font-size:13.5px}
+  .mp-sum{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;color:#4b5246}
+  .mp-tot{font-weight:700;font-size:13px;flex:none}.mp-at{font-size:11.5px;color:#7a8273;flex:none;width:112px;text-align:right}
+  .mp-st{flex:none;font-size:11px;font-weight:700;border-radius:999px;padding:3px 9px;background:#eceee8;color:#5f6858}
+  .mp-st.new{background:#fde8e8;color:#b3261e}.mp-st.ing{background:#e8eff9;color:#2a5ca8}.mp-st.ship{background:#e6f3ea;color:#2e7a4c}
+  .mp-o.canceled .mp-h,.mp-o.rejected .mp-h{opacity:.6}
+  .mp-d{padding:2px 4px 16px 4px}.mp-meta{font-size:12px;color:#7a8273;margin-bottom:8px}
+  .mp-t{width:100%;border-collapse:collapse;font-size:13px}.mp-t td{padding:7px 8px;border-top:1px solid #f0f2ec}.mp-t td.n{text-align:right;white-space:nowrap}
+  .mp-t tfoot td{font-weight:700;border-top:1px solid #cfd5c8}.mp-na{color:#b3261e;font-size:12px}
+  .mp-memo{background:#f6f7f3;border-radius:8px;padding:10px 12px;font-size:13px;margin-top:10px}.mp-memo b{display:block;font-size:11.5px;color:#7a8273;margin-bottom:2px}
+  .mp-act{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;align-items:center}
+  .mp-ship select,.mp-ship input{height:38px;border:1px solid #d9ded2;border-radius:8px;padding:0 10px;font:inherit;font-size:13px;background:#fff}
+  .mp-ship input{flex:1;min-width:160px;letter-spacing:.02em}
+  .mp-log{margin-top:12px;font-size:12px;color:#5f6858}.mp-log summary{cursor:pointer;color:#7a8273}.mp-log div{padding:3px 0}.mp-log time{display:inline-block;width:80px;color:#909b84}
+  .fnn-rbox{display:flex;gap:8px;margin-top:10px}.fnn-rbox textarea{flex:1;min-height:42px;border:1px solid #d9ded2;border-radius:8px;padding:9px 10px;font:inherit;font-size:13px;resize:vertical}
+  .fnn-rbox button{flex:none;border:0;border-radius:8px;background:#c62429;color:#fff;font-weight:700;font-size:13px;padding:0 14px;cursor:pointer}
+  @media (max-width:640px){.mp-h{flex-wrap:wrap;gap:6px 10px}.mp-h b{width:auto}.mp-sum{flex-basis:100%;order:5}.mp-at{width:auto;margin-left:auto}}`;
+  document.head.appendChild(st);
+})();
+</script>
+
 </body>
 </html>
