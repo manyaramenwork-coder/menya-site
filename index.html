@@ -7882,6 +7882,7 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
     if (error) { document.getElementById('fnn-body').innerHTML = `<section class="card"><div class="fnn-empty">열지 못했어요: ${h(error.message)}</div></section>`; return; }
     FN.cur = data;
     if (!FN.open && FN.view === 'talk' && data.threads.length) FN.open = data.threads[0].tkey;
+    SB.rpc('mst_hq_seen', { p_id: id }).then(() => load(true)).catch(() => {});  // 2026-11-12: 열어 보면 '점주 댓글' 숫자 지움
     drawDetail();
   };
   window.fnBack = () => { FN.cur = null; if (FN.data) drawList(); else pageList(); window.scrollTo(0, 0); };
@@ -8314,6 +8315,7 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
     const { data, error } = await SB.rpc('fn_notice_open', { p_id: id });
     if (error) { box.innerHTML = `<section class="card"><div class="mp-empty">열지 못했어요: ${h(error.message)}</div></section>`; return; }
     MN.cur = data; if (tkey) MN.open = tkey; npDetail(); window.scrollTo(0, 0);
+    SB.rpc('mst_hq_seen', { p_id: id }).then(() => npLoad(true)).catch(() => {});  // 열어 보면 숫자 지움
   };
   window.npBack = () => { MN.cur = null; npLoad(true).then(npList).catch(() => npList()); };
   function npDetail(){
