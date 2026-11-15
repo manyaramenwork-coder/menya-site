@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>샵인샵 영업관리 · 멘야마쯔리</title>
+<link rel="icon" href="https://menyamatsuri.work/favicon-32.png">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
+<script>
+/* 매장관리 사이트와 같은 Supabase·같은 계정. crm 주소는 도메인이 달라 로그인은 따로 한 번 필요 */
+window.MM_CONFIG = { url: 'https://bauaychmvbfmtqototvt.supabase.co', key: 'sb_publishable_rfd_8qDKEpokFmGACsBJ7A_qhHmQlEB', idDomain: '@menya.local' };
+</script>
+<style>
+:root{
+  --bg:#f6f7f3; --card:#fff; --ink:#232621; --sub:#6b6f68; --line:#e3e5de; --side:#1c211e;
+  --brand:#c62429; --brand-d:#a01b21; --brand-soft:#fbe9e9; --blue:#1f4e8c; --blue-soft:#e6eef8;
+  --ok:#2f6b3f; --warn:#9a5b00; --radius:14px;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:"Pretendard Variable",Pretendard,-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",sans-serif;font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+a{color:var(--blue)}
+[hidden]{display:none!important}
+
+/* 상단 */
+.top{background:var(--side);color:#fff;display:flex;align-items:center;gap:16px;padding:0 20px;min-height:56px;padding-top:env(safe-area-inset-top,0px);position:sticky;top:0;z-index:20}
+.top .brand{font-weight:700;font-size:16px;white-space:nowrap}
+.top .brand small{font-weight:500;color:#b9bdb6;margin-left:8px;font-size:13px}
+.top .sp{flex:1}
+.top a,.top button.lnk{color:#cfd3cc;font-size:13px;text-decoration:none;background:none;border:0;padding:6px 8px;border-radius:8px}
+.top a:hover,.top button.lnk:hover{color:#fff;background:#2b312d}
+.top .me{font-size:13px;color:#cfd3cc;white-space:nowrap}
+
+.wrap{max-width:1480px;margin:0 auto;padding:20px 20px 60px}
+
+/* 숫자 줄 */
+.stats{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;margin-bottom:16px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.stat b{display:block;font-size:22px;font-weight:700;letter-spacing:-.3px;font-variant-numeric:tabular-nums}
+.stat span{font-size:12px;color:var(--sub)}
+.stat.alert b{color:var(--brand)}
+
+/* 필터 */
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px}
+.bar select,.bar input[type=search]{height:38px;border:1px solid var(--line);background:#fff;border-radius:10px;padding:0 10px}
+.bar input[type=search]{min-width:220px;flex:1 1 220px;max-width:340px}
+.chk{display:inline-flex;align-items:center;gap:6px;height:38px;padding:0 10px;border:1px solid var(--line);background:#fff;border-radius:10px;font-size:13px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff}
+.seg button{border:0;background:none;height:36px;padding:0 14px;font-size:13px}
+.seg button.on{background:var(--ink);color:#fff}
+.btn{height:38px;border:1px solid var(--line);background:#fff;border-radius:10px;padding:0 14px;font-size:13px;font-weight:500}
+.btn.pri{background:var(--brand);border-color:var(--brand);color:#fff}
+.btn.pri:hover{background:var(--brand-d)}
+.btn:disabled{opacity:.5;cursor:default}
+.cats{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.cats button{border:1px solid var(--line);background:#fff;border-radius:999px;padding:5px 12px;font-size:13px}
+.cats button.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.cats button small{color:inherit;opacity:.65;margin-left:4px}
+
+/* 목록 */
+.tbl-wrap{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:900px}
+th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:middle}
+th{font-size:12px;font-weight:600;color:var(--sub);background:#fafbf8;position:sticky;top:0}
+tbody tr{cursor:pointer}
+tbody tr:hover{background:#fafbf8}
+td .nm{font-weight:600}
+td .sm{font-size:12px;color:var(--sub)}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+.more{display:flex;justify-content:center;padding:14px}
+
+/* 표시 */
+.tag{display:inline-block;font-size:11px;font-weight:600;border-radius:5px;padding:2px 7px;white-space:nowrap}
+.t-A{background:var(--ink);color:#fff}
+.t-B{background:var(--brand-soft);color:var(--brand-d)}
+.t-C{background:#eceee8;color:#4a4e47}
+.t-U{border:1px dashed #b7bbb3;color:var(--sub);padding:1px 6px;font-weight:500}
+.t-org{background:var(--blue-soft);color:var(--blue)}
+.t-st{background:#eceee8;color:#3c403a}
+.t-late{background:var(--brand);color:#fff}
+
+/* 보드 */
+.board{display:flex;gap:10px;overflow-x:auto;padding-bottom:10px;align-items:flex-start}
+.col{flex:0 0 250px;background:#eceee8;border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:8px}
+.col h3{margin:0;display:flex;justify-content:space-between;align-items:center;font-size:14px;padding:2px 4px}
+.col h3 span{font-size:12px;font-weight:500;background:#fff;border-radius:999px;padding:1px 8px}
+.card{background:#fff;border:1px solid #dcdfd7;border-radius:10px;padding:10px 11px;cursor:pointer;display:flex;flex-direction:column;gap:6px;text-align:left;width:100%}
+.card:hover{border-color:#b9bdb4}
+.card .nm{font-weight:600;line-height:1.35}
+.card .sm{font-size:12px;color:var(--sub)}
+.card .tags{display:flex;flex-wrap:wrap;gap:4px}
+.col .empty{font-size:12px;color:var(--sub);text-align:center;padding:16px 6px;border:1px dashed #c4c8bf;border-radius:10px}
+
+/* 상세 패널 */
+.scrim{position:fixed;inset:0;background:rgba(20,22,19,.35);z-index:40}
+.panel{position:fixed;top:0;right:0;bottom:0;width:min(640px,100%);background:var(--bg);z-index:41;display:flex;flex-direction:column;box-shadow:-12px 0 32px rgba(0,0,0,.12);padding-top:env(safe-area-inset-top,0px)}
+.panel-hd{background:#fff;border-bottom:1px solid var(--line);padding:16px 20px;display:flex;gap:12px;align-items:flex-start}
+.panel-hd h2{margin:0;font-size:20px;line-height:1.3}
+.panel-hd .sm{color:var(--sub);font-size:13px;margin-top:4px}
+.panel-hd .x{margin-left:auto;border:0;background:none;font-size:22px;line-height:1;padding:4px 8px;border-radius:8px}
+.panel-bd{flex:1;overflow-y:auto;padding:16px 20px calc(40px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:14px}
+.box{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.box h4{margin:0 0 10px;font-size:14px}
+.steps{display:flex;flex-wrap:wrap;gap:6px}
+.steps button{border:1px solid var(--line);background:#fff;border-radius:8px;padding:6px 10px;font-size:13px}
+.steps button.done{background:#eceee8}
+.steps button.on{background:var(--brand);border-color:var(--brand);color:#fff;font-weight:600}
+.steps .gap{width:100%;height:0}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px 12px}
+.fld{display:flex;flex-direction:column;gap:4px}
+.fld.full{grid-column:1/-1}
+.fld label{font-size:12px;color:var(--sub)}
+.fld input,.fld select,.fld textarea{border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:#fff;min-height:38px}
+.fld textarea{resize:vertical;min-height:70px}
+.toggles{display:flex;flex-wrap:wrap;gap:8px}
+.pick{display:flex;flex-wrap:wrap;gap:6px}
+.pick button{border:1px solid var(--line);background:#fff;border-radius:8px;padding:8px 12px;font-size:13px;min-height:40px}
+.pick button.on{background:var(--ink);border-color:var(--ink);color:#fff;font-weight:600}
+.pick.red button.on{background:var(--brand);border-color:var(--brand)}
+.row-end{display:flex;justify-content:flex-end;gap:8px;margin-top:12px;align-items:center}
+.row-end .msg{font-size:12px;color:var(--ok);margin-right:auto}
+.links{display:flex;flex-wrap:wrap;gap:12px;font-size:13px;margin-top:8px}
+.tl{display:flex;flex-direction:column;gap:10px}
+.act{border-left:3px solid #d4d7cf;padding:2px 0 2px 12px}
+.act.call{border-left-color:var(--brand)}
+.act .hd{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:13px}
+.act .hd b{font-weight:600}
+.act .hd .when{color:var(--sub);font-size:12px;margin-left:auto}
+.act dl{display:grid;grid-template-columns:72px 1fr;gap:3px 10px;margin:6px 0 0;font-size:13px}
+.act dt{color:var(--sub)}
+.act dd{margin:0}
+.muted{color:var(--sub);font-size:13px}
+
+/* 로그인 */
+.login{max-width:360px;margin:12vh auto;background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:28px}
+.login h1{margin:0 0 4px;font-size:20px}
+.login p{margin:0 0 18px;color:var(--sub);font-size:13px}
+.login .fld{margin-bottom:10px}
+.login .err{color:var(--brand);font-size:13px;min-height:20px}
+
+/* 추가 모달 */
+.modal{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(440px,calc(100% - 32px));background:#fff;border-radius:var(--radius);z-index:41;padding:20px}
+.modal h3{margin:0 0 14px}
+
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:10px;font-size:13px;z-index:60}
+.toast.err{background:var(--brand)}
+
+@media (max-width:900px){
+  .stats{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media (max-width:600px){
+  .wrap{padding:14px 12px 60px}
+  .top{padding:0 12px;padding-top:env(safe-area-inset-top,0px);gap:8px}
+  .top .brand small,.top .me{display:none}
+  .stat b{font-size:18px}
+  .grid2{grid-template-columns:1fr}
+  .bar input[type=search]{max-width:none}
+  .panel-hd,.panel-bd{padding-left:14px;padding-right:14px}
+}
+@media (prefers-reduced-motion:no-preference){
+  .panel{animation:slide .18s ease-out}
+  @keyframes slide{from{transform:translateX(24px);opacity:.6}to{transform:none;opacity:1}}
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="brand">멘야마쯔리<small>샵인샵 영업관리</small></div>
+  <div class="sp"></div>
+  <span class="me" id="me"></span>
+  <a href="https://menyamatsuri.work/">매장관리로</a>
+  <button class="lnk" id="logout" hidden>로그아웃</button>
+</header>
+
+<!-- 로그인 (매장관리에서 로그인돼 있으면 안 보임) -->
+<form class="login" id="loginbox" hidden>
+  <h1>로그인</h1>
+  <p>매장관리 계정으로 로그인하세요.</p>
+  <div class="fld"><label for="uid">아이디</label><input id="uid" autocomplete="username"></div>
+  <div class="fld"><label for="upw">비밀번호</label><input id="upw" type="password" autocomplete="current-password"></div>
+  <div class="err" id="lerr"></div>
+  <button class="btn pri" style="width:100%" type="submit">로그인</button>
+</form>
+
+<div class="login" id="noperm" hidden>
+  <h1>영업관리 권한이 없어요</h1>
+  <p>관리자에게 권한 설정에서 ‘영업관리’를 켜 달라고 요청하세요.</p>
+  <a class="btn" href="https://menyamatsuri.work/" style="display:inline-flex;align-items:center;text-decoration:none">매장관리로 돌아가기</a>
+</div>
+
+<main class="wrap" id="app" hidden>
+  <section class="stats" id="stats" aria-label="요약"></section>
+
+  <div class="bar">
+    <select id="f-region" aria-label="지역"><option value="">전체 지역</option></select>
+    <select id="f-stage" aria-label="단계"><option value="">전체 단계</option></select>
+    <select id="f-lunch" aria-label="점심 유형">
+      <option value="">점심 유형 전체</option><option value="A">A 점심 미영업</option><option value="B">B 점심 부진</option><option value="C">C 점심 양호</option><option value="U">미확인</option>
+    </select>
+    <select id="f-org" aria-label="담당 회사">
+      <option value="">담당 회사 전체</option><option value="menya">멘야마쯔리</option><option value="oyumi">오유미당</option><option value="joint">공동</option>
+    </select>
+    <label class="chk"><input type="checkbox" id="f-mine">내 담당만</label>
+    <label class="chk"><input type="checkbox" id="f-due">재연락 대상만</label>
+    <input type="search" id="f-q" placeholder="상호, 주소, 전화번호 검색">
+    <div class="seg" role="group" aria-label="보기 방식">
+      <button id="v-list" class="on">목록</button><button id="v-board">보드</button>
+    </div>
+    <button class="btn pri" id="add">매장 추가</button>
+  </div>
+  <div class="cats" id="cats" aria-label="업종"></div>
+
+  <section id="list-view">
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr>
+          <th>매장</th><th>업종</th><th>지역</th><th>단계</th><th>점심</th><th>담당</th><th>다음 연락</th><th class="num">점수</th>
+        </tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+    <div class="more"><button class="btn" id="more" hidden>더 보기</button></div>
+  </section>
+
+  <section id="board-view" class="board" hidden></section>
+</main>
+
+<div class="scrim" id="scrim" hidden></div>
+<aside class="panel" id="panel" hidden aria-modal="true" role="dialog" aria-labelledby="p-name"></aside>
+<div class="modal" id="addbox" hidden role="dialog" aria-modal="true" aria-labelledby="add-title"></div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+(function(){
+const CFG = window.MM_CONFIG;
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const tel = s => (window.mmTel ? window.mmTel(s) : (s || ''));
+
+/* 매장관리와 같은 로그인 저장 방식 */
+const keepOn = () => { try { return localStorage.getItem('mm-keep') !== '0'; } catch (e) { return false; } };
+const authStore = {
+  getItem: k => { try { return localStorage.getItem(k) ?? sessionStorage.getItem(k); } catch (e) { return sessionStorage.getItem(k); } },
+  setItem: (k, v) => { try { if (keepOn()) { localStorage.setItem(k, v); sessionStorage.removeItem(k); } else { sessionStorage.setItem(k, v); localStorage.removeItem(k); } } catch (e) { sessionStorage.setItem(k, v); } },
+  removeItem: k => { try { localStorage.removeItem(k); } catch (e) {} sessionStorage.removeItem(k); }
+};
+const SB = supabase.createClient(CFG.url, CFG.key, { auth: { storage: authStore, storageKey: 'mm-auth', persistSession: true, autoRefreshToken: true, detectSessionInUrl: false } });
+
+const STAGES = [['collected','수집'],['contacted','1차 통화'],['interested','관심'],['meeting','미팅'],['trial','시식·실사'],['proposal','제안'],['contract','계약'],['hold','보류'],['rejected','거절']];
+const ST = Object.fromEntries(STAGES);
+const FLOW = STAGES.slice(0, 7).map(s => s[0]);
+const LUNCH = { A: 'A 점심 미영업', B: 'B 점심 부진', C: 'C 점심 양호', U: '미확인' };
+const ORG = { menya: '멘야마쯔리', oyumi: '오유미당', joint: '공동' };
+const SRC = { public: '공공데이터', license: '인허가', landing: '랜딩 신청', openchat: '오픈톡', cafe: '카페', listing: '양도 매물', referral: '거래처 소개', manual: '직접 입력' };
+const RES = { interested: '관심', hold: '보류', rejected: '거절', no_answer: '부재', meeting_set: '미팅 확정', wrong_number: '번호 오류' };
+const RES_STAGE = { interested: 'interested', meeting_set: 'meeting', hold: 'hold', rejected: 'rejected' };
+const KIND = { call: '통화', sms: '문자', meeting: '미팅', memo: '메모', landing: '랜딩 신청', stage: '단계 변경', import: '수집' };
+
+const state = { view: 'list', cats: [], offset: 0, rows: [], users: [], regions: [], cur: null };
+
+function toast(m, err){ const t = $('toast'); t.textContent = m; t.className = 'toast' + (err ? ' err' : ''); t.hidden = false; clearTimeout(t._h); t._h = setTimeout(() => t.hidden = true, 2600); }
+function errMsg(e){ const m = String((e && e.message) || e || ''); return m.replace(/^.*?:\s*/, '') || '처리하지 못했어요. 잠시 후 다시 시도하세요.'; }
+async function rpc(fn, args){ const { data, error } = await SB.rpc(fn, args); if (error) throw error; return data; }
+function today(){ return new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10); }
+function addDays(n){ return new Date(Date.now() + 9 * 3600e3 + n * 864e5).toISOString().slice(0, 10); }
+function shortDate(d){ if (!d) return ''; const [, m, dd] = d.split('-'); const w = '일월화수목금토'[new Date(d + 'T00:00:00+09:00').getDay()]; return `${+m}/${+dd} (${w})`; }
+function lunchTag(l){ return `<span class="tag t-${esc(l || 'U')}">${esc(LUNCH[l] || '미확인')}</span>`; }
+
+/* ---------- 로그인 ---------- */
+function show(which){
+  $('loginbox').hidden = which !== 'login'; $('noperm').hidden = which !== 'noperm'; $('app').hidden = which !== 'app';
+  $('logout').hidden = which === 'login';
+}
+$('loginbox').addEventListener('submit', async e => {
+  e.preventDefault();
+  const id = $('uid').value.trim(), pw = $('upw').value;
+  if (!id || !pw) { $('lerr').textContent = '아이디와 비밀번호를 입력하세요.'; return; }
+  $('lerr').textContent = '';
+  const email = (id.indexOf('@') >= 0 ? id : id + CFG.idDomain).toLowerCase();
+  const { error } = await SB.auth.signInWithPassword({ email, password: pw });
+  $('upw').value = '';
+  if (error) { $('lerr').textContent = '아이디 또는 비밀번호를 확인하세요.'; return; }
+  boot();
+});
+$('logout').addEventListener('click', async () => { await SB.auth.signOut(); location.reload(); });
+
+async function boot(){
+  const { data } = await SB.auth.getSession();
+  if (!data.session) { show('login'); return; }
+  try {
+    const s = await rpc('lead_stats');
+    show('app');
+    const { data: me } = await SB.from('profiles').select('name').eq('id', data.session.user.id).maybeSingle();
+    $('me').textContent = me && me.name ? me.name : '';
+    applyStats(s); fillFilters(s); await load(true);
+  } catch (e) {
+    if (/권한/.test(e.message || '')) show('noperm'); else { show('app'); toast(errMsg(e), true); }
+  }
+}
+
+/* ---------- 요약·필터 ---------- */
+function applyStats(s){
+  const items = [
+    ['이번 주 통화', s.calls_week + '건'], ['연결', s.connected_week + '건'], ['신규 관심', s.interested_week + '곳'],
+    ['오늘 재연락', s.due_today + '곳'], ['기한 지남', s.overdue + '곳', s.overdue > 0], ['계약', s.contracts + '건']
+  ];
+  $('stats').innerHTML = items.map(([l, v, a]) => `<div class="stat${a ? ' alert' : ''}"><b>${esc(v)}</b><span>${esc(l)}</span></div>`).join('');
+  state.users = s.users || [];
+}
+function fillFilters(s){
+  state.regions = s.regions || [];
+  $('f-region').innerHTML = `<option value="">전체 지역 (${(s.total || 0).toLocaleString()})</option>` +
+    state.regions.map(r => `<option value="${esc(r.sido + '|' + r.sigungu)}">${esc((r.sido + ' ' + r.sigungu).trim() || '지역 미상')} (${r.n.toLocaleString()})</option>`).join('');
+  $('f-stage').innerHTML = '<option value="">전체 단계</option>' + STAGES.map(([k, v]) => `<option value="${k}">${v}</option>`).join('');
+}
+function filters(){
+  const [sido, sigungu] = ($('f-region').value || '|').split('|');
+  return { sido, sigungu, stage: $('f-stage').value, lunch: $('f-lunch').value, org: $('f-org').value,
+    mine: $('f-mine').checked, due: $('f-due').checked, q: $('f-q').value.trim(), cats: state.cats };
+}
+function renderCats(cats){
+  const keys = Object.keys(cats || {}).sort((a, b) => cats[b] - cats[a]);
+  $('cats').innerHTML = `<button data-c="" class="${state.cats.length ? '' : 'on'}">전체 업종</button>` +
+    keys.map(k => `<button data-c="${esc(k)}" class="${state.cats.includes(k) ? 'on' : ''}">${esc(k)}<small>${cats[k].toLocaleString()}</small></button>`).join('');
+}
+$('cats').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  const c = b.dataset.c;
+  if (!c) state.cats = []; else state.cats = state.cats.includes(c) ? state.cats.filter(x => x !== c) : state.cats.concat(c);
+  load(true);
+});
+['f-region', 'f-stage', 'f-lunch', 'f-org', 'f-mine', 'f-due'].forEach(id => $(id).addEventListener('change', () => load(true)));
+let qT; $('f-q').addEventListener('input', () => { clearTimeout(qT); qT = setTimeout(() => load(true), 300); });
+
+/* ---------- 목록 ---------- */
+const PAGE = 100;
+async function load(reset){
+  if (state.view === 'board') return loadBoard();
+  if (reset) { state.offset = 0; state.rows = []; }
+  try {
+    const d = await rpc('lead_list', { p: { ...filters(), sort: $('f-due').checked ? 'next' : 'score', limit: PAGE, offset: state.offset } });
+    renderCats(d.cats);
+    state.rows = state.rows.concat(d.rows); state.offset += d.rows.length;
+    renderRows(d.total);
+  } catch (e) { toast(errMsg(e), true); }
+}
+function renderRows(total){
+  const tb = $('rows');
+  if (!state.rows.length) { tb.innerHTML = `<tr><td colspan="8" class="muted" style="text-align:center;padding:40px">조건에 맞는 매장이 없어요. 필터를 줄이거나 매장을 추가하세요.</td></tr>`; $('more').hidden = true; return; }
+  tb.innerHTML = state.rows.map(r => `<tr data-id="${r.id}">
+    <td><div class="nm">${esc(r.name)}${r.branch ? ' ' + esc(r.branch) : ''}</div><div class="sm">${esc(SRC[r.source] || r.source)}${r.tel ? ' · ' + esc(tel(r.tel)) : ''}</div></td>
+    <td>${esc(r.cat || '')}</td>
+    <td>${esc([r.sigungu, r.dong].filter(Boolean).join(' '))}</td>
+    <td><span class="tag t-st">${esc(ST[r.stage])}</span></td>
+    <td>${lunchTag(r.lunch)}</td>
+    <td>${esc(r.assignee || '')}${r.org !== 'menya' ? ` <span class="tag t-org">${esc(ORG[r.org])}</span>` : ''}</td>
+    <td>${r.next ? (r.overdue ? `<span class="tag t-late">${esc(shortDate(r.next))}</span>` : esc(shortDate(r.next))) : '<span class="muted">-</span>'}</td>
+    <td class="num">${r.score}</td></tr>`).join('');
+  $('more').hidden = state.rows.length >= total;
+  $('more').textContent = `더 보기 (${state.rows.length.toLocaleString()} / ${total.toLocaleString()})`;
+}
+$('more').addEventListener('click', () => load(false));
+$('rows').addEventListener('click', e => { const tr = e.target.closest('tr[data-id]'); if (tr) openLead(+tr.dataset.id); });
+
+/* ---------- 보드 ---------- */
+async function loadBoard(){
+  const f = filters(); const bv = $('board-view');
+  bv.innerHTML = '<p class="muted">불러오는 중…</p>';
+  try {
+    const res = await Promise.all(STAGES.map(([k]) => rpc('lead_list', { p: { ...f, stage: k, limit: 30 } })));
+    renderCats(res[0].cats);
+    bv.innerHTML = STAGES.map(([k, v], i) => {
+      const d = res[i];
+      const cards = d.rows.map(r => `<button class="card" data-id="${r.id}">
+        <span class="nm">${esc(r.name)}${r.branch ? ' ' + esc(r.branch) : ''}</span>
+        <span class="sm">${esc([r.sigungu, r.dong].filter(Boolean).join(' '))} · ${esc(r.cat || '')}</span>
+        <span class="tags">${lunchTag(r.lunch)}${r.org !== 'menya' ? `<span class="tag t-org">${esc(ORG[r.org])}</span>` : ''}${r.overdue ? '<span class="tag t-late">재연락 지남</span>' : ''}</span>
+        ${r.next ? `<span class="sm">다음 연락 ${esc(shortDate(r.next))}</span>` : ''}
+      </button>`).join('');
+      const more = d.total > d.rows.length ? `<p class="sm muted" style="margin:0;text-align:center">외 ${(d.total - d.rows.length).toLocaleString()}곳은 목록에서 보기</p>` : '';
+      return `<div class="col"><h3>${v}<span>${d.total.toLocaleString()}</span></h3>${cards || '<div class="empty">아직 없음</div>'}${more}</div>`;
+    }).join('');
+  } catch (e) { bv.innerHTML = ''; toast(errMsg(e), true); }
+}
+$('board-view').addEventListener('click', e => { const c = e.target.closest('.card'); if (c) openLead(+c.dataset.id); });
+function setView(v){
+  state.view = v; $('v-list').classList.toggle('on', v === 'list'); $('v-board').classList.toggle('on', v === 'board');
+  $('list-view').hidden = v !== 'list'; $('board-view').hidden = v !== 'board'; load(true);
+}
+$('v-list').addEventListener('click', () => setView('list'));
+$('v-board').addEventListener('click', () => setView('board'));
+
+/* ---------- 상세 ---------- */
+function closePanel(){ $('panel').hidden = true; $('scrim').hidden = true; $('addbox').hidden = true; state.cur = null; }
+$('scrim').addEventListener('click', closePanel);
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('scrim').hidden) closePanel(); });
+
+async function openLead(id){
+  try {
+    const d = await rpc('lead_get', { p_id: id });
+    state.cur = d; renderPanel(d);
+    $('scrim').hidden = false; $('panel').hidden = false;
+  } catch (e) { toast(errMsg(e), true); }
+}
+
+function opt(map, v){ return Object.entries(map).map(([k, l]) => `<option value="${k}"${k === v ? ' selected' : ''}>${esc(l)}</option>`).join(''); }
+function renderPanel(d){
+  const addr = d.addr_road || d.addr_jibun || '';
+  const mapUrl = 'https://map.naver.com/p/search/' + encodeURIComponent((d.name + ' ' + (d.sigungu || '') + ' ' + (d.dong || '')).trim());
+  const users = `<option value="">미지정</option>` + state.users.map(u => `<option value="${esc(u.id)}"${u.id === d.assignee ? ' selected' : ''}>${esc(u.name)}</option>`).join('');
+  const idx = FLOW.indexOf(d.stage);
+  const steps = STAGES.map(([k, v], i) => {
+    const cls = k === d.stage ? 'on' : (i < 7 && idx >= 0 && i < idx ? 'done' : '');
+    return (i === 7 ? '<span class="gap"></span>' : '') + `<button data-stage="${k}" class="${cls}">${v}</button>`;
+  }).join('');
+  $('panel').innerHTML = `
+  <div class="panel-hd">
+    <div>
+      <h2 id="p-name">${esc(d.name)}${d.branch ? ' ' + esc(d.branch) : ''}</h2>
+      <div class="sm">${esc(d.cat_s || '')}${addr ? ' · ' + esc(addr) : ''}</div>
+      <div class="links"><a href="${esc(mapUrl)}" target="_blank" rel="noopener">네이버 지도에서 찾기</a>${d.tel ? `<a href="tel:${esc(d.tel)}">${esc(tel(d.tel))} 전화</a>` : ''}${d.owner_tel ? `<a href="tel:${esc(d.owner_tel)}">점주 ${esc(tel(d.owner_tel))} 전화</a>` : ''}</div>
+    </div>
+    <button class="x" id="p-close" aria-label="닫기">×</button>
+  </div>
+  <div class="panel-bd">
+    <div class="box"><h4>영업 단계</h4><div class="steps" id="p-steps">${steps}</div></div>
+
+    <div class="box">
+      <h4>통화 결과 남기기</h4>
+      <div class="fld" style="margin-bottom:10px"><label>결과</label><div class="pick" id="c-res">${Object.entries(RES).map(([k, v]) => `<button type="button" data-v="${k}">${v}</button>`).join('')}</div></div>
+      <div class="fld" style="margin-bottom:10px"><label>점심 장사 유형</label><div class="pick red" id="c-lunch">${Object.entries(LUNCH).map(([k, v]) => `<button type="button" data-v="${k}" class="${k === d.lunch_type ? 'on' : ''}">${v}</button>`).join('')}</div></div>
+      <div class="grid2">
+        <div class="fld"><label for="c-feel">매출 체감</label><input id="c-feel" placeholder="예: 평일 저녁이 특히 약함"></div>
+        <div class="fld"><label for="c-dur">통화 시간(분)</label><input id="c-dur" type="number" min="0" inputmode="numeric"></div>
+        <div class="fld full"><label for="c-react">핵심 반응</label><textarea id="c-react" placeholder="예: 낮 임대료 부담 언급, 돈카츠 같이 하는 구성에 관심"></textarea></div>
+        <div class="fld full"><label for="c-concern">우려 사항</label><input id="c-concern" placeholder="예: 점심 인력 추가 채용 부담"></div>
+        <div class="fld"><label for="c-next">다음 연락일</label><input id="c-next" type="date" value="${esc(d.next_contact || '')}"></div>
+        <div class="fld"><label for="c-action">다음 액션</label><input id="c-action" value="${esc(d.next_action || '')}" placeholder="예: 수익 시뮬레이션 문자 발송"></div>
+        <div class="fld full"><label for="c-rec">녹음 파일 링크 (선택)</label><input id="c-rec" placeholder="드라이브 등 링크"></div>
+      </div>
+      <div class="row-end"><span class="msg" id="c-msg"></span><button class="btn" type="button" id="c-memo">메모로 저장</button><button class="btn pri" type="button" id="c-save">통화 결과 저장</button></div>
+    </div>
+
+    <div class="box">
+      <h4>매장 정보</h4>
+      <div class="grid2">
+        <div class="fld"><label for="e-tel">매장 전화</label><input id="e-tel" type="tel" value="${esc(tel(d.tel || ''))}"></div>
+        <div class="fld"><label for="e-hours">영업시간</label><input id="e-hours" value="${esc(d.hours || '')}" placeholder="예: 17:00–01:00"></div>
+        <div class="fld"><label for="e-oname">점주</label><input id="e-oname" value="${esc(d.owner_name || '')}"></div>
+        <div class="fld"><label for="e-otel">점주 연락처</label><input id="e-otel" type="tel" value="${esc(tel(d.owner_tel || ''))}"></div>
+        <div class="fld"><label for="e-asg">담당자</label><select id="e-asg">${users}</select></div>
+        <div class="fld"><label for="e-org">리드 소유</label><select id="e-org">${opt(ORG, d.owner_org)}</select></div>
+        <div class="fld"><label for="e-src">유입 경로</label><select id="e-src">${opt(SRC, d.source)}</select></div>
+        <div class="fld"><label>수집 정보</label><div class="muted" style="padding-top:8px">${d.first_seen ? '처음 확인 ' + esc(d.first_seen) : '직접 등록'}${d.closed_at ? ' · <b style="color:var(--brand)">폐업 의심 ' + esc(d.closed_at) + '</b>' : ''}</div></div>
+      </div>
+      <h4 style="margin-top:16px">매출 정보 (월, 원)</h4>
+      <div class="grid2">
+        <div class="fld"><label for="e-rown">점주 신고</label><input id="e-rown" type="number" min="0" value="${d.rev_owner ?? ''}"></div>
+        <div class="fld"><label for="e-ropen">오픈업 조회</label><input id="e-ropen" type="number" min="0" value="${d.rev_openup ?? ''}"></div>
+        <div class="fld"><label for="e-rarea">상권 평균</label><input id="e-rarea" type="number" min="0" value="${d.rev_area ?? ''}"></div>
+        <div class="fld"><label for="e-rnote">매출 메모</label><input id="e-rnote" value="${esc(d.rev_note || '')}"></div>
+      </div>
+      <h4 style="margin-top:16px">동의</h4>
+      <div class="toggles">
+        <label class="chk"><input type="checkbox" id="e-cc"${d.consent_collect ? ' checked' : ''}>개인정보 수집</label>
+        <label class="chk"><input type="checkbox" id="e-cs"${d.consent_share ? ' checked' : ''}>오유미당 제공</label>
+        <label class="chk"><input type="checkbox" id="e-cm"${d.consent_marketing ? ' checked' : ''}>마케팅 수신</label>
+      </div>
+      <div class="fld full" style="margin-top:12px"><label for="e-memo">메모</label><textarea id="e-memo">${esc(d.memo || '')}</textarea></div>
+      <div class="row-end"><span class="msg" id="e-msg"></span><button class="btn pri" type="button" id="e-save">매장 정보 저장</button></div>
+    </div>
+
+    <div class="box"><h4>활동 기록</h4><div class="tl">${renderActs(d.activities)}</div></div>
+  </div>`;
+
+  $('p-close').onclick = closePanel;
+  $('p-steps').onclick = async e => {
+    const b = e.target.closest('button[data-stage]'); if (!b || b.dataset.stage === d.stage) return;
+    await save({ id: d.id, stage: b.dataset.stage }, `${ST[b.dataset.stage]} 단계로 옮겼어요`);
+  };
+  ['c-res', 'c-lunch'].forEach(id => $(id).onclick = e => {
+    const b = e.target.closest('button'); if (!b) return;
+    const was = b.classList.contains('on');
+    [...$(id).children].forEach(x => x.classList.remove('on'));
+    if (!was) b.classList.add('on');
+    if (id === 'c-res' && !was && !$('c-next').value && ['interested', 'hold', 'no_answer'].includes(b.dataset.v)) $('c-next').value = addDays(b.dataset.v === 'no_answer' ? 1 : 3);
+  });
+  $('c-save').onclick = () => logCall('call');
+  $('c-memo').onclick = () => logCall('memo');
+  $('e-save').onclick = () => save({
+    id: d.id, tel: $('e-tel').value.replace(/\D/g, ''), hours: $('e-hours').value, owner_name: $('e-oname').value,
+    owner_tel: $('e-otel').value.replace(/\D/g, ''), assignee: $('e-asg').value, org: $('e-org').value, source: $('e-src').value,
+    rev_owner: $('e-rown').value, rev_openup: $('e-ropen').value, rev_area: $('e-rarea').value, rev_note: $('e-rnote').value,
+    consent_collect: $('e-cc').checked, consent_share: $('e-cs').checked, consent_marketing: $('e-cm').checked, memo: $('e-memo').value
+  }, '매장 정보를 저장했어요');
+}
+
+function renderActs(list){
+  if (!list || !list.length) return '<p class="muted" style="margin:0">아직 기록이 없어요. 첫 통화 결과를 남겨 보세요.</p>';
+  return list.map(a => {
+    const s = a.summary || {};
+    const rows = [['점심', s.lunch], ['매출 체감', s.revenue_feel], ['핵심 반응', s.reaction], ['우려', s.concern], ['다음 액션', s.next_action], ['메모', s.note]].filter(r => r[1]);
+    const title = a.kind === 'stage' ? `단계 변경: ${esc(ST[a.from] || a.from || '')} → ${esc(ST[a.to] || a.to || '')}` : esc(KIND[a.kind] || a.kind);
+    return `<div class="act ${a.kind === 'call' ? 'call' : ''}">
+      <div class="hd"><b>${title}</b>${a.result ? `<span class="tag t-st">${esc(RES[a.result] || a.result)}</span>` : ''}${a.ai ? '<span class="tag t-C">Claude 요약</span>' : ''}${a.duration ? `<span class="muted">${Math.round(a.duration / 60)}분</span>` : ''}<span class="when">${esc(a.at)}${a.by ? ' · ' + esc(a.by) : ''}</span></div>
+      ${rows.length ? `<dl>${rows.map(r => `<dt>${esc(r[0])}</dt><dd>${esc(r[1])}</dd>`).join('')}</dl>` : ''}
+      ${a.rec ? `<div class="links"><a href="${esc(a.rec)}" target="_blank" rel="noopener">녹음 듣기</a></div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+async function save(p, okMsg){
+  try {
+    await rpc('lead_save', { p });
+    toast(okMsg); await refreshAfter(p.id);
+  } catch (e) { toast(errMsg(e), true); }
+}
+async function logCall(kind){
+  const d = state.cur; if (!d) return;
+  const res = ($('c-res').querySelector('.on') || {}).dataset?.v || '';
+  const lunch = ($('c-lunch').querySelector('.on') || {}).dataset?.v || '';
+  const summary = {
+    lunch: lunch ? LUNCH[lunch] : '', revenue_feel: $('c-feel').value.trim(), reaction: $('c-react').value.trim(),
+    concern: $('c-concern').value.trim(), next_action: $('c-action').value.trim()
+  };
+  Object.keys(summary).forEach(k => { if (!summary[k]) delete summary[k]; });
+  if (kind === 'call' && !res) { toast('통화 결과를 골라 주세요', true); return; }
+  if (kind === 'memo' && !Object.keys(summary).length) { toast('남길 내용을 입력해 주세요', true); return; }
+  let stage = '';
+  if (kind === 'call' && RES_STAGE[res]) {
+    const to = RES_STAGE[res], fi = FLOW.indexOf(d.stage), ti = FLOW.indexOf(to);
+    if (to === 'hold' || to === 'rejected' || ti > fi || fi < 0) stage = to;
+  }
+  const btn = kind === 'call' ? $('c-save') : $('c-memo'); btn.disabled = true;
+  try {
+    await rpc('lead_log', { p: { lead_id: d.id, kind, result: kind === 'call' ? res : '', duration: $('c-dur').value ? Math.round(+$('c-dur').value * 60) : '',
+      summary, rec: $('c-rec').value.trim(), stage, lunch, next: $('c-next').value, next_action: $('c-action').value.trim() } });
+    toast(kind === 'call' ? '통화 결과를 저장했어요' : '메모를 저장했어요');
+    await refreshAfter(d.id);
+  } catch (e) { toast(errMsg(e), true); }
+  finally { btn.disabled = false; }
+}
+async function refreshAfter(id){
+  const [d, s] = await Promise.all([rpc('lead_get', { p_id: id }), rpc('lead_stats')]);
+  state.cur = d; renderPanel(d); applyStats(s); load(true);
+}
+
+/* ---------- 매장 추가 ---------- */
+$('add').addEventListener('click', () => {
+  const b = $('addbox');
+  b.innerHTML = `<h3 id="add-title">매장 추가</h3>
+    <div class="grid2">
+      <div class="fld full"><label for="a-name">상호</label><input id="a-name" required></div>
+      <div class="fld"><label for="a-sgg">시군구</label><input id="a-sgg" placeholder="예: 마포구"></div>
+      <div class="fld"><label for="a-dong">동</label><input id="a-dong" placeholder="예: 서교동"></div>
+      <div class="fld full"><label for="a-addr">주소</label><input id="a-addr"></div>
+      <div class="fld"><label for="a-tel">전화</label><input id="a-tel" type="tel"></div>
+      <div class="fld"><label for="a-src">유입 경로</label><select id="a-src">${opt(SRC, 'manual')}</select></div>
+      <div class="fld"><label for="a-cat">업종</label><input id="a-cat" placeholder="예: 요리 주점"></div>
+      <div class="fld"><label for="a-org">리드 소유</label><select id="a-org">${opt(ORG, 'menya')}</select></div>
+    </div>
+    <div class="row-end"><button class="btn" type="button" id="a-cancel">취소</button><button class="btn pri" type="button" id="a-save">매장 추가</button></div>`;
+  $('scrim').hidden = false; b.hidden = false; $('a-name').focus();
+  $('a-cancel').onclick = closePanel;
+  $('a-save').onclick = async () => {
+    const name = $('a-name').value.trim(); if (!name) { toast('상호를 입력해 주세요', true); return; }
+    try {
+      const id = await rpc('lead_save', { p: { name, sigungu: $('a-sgg').value.trim(), dong: $('a-dong').value.trim(), addr_road: $('a-addr').value.trim(),
+        tel: $('a-tel').value.replace(/\D/g, ''), source: $('a-src').value, cat_s: $('a-cat').value.trim(), org: $('a-org').value } });
+      b.hidden = true; toast('매장을 추가했어요'); load(true); openLead(id);
+    } catch (e) { toast(errMsg(e), true); }
+  };
+});
+
+boot();
+})();
+</script>
+</body>
+</html>
