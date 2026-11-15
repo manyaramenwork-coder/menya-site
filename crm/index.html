@@ -7,6 +7,9 @@
 <link rel="icon" href="https://menyamatsuri.work/favicon-32.png">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/topojson-client@3.1.0/dist/topojson-client.min.js"></script>
 <script>
 /* 매장관리 사이트와 같은 Supabase·같은 계정. crm 주소는 도메인이 달라 로그인은 따로 한 번 필요 */
 window.MM_CONFIG = { url: 'https://bauaychmvbfmtqototvt.supabase.co', key: 'sb_publishable_rfd_8qDKEpokFmGACsBJ7A_qhHmQlEB', idDomain: '@menya.local' };
@@ -95,6 +98,25 @@ td .sm{font-size:12px;color:var(--sub)}
 .card .tags{display:flex;flex-wrap:wrap;gap:4px}
 .col .empty{font-size:12px;color:var(--sub);text-align:center;padding:16px 6px;border:1px dashed #c4c8bf;border-radius:10px}
 
+/* 지도 */
+.crumb{display:flex;flex-wrap:wrap;align-items:center;gap:4px;margin-bottom:10px;font-size:14px}
+.crumb button{border:0;background:none;padding:4px 6px;border-radius:6px;color:var(--blue);font-weight:500}
+.crumb button:disabled{color:var(--ink);font-weight:700;cursor:default}
+.crumb span{color:var(--sub)}
+.crumb .hint{margin-left:auto;font-size:12px;color:var(--sub)}
+#map{height:max(480px, calc(100vh - 240px));border-radius:var(--radius);border:1px solid var(--line);background:#e9ece6;z-index:0}
+.bub{display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:50%;background:rgba(198,36,41,.88);color:#fff;border:2px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.25);text-align:center;line-height:1.15;cursor:pointer;font-family:inherit}
+.bub small{font-size:11px;font-weight:500;max-width:90%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bub b{font-size:14px;font-weight:700;font-variant-numeric:tabular-nums}
+.bub:hover{background:var(--brand-d)}
+.leaflet-tooltip.lbl{background:transparent;border:0;box-shadow:none;padding:0;font-weight:700;font-size:12px;color:#232621;text-align:center;line-height:1.2;text-shadow:0 0 3px #fff,0 0 3px #fff,0 0 2px #fff;pointer-events:none}
+.leaflet-tooltip.lbl::before{display:none}
+.leaflet-tooltip.lbl small{display:block;font-weight:600;color:var(--brand-d)}
+.scale{display:inline-flex;align-items:center;gap:6px}
+.scale b{display:inline-block;width:90px;height:10px;border-radius:5px;background:linear-gradient(90deg,#eceee8,rgba(198,36,41,.75))}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:10px;font-size:12px;color:var(--sub)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:-1px}
+
 /* 상세 패널 */
 .scrim{position:fixed;inset:0;background:rgba(20,22,19,.35);z-index:40}
 .panel{position:fixed;top:0;right:0;bottom:0;width:min(640px,100%);background:var(--bg);z-index:41;display:flex;flex-direction:column;box-shadow:-12px 0 32px rgba(0,0,0,.12);padding-top:env(safe-area-inset-top,0px)}
@@ -134,6 +156,8 @@ td .sm{font-size:12px;color:var(--sub)}
 .act dt{color:var(--sub)}
 .act dd{margin:0}
 .muted{color:var(--sub);font-size:13px}
+.nv{display:inline-block;font-size:11px;font-weight:600;color:#03702f;border:1px solid #9fd6b3;background:#effaf3;border-radius:5px;padding:1px 6px;margin-left:6px;text-decoration:none;vertical-align:1px}
+.nv:hover{background:#dff3e6;color:#025a26}
 
 /* 로그인 */
 .login{max-width:360px;margin:12vh auto;background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:28px}
@@ -209,7 +233,7 @@ td .sm{font-size:12px;color:var(--sub)}
     <label class="chk"><input type="checkbox" id="f-due">재연락 대상만</label>
     <input type="search" id="f-q" placeholder="상호, 주소, 전화번호 검색">
     <div class="seg" role="group" aria-label="보기 방식">
-      <button id="v-list" class="on">목록</button><button id="v-board">보드</button>
+      <button id="v-list" class="on">목록</button><button id="v-board">보드</button><button id="v-map">지도</button>
     </div>
     <button class="btn pri" id="add">매장 추가</button>
   </div>
@@ -228,6 +252,12 @@ td .sm{font-size:12px;color:var(--sub)}
   </section>
 
   <section id="board-view" class="board" hidden></section>
+
+  <section id="map-view" hidden>
+    <nav class="crumb" id="crumb" aria-label="지역 단계"></nav>
+    <div id="map" role="region" aria-label="매장 지도"></div>
+    <div class="legend" id="legend"></div>
+  </section>
 </main>
 
 <div class="scrim" id="scrim" hidden></div>
@@ -269,6 +299,11 @@ async function rpc(fn, args){ const { data, error } = await SB.rpc(fn, args); if
 function today(){ return new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10); }
 function addDays(n){ return new Date(Date.now() + 9 * 3600e3 + n * 864e5).toISOString().slice(0, 10); }
 function shortDate(d){ if (!d) return ''; const [, m, dd] = d.split('-'); const w = '일월화수목금토'[new Date(d + 'T00:00:00+09:00').getDay()]; return `${+m}/${+dd} (${w})`; }
+function naverLink(r){
+  const u = r.naver || r.naver_url;
+  if (u) return u;
+  return 'https://map.naver.com/p/search/' + encodeURIComponent([r.name, r.sigungu, r.dong].filter(Boolean).join(' '));
+}
 function lunchTag(l){ return `<span class="tag t-${esc(l || 'U')}">${esc(LUNCH[l] || '미확인')}</span>`; }
 
 /* ---------- 로그인 ---------- */
@@ -341,6 +376,7 @@ let qT; $('f-q').addEventListener('input', () => { clearTimeout(qT); qT = setTim
 const PAGE = 100;
 async function load(reset){
   if (state.view === 'board') return loadBoard();
+  if (state.view === 'map') return loadMap();
   if (reset) { state.offset = 0; state.rows = []; }
   try {
     const d = await rpc('lead_list', { p: { ...filters(), sort: $('f-due').checked ? 'next' : 'score', limit: PAGE, offset: state.offset } });
@@ -353,7 +389,7 @@ function renderRows(total){
   const tb = $('rows');
   if (!state.rows.length) { tb.innerHTML = `<tr><td colspan="8" class="muted" style="text-align:center;padding:40px">조건에 맞는 매장이 없어요. 필터를 줄이거나 매장을 추가하세요.</td></tr>`; $('more').hidden = true; return; }
   tb.innerHTML = state.rows.map(r => `<tr data-id="${r.id}">
-    <td><div class="nm">${esc(r.name)}${r.branch ? ' ' + esc(r.branch) : ''}</div><div class="sm">${esc(SRC[r.source] || r.source)}${r.tel ? ' · ' + esc(tel(r.tel)) : ''}</div></td>
+    <td><div class="nm">${esc(r.name)}${r.branch ? ' ' + esc(r.branch) : ''}<a class="nv" href="${esc(naverLink(r))}" target="_blank" rel="noopener" title="네이버 플레이스">N ${r.naver ? '플레이스' : '검색'}</a></div><div class="sm">${esc(SRC[r.source] || r.source)}${r.tel ? ' · ' + esc(tel(r.tel)) : ''}</div></td>
     <td>${esc(r.cat || '')}</td>
     <td>${esc([r.sigungu, r.dong].filter(Boolean).join(' '))}</td>
     <td><span class="tag t-st">${esc(ST[r.stage])}</span></td>
@@ -365,7 +401,7 @@ function renderRows(total){
   $('more').textContent = `더 보기 (${state.rows.length.toLocaleString()} / ${total.toLocaleString()})`;
 }
 $('more').addEventListener('click', () => load(false));
-$('rows').addEventListener('click', e => { const tr = e.target.closest('tr[data-id]'); if (tr) openLead(+tr.dataset.id); });
+$('rows').addEventListener('click', e => { if (e.target.closest('a')) return; const tr = e.target.closest('tr[data-id]'); if (tr) openLead(+tr.dataset.id); });
 
 /* ---------- 보드 ---------- */
 async function loadBoard(){
@@ -389,11 +425,135 @@ async function loadBoard(){
 }
 $('board-view').addEventListener('click', e => { const c = e.target.closest('.card'); if (c) openLead(+c.dataset.id); });
 function setView(v){
-  state.view = v; $('v-list').classList.toggle('on', v === 'list'); $('v-board').classList.toggle('on', v === 'board');
-  $('list-view').hidden = v !== 'list'; $('board-view').hidden = v !== 'board'; load(true);
+  state.view = v; ['list', 'board', 'map'].forEach(k => $('v-' + k).classList.toggle('on', v === k));
+  $('list-view').hidden = v !== 'list'; $('board-view').hidden = v !== 'board'; $('map-view').hidden = v !== 'map';
+  if (v === 'map') { const [s, g] = ($('f-region').value || '|').split('|'); state.geo = { sido: s || '', sigungu: g || '', dong: '' }; }
+  load(true);
 }
-$('v-list').addEventListener('click', () => setView('list'));
-$('v-board').addEventListener('click', () => setView('board'));
+$('v-map').addEventListener('click', () => setView('map'));
+
+/* ---------- 지도: 전국 → 시도 → 시군구 → 읍면동 → 매장 (경계 색칠) ---------- */
+const STAGE_COLOR = { collected: '#9aa097', contacted: '#e0a33c', interested: '#c62429', meeting: '#7a1015', trial: '#7a1015', proposal: '#7a1015', contract: '#1f4e8c', hold: '#c9cbc4', rejected: '#4d514a' };
+state.geo = { sido: '', sigungu: '', dong: '' };
+let MAP = null, POLY = null, PTS = null;
+const GEO = {};
+const norm = s => String(s || '').replace(/\s/g, '');
+function geoFile(name){
+  if (!GEO[name]) GEO[name] = fetch('geo/' + name + '.json').then(r => { if (!r.ok) throw new Error('경계 파일을 못 불러왔어요 (geo/' + name + '.json)'); return r.json(); })
+    .then(tp => topojson.feature(tp, tp.objects[name]).features)
+    .catch(e => { delete GEO[name]; throw e; });
+  return GEO[name];
+}
+function ensureMap(){
+  if (MAP) { setTimeout(() => MAP.invalidateSize(), 0); return; }
+  MAP = L.map('map', { zoomControl: true, zoomSnap: .25 }).setView([36.2, 127.8], 7);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, opacity: .55,
+    attribution: '&copy; OpenStreetMap · 경계: 통계청 SGIS, admdongkor(CC BY 4.0)' }).addTo(MAP);
+  POLY = L.layerGroup().addTo(MAP); PTS = L.layerGroup().addTo(MAP);
+  $('legend').innerHTML = '<span class="scale">매장 적음<b></b>많음</span>' + [['collected', '수집'], ['contacted', '1차 통화'], ['interested', '관심'], ['meeting', '미팅~제안'], ['contract', '계약'], ['hold', '보류'], ['rejected', '거절']]
+    .map(([k, v]) => `<span><i style="background:${STAGE_COLOR[k]}"></i>${v}</span>`).join('') + '<span>테두리 굵은 점 = 재연락 기한 지남</span>';
+}
+function renderCrumb(level){
+  const g = state.geo, parts = [`<button data-l="0" ${!g.sido ? 'disabled' : ''}>전국</button>`];
+  if (g.sido) parts.push('<span>›</span>', `<button data-l="1" ${!g.sigungu ? 'disabled' : ''}>${esc(g.sido)}</button>`);
+  if (g.sigungu) parts.push('<span>›</span>', `<button data-l="2" ${!g.dong ? 'disabled' : ''}>${esc(g.sigungu)}</button>`);
+  if (g.dong) parts.push('<span>›</span>', `<button data-l="3" disabled>${esc(g.dong)}</button>`);
+  const hint = level === 'store' ? '점을 누르면 매장 상세가 열려요 · 다른 동을 눌러 바꿀 수 있어요' : '지역을 누르면 한 단계 들어가요';
+  $('crumb').innerHTML = parts.join('') + `<span class="hint">${hint}</span>`;
+}
+$('crumb').addEventListener('click', e => {
+  const b = e.target.closest('button[data-l]'); if (!b || b.disabled) return;
+  const l = b.dataset.l;
+  if (l === '0') state.geo = { sido: '', sigungu: '', dong: '' };
+  else if (l === '1') state.geo = { sido: state.geo.sido, sigungu: '', dong: '' };
+  else state.geo.dong = '';
+  syncRegion(); state.geoNav = true; loadMap();
+});
+function syncRegion(){
+  const v = state.geo.sigungu ? state.geo.sido + '|' + state.geo.sigungu : '';
+  $('f-region').value = [...$('f-region').options].some(o => o.value === v) ? v : '';
+}
+const BASE = { color: '#ffffff', weight: 1.2 };
+function fillFor(n, max){
+  if (!n) return { fillColor: '#eceee8', fillOpacity: .55 };
+  return { fillColor: '#c62429', fillOpacity: .12 + .63 * Math.sqrt(n / max) };
+}
+let mapSeq = 0;
+async function loadMap(){
+  ensureMap();
+  const seq = ++mapSeq;
+  const f = filters();
+  if (!state.geoNav) { const [s, g] = ($('f-region').value || '|').split('|'); if (s !== state.geo.sido || g !== state.geo.sigungu) state.geo = { sido: s || '', sigungu: g || '', dong: '' }; }
+  state.geoNav = false;
+  const G = state.geo;
+  const level = !G.sido ? 'sido' : !G.sigungu ? 'sgg' : !G.dong ? 'dong' : 'store';
+  try {
+    const [feats, grp, pts] = await Promise.all([
+      geoFile(level === 'sido' ? 'sido' : level === 'sgg' ? 'sgg' : 'dong'),
+      rpc('lead_geo', { p: { ...f, sido: G.sido, sigungu: G.sigungu, dong: '' } }),
+      level === 'store' ? rpc('lead_geo', { p: { ...f, sido: G.sido, sigungu: G.sigungu, dong: G.dong } }) : null
+    ]);
+    if (seq !== mapSeq || state.view !== 'map') return;
+    renderCrumb(level);
+    const counts = {}; (grp.groups || []).forEach(x => counts[norm(x.name)] = x);
+    const keyOf = level === 'sido' ? (p => p.sidonm) : level === 'sgg' ? (p => p.sggk) : (p => p.dong);
+    const nameOf = level === 'sido' ? (p => p.sidonm) : level === 'sgg' ? (p => p.sggnm) : (p => p.dong);
+    const list = feats.filter(ft => level === 'sido' ? true : level === 'sgg' ? ft.properties.sidonm === G.sido
+      : ft.properties.sidonm === G.sido && ft.properties.sggk === norm(G.sigungu));
+    POLY.clearLayers(); PTS.clearLayers();
+    if (!list.length) { toast('이 지역 경계를 찾지 못했어요', true); return; }
+    const max = Math.max(1, ...list.map(ft => (counts[norm(keyOf(ft.properties))] || {}).n || 0));
+    let selectedLayer = null;
+    const styleOf = ft => {
+      const c = counts[norm(keyOf(ft.properties))], n = c ? c.n : 0;
+      if (level === 'store') {
+        if (ft.properties.dong === G.dong) return { color: '#1f4e8c', weight: 3, fillColor: '#1f4e8c', fillOpacity: .12 };
+        return { ...BASE, ...fillFor(n, max), fillOpacity: n ? .18 : .35 };
+      }
+      return { ...BASE, ...fillFor(n, max) };
+    };
+    const layer = L.geoJSON({ type: 'FeatureCollection', features: list }, {
+      style: styleOf,
+      onEachFeature: (ft, lyr) => {
+        const c = counts[norm(keyOf(ft.properties))], n = c ? c.n : 0, nm = nameOf(ft.properties);
+        const isSel = level === 'store' && ft.properties.dong === G.dong;
+        if (isSel) selectedLayer = lyr;
+        if (n && level !== 'store') lyr.bindTooltip(`${esc(nm)}<small>${n.toLocaleString()}</small>`, { permanent: true, direction: 'center', className: 'lbl' });
+        else lyr.bindTooltip(`<b>${esc(nm)}</b> ${n.toLocaleString()}곳${c ? `<br>가장 많은 업종: ${esc(c.top_cat || '-')}<br>영업 진행 ${c.active.toLocaleString()} · 계약 ${c.contract.toLocaleString()}` : ''}`, { sticky: true });
+        lyr.on('mouseover', () => { if (!isSel) { const s = styleOf(ft); lyr.setStyle({ color: '#232621', weight: 2.5, fillOpacity: Math.min(.92, (s.fillOpacity || .3) + .2) }); lyr.bringToFront(); } });
+        lyr.on('mouseout', () => { lyr.setStyle(styleOf(ft)); });
+        lyr.on('click', () => {
+          if (isSel) return;
+          lyr.setStyle({ color: '#1f4e8c', weight: 3, fillColor: '#1f4e8c', fillOpacity: .5 }); lyr.bringToFront();
+          // 누른 지역으로 바로 확대 (확대 애니메이션이 끝날 즈음 안쪽 경계를 그림)
+          MAP.flyToBounds(lyr.getBounds(), { padding: [10, 10], duration: .55, maxZoom: level === 'dong' ? 17 : 15 });
+          const p = ft.properties;
+          if (level === 'sido') state.geo = { sido: p.sidonm, sigungu: '', dong: '' };
+          else if (level === 'sgg') state.geo = { sido: G.sido, sigungu: c && c.name ? c.name : p.sggnm, dong: '' };
+          else state.geo = { sido: G.sido, sigungu: G.sigungu, dong: p.dong };
+          setTimeout(() => { syncRegion(); state.geoNav = true; loadMap(); }, 450);
+        });
+      }
+    }).addTo(POLY);
+
+    if (level === 'store') {
+      const ps = (pts && pts.points) || [];
+      ps.forEach(p => {
+        const m = L.circleMarker([p.lat, p.lng], { radius: 6, weight: p.overdue ? 3 : 1, color: p.overdue ? '#232621' : '#ffffff', fillColor: STAGE_COLOR[p.stage] || '#9aa097', fillOpacity: .95 });
+        m.bindTooltip(`<b>${esc(p.name)}${p.branch ? ' ' + esc(p.branch) : ''}</b><br>${esc(p.cat || '')} · ${esc(ST[p.stage])} · ${esc(LUNCH[p.lunch] || '')}`, { direction: 'top' });
+        m.on('click', () => openLead(p.id));
+        PTS.addLayer(m);
+      });
+      const b = selectedLayer ? selectedLayer.getBounds() : (ps.length ? L.latLngBounds(ps.map(p => [p.lat, p.lng])) : layer.getBounds());
+      MAP.flyToBounds(b, { padding: [12, 12], maxZoom: 17, duration: .4 });
+      if (!ps.length) toast('이 동에는 조건에 맞는 매장이 없어요');
+    } else {
+      // 선택한 지역이 지도 화면을 꽉 채우게
+      if (level === 'sido') MAP.fitBounds(layer.getBounds(), { padding: [8, 8] });
+      else MAP.flyToBounds(layer.getBounds(), { padding: [8, 8], duration: .4 });
+    }
+  } catch (e) { toast(errMsg(e), true); }
+}
 
 /* ---------- 상세 ---------- */
 function closePanel(){ $('panel').hidden = true; $('scrim').hidden = true; $('addbox').hidden = true; state.cur = null; }
@@ -411,7 +571,7 @@ async function openLead(id){
 function opt(map, v){ return Object.entries(map).map(([k, l]) => `<option value="${k}"${k === v ? ' selected' : ''}>${esc(l)}</option>`).join(''); }
 function renderPanel(d){
   const addr = d.addr_road || d.addr_jibun || '';
-  const mapUrl = 'https://map.naver.com/p/search/' + encodeURIComponent((d.name + ' ' + (d.sigungu || '') + ' ' + (d.dong || '')).trim());
+  const mapUrl = naverLink(d);
   const users = `<option value="">미지정</option>` + state.users.map(u => `<option value="${esc(u.id)}"${u.id === d.assignee ? ' selected' : ''}>${esc(u.name)}</option>`).join('');
   const idx = FLOW.indexOf(d.stage);
   const steps = STAGES.map(([k, v], i) => {
@@ -423,7 +583,7 @@ function renderPanel(d){
     <div>
       <h2 id="p-name">${esc(d.name)}${d.branch ? ' ' + esc(d.branch) : ''}</h2>
       <div class="sm">${esc(d.cat_s || '')}${addr ? ' · ' + esc(addr) : ''}</div>
-      <div class="links"><a href="${esc(mapUrl)}" target="_blank" rel="noopener">네이버 지도에서 찾기</a>${d.tel ? `<a href="tel:${esc(d.tel)}">${esc(tel(d.tel))} 전화</a>` : ''}${d.owner_tel ? `<a href="tel:${esc(d.owner_tel)}">점주 ${esc(tel(d.owner_tel))} 전화</a>` : ''}</div>
+      <div class="links"><a href="${esc(mapUrl)}" target="_blank" rel="noopener">${d.naver_url ? '네이버 플레이스 열기' : '네이버에서 찾기'}</a>${d.tel ? `<a href="tel:${esc(d.tel)}">${esc(tel(d.tel))} 전화</a>` : ''}${d.owner_tel ? `<a href="tel:${esc(d.owner_tel)}">점주 ${esc(tel(d.owner_tel))} 전화</a>` : ''}</div>
     </div>
     <button class="x" id="p-close" aria-label="닫기">×</button>
   </div>
@@ -450,6 +610,7 @@ function renderPanel(d){
       <h4>매장 정보</h4>
       <div class="grid2">
         <div class="fld"><label for="e-tel">매장 전화</label><input id="e-tel" type="tel" value="${esc(tel(d.tel || ''))}"></div>
+        <div class="fld full"><label for="e-naver">네이버 플레이스 주소</label><input id="e-naver" type="url" value="${esc(d.naver_url || '')}" placeholder="네이버에서 찾은 매장 페이지 주소를 붙여 넣으세요 (naver.me 공유 링크도 가능)"></div>
         <div class="fld"><label for="e-hours">영업시간</label><input id="e-hours" value="${esc(d.hours || '')}" placeholder="예: 17:00–01:00"></div>
         <div class="fld"><label for="e-oname">점주</label><input id="e-oname" value="${esc(d.owner_name || '')}"></div>
         <div class="fld"><label for="e-otel">점주 연락처</label><input id="e-otel" type="tel" value="${esc(tel(d.owner_tel || ''))}"></div>
@@ -493,7 +654,7 @@ function renderPanel(d){
   $('c-save').onclick = () => logCall('call');
   $('c-memo').onclick = () => logCall('memo');
   $('e-save').onclick = () => save({
-    id: d.id, tel: $('e-tel').value.replace(/\D/g, ''), hours: $('e-hours').value, owner_name: $('e-oname').value,
+    id: d.id, tel: $('e-tel').value.replace(/\D/g, ''), hours: $('e-hours').value, naver_url: $('e-naver').value.trim(), owner_name: $('e-oname').value,
     owner_tel: $('e-otel').value.replace(/\D/g, ''), assignee: $('e-asg').value, org: $('e-org').value, source: $('e-src').value,
     rev_owner: $('e-rown').value, rev_openup: $('e-ropen').value, rev_area: $('e-rarea').value, rev_note: $('e-rnote').value,
     consent_collect: $('e-cc').checked, consent_share: $('e-cs').checked, consent_marketing: $('e-cm').checked, memo: $('e-memo').value
@@ -547,7 +708,7 @@ async function logCall(kind){
 }
 async function refreshAfter(id){
   const [d, s] = await Promise.all([rpc('lead_get', { p_id: id }), rpc('lead_stats')]);
-  state.cur = d; renderPanel(d); applyStats(s); load(true);
+  state.cur = d; renderPanel(d); applyStats(s); if (state.view !== 'map') load(true);
 }
 
 /* ---------- 매장 추가 ---------- */
