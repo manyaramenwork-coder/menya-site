@@ -183,6 +183,27 @@ td .sm{font-size:12px;color:var(--sub)}
   .hide-m{display:none}
 }
 
+/* 지도 + 오른쪽 매장 목록 */
+.map-wrap{display:flex;gap:12px;align-items:stretch}
+.map-wrap #map{flex:1;min-width:0}
+#map-list{flex:0 0 320px;height:max(420px, calc(100vh - 250px));overflow-y:auto;background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:12px;box-sizing:border-box}
+.ml-hd{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
+.ml-hd b{font-size:15px}
+.ml-hd small{color:var(--sub)}
+.ml-item{display:flex;gap:10px;align-items:flex-start;width:100%;text-align:left;border:1px solid transparent;border-bottom-color:#eef0eb;background:none;padding:10px 8px;border-radius:10px;cursor:pointer}
+.ml-item:hover{background:#f6f7f3}
+.ml-item.on{background:#eef3fb;border-color:#9bb4dc}
+.ml-item .dot{flex:none;width:12px;height:12px;border-radius:50%;margin-top:4px;border:1.5px solid #fff;box-shadow:0 0 0 1px #c9ccc4}
+.ml-item .tx{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.ml-item .tx b{font-size:14px}
+.ml-item .tx small{font-size:12px;color:var(--sub)}
+.ml-item .go{flex:none;align-self:center;font-size:12px;border:1px solid var(--line);background:#fff;border-radius:8px;padding:6px 10px;min-height:34px}
+@media (max-width:900px){
+  .map-wrap{flex-direction:column}
+  .map-wrap.has-list #map{height:52vh;min-height:320px}
+  #map-list{flex:none;height:auto;max-height:none}
+}
+
 /* 지도 */
 .crumb{display:flex;flex-wrap:wrap;align-items:center;gap:4px;margin-bottom:10px;font-size:14px}
 .crumb button{border:0;background:none;padding:4px 6px;border-radius:6px;color:var(--blue);font-weight:500}
@@ -327,7 +348,14 @@ td .sm{font-size:12px;color:var(--sub)}
     <!-- 지도 탐색 -->
     <section id="sec-map" class="sec" hidden>
       <nav class="crumb" id="crumb" aria-label="지역 단계"></nav>
-      <div id="map" role="region" aria-label="매장 지도"></div>
+      <div class="map-wrap">
+        <div id="map" role="region" aria-label="매장 지도"></div>
+        <aside id="map-list" hidden aria-label="이 동의 매장 목록">
+          <div class="ml-hd"><b id="ml-title"></b><small id="ml-count"></small></div>
+          <div class="chips" id="ml-sort"><button data-v="score" class="on">점수순</button><button data-v="name">이름순</button><button data-v="stage">진행 중 먼저</button></div>
+          <div id="ml-items"></div>
+        </aside>
+      </div>
       <div class="legend" id="legend"></div>
     </section>
 
@@ -981,14 +1009,17 @@ async function loadMap(){
       }
     }).addTo(POLY);
 
+    showMapList(level === 'store');
     if (level === 'store') {
       const ps = (pts && pts.points) || [];
+      MARKS = {}; state.mlPoints = ps; state.mlSel = null;
       ps.forEach(p => {
-        const m = L.circleMarker([p.lat, p.lng], { radius: 6, weight: p.overdue ? 3 : 1, color: p.overdue ? '#232621' : '#ffffff', fillColor: STAGE_COLOR[p.stage] || '#9aa097', fillOpacity: .95 });
+        const m = L.circleMarker([p.lat, p.lng], markStyle(p, false));
         m.bindTooltip(`<b>${esc(p.name)}${p.branch ? ' ' + esc(p.branch) : ''}</b><br>${esc(p.cat || '')} · ${esc(ST[p.stage])} · ${esc(LUNCH[p.lunch] || '')}`, { direction: 'top' });
-        m.on('click', () => openLead(p.id));
-        PTS.addLayer(m);
+        m.on('click', () => { selectMark(p.id, false); openLead(p.id); });
+        MARKS[p.id] = m; PTS.addLayer(m);
       });
+      $('ml-title').textContent = G.dong; renderMapList();
       const b = selectedLayer ? selectedLayer.getBounds() : (ps.length ? L.latLngBounds(ps.map(p => [p.lat, p.lng])) : layer.getBounds());
       MAP.flyToBounds(b, { padding: [12, 12], maxZoom: 17, duration: .4 });
       if (!ps.length) toast('이 동에는 조건에 맞는 매장이 없어요');
@@ -999,6 +1030,50 @@ async function loadMap(){
     }
   } catch (e) { toast(errMsg(e), true); }
 }
+
+/* 동 안 매장 목록 ↔ 지도 연결 */
+let MARKS = {};
+state.mlSort = 'score';
+function markStyle(p, sel){
+  return sel ? { radius: 11, weight: 3, color: '#1f4e8c', fillColor: STAGE_COLOR[p.stage] || '#9aa097', fillOpacity: 1 }
+             : { radius: 6, weight: p.overdue ? 3 : 1, color: p.overdue ? '#232621' : '#ffffff', fillColor: STAGE_COLOR[p.stage] || '#9aa097', fillOpacity: .95 };
+}
+function showMapList(on){
+  $('map-list').hidden = !on;
+  document.querySelector('.map-wrap').classList.toggle('has-list', on);
+  if (MAP) setTimeout(() => MAP.invalidateSize(), 0);
+}
+function renderMapList(){
+  const ps = (state.mlPoints || []).slice(), s = state.mlSort;
+  const prog = p => ['collected', 'rejected'].includes(p.stage) ? 1 : 0;
+  ps.sort((a, b) => s === 'name' ? a.name.localeCompare(b.name, 'ko') : s === 'stage' ? prog(a) - prog(b) || b.score - a.score : b.score - a.score);
+  $('ml-count').textContent = ps.length.toLocaleString() + '곳';
+  $('ml-items').innerHTML = ps.length ? ps.map(p => `<div class="ml-item${state.mlSel === p.id ? ' on' : ''}" data-id="${p.id}" role="button" tabindex="0">
+      <span class="dot" style="background:${STAGE_COLOR[p.stage] || '#9aa097'}"></span>
+      <span class="tx"><b>${esc(p.name)}${p.branch ? ' ' + esc(p.branch) : ''}</b>
+        <small>${esc(p.cat || '')} · ${esc(ST[p.stage])}${p.overdue ? ' · <span class="late">재연락 지남</span>' : ''}</small>
+        <span class="tags">${lunchTag(p.lunch)}</span></span>
+      <button class="go" data-open="${p.id}">상세</button></div>`).join('')
+    : '<div class="empty-box">조건에 맞는 매장이 없어요.</div>';
+}
+function selectMark(id, move){
+  const prev = state.mlSel; state.mlSel = id;
+  const pts = state.mlPoints || [];
+  if (prev && MARKS[prev]) MARKS[prev].setStyle(markStyle(pts.find(x => x.id === prev) || {}, false));
+  const p = pts.find(x => x.id === id), m = MARKS[id];
+  if (m && p) { m.setStyle(markStyle(p, true)); m.bringToFront(); m.openTooltip(); if (move) MAP.flyTo([p.lat, p.lng], Math.max(MAP.getZoom(), 18), { duration: .5 }); }
+  document.querySelectorAll('#ml-items .ml-item').forEach(el => el.classList.toggle('on', +el.dataset.id === id));
+  const el = document.querySelector(`#ml-items .ml-item[data-id="${id}"]`);
+  if (el && !move) el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+}
+$('ml-items').addEventListener('click', e => {
+  const o = e.target.closest('[data-open]'); if (o) { e.stopPropagation(); selectMark(+o.dataset.open, true); openLead(+o.dataset.open); return; }
+  const it = e.target.closest('.ml-item'); if (!it) return;
+  selectMark(+it.dataset.id, true);
+  if (window.innerWidth <= 900) document.getElementById('map').scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
+$('ml-items').addEventListener('keydown', e => { if (e.key === 'Enter') { const it = e.target.closest('.ml-item'); if (it) selectMark(+it.dataset.id, true); } });
+$('ml-sort').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; state.mlSort = b.dataset.v; [...$('ml-sort').children].forEach(x => x.classList.toggle('on', x === b)); renderMapList(); });
 
 /* ---------- 상세 ---------- */
 function closePanel(){ $('panel').hidden = true; $('scrim').hidden = true; $('addbox').hidden = true; $('more-sheet').hidden = true; state.cur = null; }
