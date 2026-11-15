@@ -98,13 +98,89 @@ td .sm{font-size:12px;color:var(--sub)}
 .card .tags{display:flex;flex-wrap:wrap;gap:4px}
 .col .empty{font-size:12px;color:var(--sub);text-align:center;padding:16px 6px;border:1px dashed #c4c8bf;border-radius:10px}
 
+/* 앱 틀: 왼쪽 메뉴(PC) + 하단 탭(휴대폰) */
+.shell{display:flex;align-items:flex-start;max-width:1600px;margin:0 auto}
+.side{position:sticky;top:56px;flex:0 0 220px;display:flex;flex-direction:column;gap:2px;padding:16px 10px;height:calc(100vh - 56px);overflow-y:auto;box-sizing:border-box;border-right:1px solid var(--line);background:#fbfcf9}
+.side a{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;color:var(--ink);text-decoration:none;font-size:14px;font-weight:500}
+.side a:hover{background:#eef0eb}
+.side a.on{background:var(--ink);color:#fff;font-weight:700}
+.side a em{margin-left:auto;font-style:normal;font-size:11px;font-weight:700;background:var(--brand);color:#fff;border-radius:999px;padding:1px 7px}
+.side a.ext{color:var(--sub);font-size:13px}
+.side-gap{height:1px;background:var(--line);margin:8px 6px}
+.shell .wrap{flex:1;min-width:0;margin:0}
+.sec-hd{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}
+.sec-hd h1{margin:0;font-size:22px}
+.sec-hd h1 small{font-size:14px;color:var(--sub);font-weight:500;margin-left:6px}
+.h2{font-size:16px;margin:20px 0 10px}
+.row-btns{display:inline-flex;gap:6px;flex-wrap:wrap;align-items:center}
+.btn.sm{height:34px;padding:0 12px;font-size:13px;display:inline-flex;align-items:center;text-decoration:none;color:var(--ink)}
+.btn.sm.pri{color:#fff}
+.chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:10px}
+.chips button{flex:none;border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 12px;font-size:13px;min-height:36px}
+.chips button.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.chips.region button{border-radius:8px}
+.chips.region button.on{background:var(--blue);border-color:var(--blue)}
+.chips button small{opacity:.7;margin-left:2px}
+.seg2{display:grid;grid-template-columns:1fr 1fr;background:#eceee8;border-radius:10px;padding:3px;margin-bottom:10px;max-width:360px}
+.seg2 button{border:0;background:transparent;border-radius:8px;height:38px;font-size:14px;color:var(--sub)}
+.seg2 button.on{background:#fff;color:var(--ink);font-weight:700;box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.grp{margin-bottom:12px}
+.grp-hd{display:flex;align-items:center;gap:8px;width:100%;border:0;background:none;padding:8px 2px;text-align:left;min-height:44px}
+.grp-hd b{font-size:15px}
+.grp-hd small{color:var(--sub)}
+.grp-hd em{font-style:normal;font-size:11px;font-weight:700;background:var(--brand);color:#fff;border-radius:999px;padding:1px 7px}
+.grp-hd .car{width:14px;color:var(--sub)}
+.day{font-size:13px;color:var(--sub);margin:6px 2px}
+.item{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:8px;display:flex;flex-direction:column;gap:8px;cursor:pointer}
+.item:hover{border-color:#c9ccc4}
+.item-top{display:flex;gap:10px;align-items:flex-start}
+.item-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.item-main b{font-size:15px}
+.item-main small{color:var(--sub);font-size:12px}
+.item-main .tags{display:flex;gap:4px;flex-wrap:wrap}
+.item-bot{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;border-top:1px solid #eef0eb;padding-top:8px;font-size:13px}
+.item select{height:34px;border:1px solid var(--line);border-radius:8px;background:#fff;padding:0 8px}
+.item .memo{margin:0;font-size:13px;line-height:1.55}
+.item .time{font-size:12px;color:var(--sub);padding-top:2px;min-width:38px}
+.item.act-call{border-left:4px solid var(--brand)}
+.late{color:var(--brand-d);font-weight:700}
+.star{font-size:20px;line-height:1;color:#b7bbb3}
+.star.on{color:#d9961c}
+.empty-box{background:#fff;border:1px dashed #c4c8bf;border-radius:12px;padding:28px 16px;text-align:center;color:var(--sub);font-size:14px;line-height:1.6}
+.sumbar{display:grid;grid-template-columns:repeat(4,1fr);background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 0;margin-bottom:14px;text-align:center}
+.sumbar b{display:block;font-size:20px}
+.sumbar span{font-size:12px;color:var(--sub)}
+.grid-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
+.post{display:flex;flex-direction:column;gap:8px}
+.post small{display:block;margin-top:2px}
+.post-n{display:flex;gap:14px;font-size:13px}
+.favbtn{border:1px solid var(--line);background:#fff;border-radius:10px;padding:6px 12px;font-size:14px;font-weight:600;min-height:40px;white-space:nowrap}
+.favbtn.on{background:#fff6e5;border-color:#e8c27a;color:#8a5a00}
+.bnav{position:fixed;left:0;right:0;bottom:0;z-index:30;background:#fff;border-top:1px solid var(--line);display:none;grid-template-columns:repeat(5,1fr);padding:4px 4px calc(6px + env(safe-area-inset-bottom,0px))}
+.bnav a{position:relative;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0;font-size:11px;color:var(--sub);text-decoration:none;min-height:44px;justify-content:center}
+.bnav a.on{color:var(--brand);font-weight:700}
+.bnav .dot{position:absolute;top:6px;left:calc(50% + 8px);width:8px;height:8px;border-radius:50%;background:var(--brand)}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:45;background:#fff;border-radius:16px 16px 0 0;padding:10px 12px calc(16px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:2px;box-shadow:0 -8px 24px rgba(0,0,0,.15)}
+.sheet-hd{font-weight:700;padding:8px 6px 10px}
+.sheet button,.sheet a{display:flex;align-items:center;gap:12px;border:0;background:none;padding:12px 8px;border-radius:10px;text-align:left;font-size:15px;color:var(--ink);text-decoration:none;min-height:48px}
+.sheet button span{display:flex;flex-direction:column}
+.sheet button small{color:var(--sub);font-size:12px}
+.sheet button em{margin-left:auto;font-style:normal;font-size:11px;font-weight:700;background:var(--brand);color:#fff;border-radius:999px;padding:1px 7px}
+.sheet .lo{color:var(--brand-d)}
+@media (max-width:900px){
+  .side{display:none}
+  .bnav:not([hidden]){display:grid}
+  .shell .wrap{padding-bottom:calc(90px + env(safe-area-inset-bottom,0px))}
+  .hide-m{display:none}
+}
+
 /* 지도 */
 .crumb{display:flex;flex-wrap:wrap;align-items:center;gap:4px;margin-bottom:10px;font-size:14px}
 .crumb button{border:0;background:none;padding:4px 6px;border-radius:6px;color:var(--blue);font-weight:500}
 .crumb button:disabled{color:var(--ink);font-weight:700;cursor:default}
 .crumb span{color:var(--sub)}
 .crumb .hint{margin-left:auto;font-size:12px;color:var(--sub)}
-#map{height:max(480px, calc(100vh - 240px));border-radius:var(--radius);border:1px solid var(--line);background:#e9ece6;z-index:0}
+#map{height:max(420px, calc(100vh - 250px));border-radius:var(--radius);border:1px solid var(--line);background:#e9ece6;z-index:0}
 .bub{display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:50%;background:rgba(198,36,41,.88);color:#fff;border:2px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.25);text-align:center;line-height:1.15;cursor:pointer;font-family:inherit}
 .bub small{font-size:11px;font-weight:500;max-width:90%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .bub b{font-size:14px;font-weight:700;font-variant-numeric:tabular-nums}
@@ -197,8 +273,8 @@ td .sm{font-size:12px;color:var(--sub)}
   <div class="brand">멘야마쯔리<small>샵인샵 영업관리</small></div>
   <div class="sp"></div>
   <span class="me" id="me"></span>
-  <a href="https://menyamatsuri.work/">매장관리로</a>
-  <button class="lnk" id="logout" hidden>로그아웃</button>
+  <a href="https://menyamatsuri.work/" class="hide-m">매장관리로</a>
+  <button class="lnk hide-m" id="logout" hidden>로그아웃</button>
 </header>
 
 <!-- 로그인 (매장관리에서 로그인돼 있으면 안 보임) -->
@@ -217,48 +293,125 @@ td .sm{font-size:12px;color:var(--sub)}
   <a class="btn" href="https://menyamatsuri.work/" style="display:inline-flex;align-items:center;text-decoration:none">매장관리로 돌아가기</a>
 </div>
 
-<main class="wrap" id="app" hidden>
-  <section class="stats" id="stats" aria-label="요약"></section>
+<div class="shell" id="app" hidden>
+  <nav class="side" id="side" aria-label="주 메뉴"></nav>
 
-  <div class="bar">
-    <select id="f-region" aria-label="지역"><option value="">전체 지역</option></select>
-    <select id="f-stage" aria-label="단계"><option value="">전체 단계</option></select>
-    <select id="f-lunch" aria-label="점심 유형">
-      <option value="">점심 유형 전체</option><option value="A">A 점심 미영업</option><option value="B">B 점심 부진</option><option value="C">C 점심 양호</option><option value="U">미확인</option>
-    </select>
-    <select id="f-org" aria-label="담당 회사">
-      <option value="">담당 회사 전체</option><option value="menya">멘야마쯔리</option><option value="oyumi">오유미당</option><option value="joint">공동</option>
-    </select>
-    <label class="chk"><input type="checkbox" id="f-mine">내 담당만</label>
-    <label class="chk"><input type="checkbox" id="f-due">재연락 대상만</label>
-    <input type="search" id="f-q" placeholder="상호, 주소, 전화번호 검색">
-    <div class="seg" role="group" aria-label="보기 방식">
-      <button id="v-list" class="on">목록</button><button id="v-board">보드</button><button id="v-map">지도</button>
+  <main class="wrap">
+    <!-- 지도·전체 DB 공용 필터 -->
+    <div id="filters">
+      <div class="bar">
+        <input type="search" id="f-q" placeholder="상호, 주소, 전화번호 검색">
+        <select id="f-region" aria-label="지역"><option value="">전체 지역</option></select>
+        <select id="f-stage" aria-label="단계"><option value="">전체 단계</option></select>
+        <select id="f-lunch" aria-label="점심 유형">
+          <option value="">점심 유형 전체</option><option value="A">A 점심 미영업</option><option value="B">B 점심 부진</option><option value="C">C 점심 양호</option><option value="U">미확인</option>
+        </select>
+        <select id="f-org" aria-label="담당 회사" class="db-only">
+          <option value="">담당 회사 전체</option><option value="menya">멘야마쯔리</option><option value="oyumi">오유미당</option><option value="joint">공동</option>
+        </select>
+        <label class="chk db-only"><input type="checkbox" id="f-mine">내 담당만</label>
+        <label class="chk db-only"><input type="checkbox" id="f-due">재연락 대상만</label>
+      </div>
+      <div class="cats" id="cats" aria-label="업종"></div>
     </div>
-    <button class="btn pri" id="add">매장 추가</button>
-  </div>
-  <div class="cats" id="cats" aria-label="업종"></div>
 
-  <section id="list-view">
-    <div class="tbl-wrap">
-      <table>
-        <thead><tr>
-          <th>매장</th><th>업종</th><th>지역</th><th>단계</th><th>점심</th><th>담당</th><th>다음 연락</th><th class="num">점수</th>
-        </tr></thead>
-        <tbody id="rows"></tbody>
-      </table>
-    </div>
-    <div class="more"><button class="btn" id="more" hidden>더 보기</button></div>
-  </section>
+    <!-- 지도 탐색 -->
+    <section id="sec-map" class="sec" hidden>
+      <nav class="crumb" id="crumb" aria-label="지역 단계"></nav>
+      <div id="map" role="region" aria-label="매장 지도"></div>
+      <div class="legend" id="legend"></div>
+    </section>
 
-  <section id="board-view" class="board" hidden></section>
+    <!-- 관심 매장 -->
+    <section id="sec-fav" class="sec" hidden>
+      <div class="sec-hd"><h1>관심 매장 <small id="fav-count"></small></h1></div>
+      <div class="seg2" role="group" aria-label="보는 범위" id="fav-scope">
+        <button data-v="mine" class="on">내 관심</button><button data-v="team">팀 전체</button>
+      </div>
+      <div class="chips" id="fav-sort">
+        <button data-v="next" class="on">다음 연락순</button><button data-v="score">점수순</button><button data-v="added">최근 담은 순</button>
+      </div>
+      <div class="chips region" id="fav-region"></div>
+      <div id="fav-list"></div>
+    </section>
 
-  <section id="map-view" hidden>
-    <nav class="crumb" id="crumb" aria-label="지역 단계"></nav>
-    <div id="map" role="region" aria-label="매장 지도"></div>
-    <div class="legend" id="legend"></div>
-  </section>
-</main>
+    <!-- 연락 기록 -->
+    <section id="sec-log" class="sec" hidden>
+      <div class="sec-hd"><h1>연락 기록</h1><button class="btn" id="log-copy">보고용으로 복사</button></div>
+      <div class="bar">
+        <select id="log-range" aria-label="기간">
+          <option value="0">오늘</option><option value="week" selected>이번 주</option><option value="7">최근 7일</option><option value="month">이번 달</option><option value="30">최근 30일</option>
+        </select>
+        <select id="log-by" aria-label="담당"><option value="">담당 전체</option><option value="me">나</option></select>
+        <select id="log-res" aria-label="결과"><option value="">결과 전체</option></select>
+        <select id="log-kind" aria-label="종류"><option value="">종류 전체</option><option value="call">통화</option><option value="memo">메모</option><option value="stage">단계 변경</option></select>
+      </div>
+      <div class="sumbar" id="log-sum"></div>
+      <div id="log-list"></div>
+    </section>
+
+    <!-- 신청함 -->
+    <section id="sec-inbox" class="sec" hidden>
+      <div class="sec-hd"><h1>신청함</h1><button class="btn pri" id="inbox-add">신청 직접 추가</button></div>
+      <p class="muted">랜딩페이지·오픈톡·카페·거래처 소개로 <b>점주가 먼저 관심을 보인 곳</b>이에요. 공공데이터 매장보다 먼저 연락하세요.</p>
+      <div id="inbox-list"></div>
+    </section>
+
+    <!-- 커뮤니티 -->
+    <section id="sec-comm" class="sec" hidden>
+      <div class="sec-hd"><h1>커뮤니티 리드</h1><div class="row-btns"><button class="btn" id="post-add">우리 글 등록</button><button class="btn pri" id="person-add">사람 추가</button></div></div>
+      <p class="muted">카페에 올린 글에 댓글·쪽지 준 분을 기록해요. 연락은 쪽지로 하고 <b>랜딩 링크로 직접 신청</b>하게 안내하세요. 연락처는 본인이 직접 알려 준 경우에만 저장할 수 있어요.</p>
+      <h2 class="h2">우리가 올린 글</h2>
+      <div id="post-list" class="grid-cards"></div>
+      <h2 class="h2">댓글·쪽지 준 분</h2>
+      <div class="chips" id="comm-status"></div>
+      <div id="person-list"></div>
+    </section>
+
+    <!-- 양도 매물 -->
+    <section id="sec-listing" class="sec" hidden>
+      <div class="sec-hd"><h1>양도 매물</h1></div>
+      <p class="muted">어사이드 등에서 자동으로 들어온 매물이에요. 같은 주소의 매장에 자동으로 연결되고 우선순위가 올라가요.</p>
+      <div id="listing-list"></div>
+    </section>
+
+    <!-- 전체 매장 DB -->
+    <section id="sec-db" class="sec" hidden>
+      <div class="sec-hd"><h1>전체 매장 DB</h1>
+        <div class="row-btns">
+          <div class="seg" role="group" aria-label="보기 방식"><button id="v-list" class="on">목록</button><button id="v-board">보드</button></div>
+          <button class="btn pri" id="add">매장 추가</button>
+        </div>
+      </div>
+      <section class="stats" id="stats" aria-label="요약"></section>
+      <div id="list-view">
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr>
+              <th>매장</th><th>업종</th><th>지역</th><th>단계</th><th>점심</th><th>담당</th><th>다음 연락</th><th class="num">점수</th>
+            </tr></thead>
+            <tbody id="rows"></tbody>
+          </table>
+        </div>
+        <div class="more"><button class="btn" id="more" hidden>더 보기</button></div>
+      </div>
+      <div id="board-view" class="board" hidden></div>
+    </section>
+
+    <!-- 영업 스크립트 -->
+    <section id="sec-script" class="sec" hidden>
+      <div class="sec-hd"><h1>영업 스크립트</h1></div>
+      <div class="box">
+        <h4>준비 중이에요</h4>
+        <p class="muted" style="margin:0">회사 자료(비용, 수수료, 메뉴, 조리, 인력, 오유미당 조건)를 확인한 뒤 통화 순서대로 채워 넣을 예정이에요.<br>
+        1) 첫 인사 30초 · 2) 상황 파악 질문 · 3) 유형별 제안 · 4) 자주 나오는 질문 · 5) 거절 대응 · 6) 다음 약속 잡기 · 7) 문자 템플릿</p>
+      </div>
+    </section>
+  </main>
+</div>
+
+<nav class="bnav" id="bnav" aria-label="하단 메뉴" hidden></nav>
+<div class="sheet" id="more-sheet" hidden role="dialog" aria-modal="true" aria-label="더보기"></div>
 
 <div class="scrim" id="scrim" hidden></div>
 <aside class="panel" id="panel" hidden aria-modal="true" role="dialog" aria-labelledby="p-name"></aside>
@@ -291,7 +444,7 @@ const RES = { interested: '관심', hold: '보류', rejected: '거절', no_answe
 const RES_STAGE = { interested: 'interested', meeting_set: 'meeting', hold: 'hold', rejected: 'rejected' };
 const KIND = { call: '통화', sms: '문자', meeting: '미팅', memo: '메모', landing: '랜딩 신청', stage: '단계 변경', import: '수집' };
 
-const state = { view: 'list', cats: [], offset: 0, rows: [], users: [], regions: [], cur: null };
+const state = { view: 'map', cats: [], offset: 0, rows: [], users: [], regions: [], cur: null };
 
 function toast(m, err){ const t = $('toast'); t.textContent = m; t.className = 'toast' + (err ? ' err' : ''); t.hidden = false; clearTimeout(t._h); t._h = setTimeout(() => t.hidden = true, 2600); }
 function errMsg(e){ const m = String((e && e.message) || e || ''); return m.replace(/^.*?:\s*/, '') || '처리하지 못했어요. 잠시 후 다시 시도하세요.'; }
@@ -309,7 +462,7 @@ function lunchTag(l){ return `<span class="tag t-${esc(l || 'U')}">${esc(LUNCH[l
 /* ---------- 로그인 ---------- */
 function show(which){
   $('loginbox').hidden = which !== 'login'; $('noperm').hidden = which !== 'noperm'; $('app').hidden = which !== 'app';
-  $('logout').hidden = which === 'login';
+  $('logout').hidden = which === 'login'; $('bnav').hidden = which !== 'app';
 }
 $('loginbox').addEventListener('submit', async e => {
   e.preventDefault();
@@ -332,7 +485,7 @@ async function boot(){
     show('app');
     const { data: me } = await SB.from('profiles').select('name').eq('id', data.session.user.id).maybeSingle();
     $('me').textContent = me && me.name ? me.name : '';
-    applyStats(s); fillFilters(s); await load(true);
+    applyStats(s); fillFilters(s); go(location.hash.slice(1) || 'map');
   } catch (e) {
     if (/권한/.test(e.message || '')) show('noperm'); else { show('app'); toast(errMsg(e), true); }
   }
@@ -346,6 +499,8 @@ function applyStats(s){
   ];
   $('stats').innerHTML = items.map(([l, v, a]) => `<div class="stat${a ? ' alert' : ''}"><b>${esc(v)}</b><span>${esc(l)}</span></div>`).join('');
   state.users = s.users || [];
+  setBadges(s);
+  const lb = $('log-by'); if (lb && lb.options.length <= 2) lb.innerHTML = '<option value="">담당 전체</option><option value="me">나</option>' + state.users.map(u => `<option value="${esc(u.id)}">${esc(u.name)}</option>`).join('');
 }
 function fillFilters(s){
   state.regions = s.regions || [];
@@ -375,8 +530,15 @@ let qT; $('f-q').addEventListener('input', () => { clearTimeout(qT); qT = setTim
 /* ---------- 목록 ---------- */
 const PAGE = 100;
 async function load(reset){
-  if (state.view === 'board') return loadBoard();
-  if (state.view === 'map') return loadMap();
+  const v = state.view;
+  if (v === 'map') return loadMap();
+  if (v === 'fav') return loadFav();
+  if (v === 'log') return loadLog();
+  if (v === 'inbox') return loadInbox();
+  if (v === 'comm') return loadComm();
+  if (v === 'listing') return loadListing();
+  if (v === 'script') return;
+  if (state.dbMode === 'board') return loadBoard();
   if (reset) { state.offset = 0; state.rows = []; }
   try {
     const d = await rpc('lead_list', { p: { ...filters(), sort: $('f-due').checked ? 'next' : 'score', limit: PAGE, offset: state.offset } });
@@ -424,13 +586,287 @@ async function loadBoard(){
   } catch (e) { bv.innerHTML = ''; toast(errMsg(e), true); }
 }
 $('board-view').addEventListener('click', e => { const c = e.target.closest('.card'); if (c) openLead(+c.dataset.id); });
-function setView(v){
-  state.view = v; ['list', 'board', 'map'].forEach(k => $('v-' + k).classList.toggle('on', v === k));
-  $('list-view').hidden = v !== 'list'; $('board-view').hidden = v !== 'board'; $('map-view').hidden = v !== 'map';
-  if (v === 'map') { const [s, g] = ($('f-region').value || '|').split('|'); state.geo = { sido: s || '', sigungu: g || '', dong: '' }; }
+/* ---------- 메뉴·화면 전환 ---------- */
+const IC = {
+  map: '<path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2zM9 4v14M15 6v14"/>',
+  fav: '<path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.3 6.5 20.2l1-6.2L3 9.6l6.2-.9z"/>',
+  log: '<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',
+  inbox: '<path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.5 5h13L22 12v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-6z"/>',
+  comm: '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
+  listing: '<path d="M3 21h18M5 21V8l7-5 7 5v13M9 21v-6h6v6"/>',
+  db: '<ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/>',
+  script: '<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/>',
+  more: '<circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/>'
+};
+const svg = k => `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[k]}</svg>`;
+const NAV = [['map', '지도 탐색'], ['fav', '관심 매장'], ['log', '연락 기록'], ['inbox', '신청함'], ['comm', '커뮤니티'], ['listing', '양도 매물'], ['db', '전체 매장 DB'], ['script', '영업 스크립트']];
+const BNAV = [['map', '지도'], ['fav', '관심'], ['log', '기록'], ['inbox', '신청함'], ['more', '더보기']];
+state.badge = {};
+function buildNav(){
+  const b = state.badge;
+  $('side').innerHTML = NAV.map(([k, l], i) => (i === 4 ? '<div class="side-gap"></div>' : '') +
+    `<a href="#${k}" data-v="${k}" class="${state.view === k ? 'on' : ''}" ${state.view === k ? 'aria-current="page"' : ''}>${svg(k)}<span>${l}</span>${b[k] ? `<em>${b[k]}</em>` : ''}</a>`).join('') +
+    '<div class="side-gap"></div><a href="https://menyamatsuri.work/" class="ext">매장관리로 돌아가기</a>';
+  const inMore = ['comm', 'listing', 'db', 'script'].includes(state.view);
+  $('bnav').innerHTML = BNAV.map(([k, l]) => {
+    const on = k === 'more' ? inMore : state.view === k;
+    const badge = k === 'more' ? (b.comm || b.listing) : b[k];
+    return `<a href="#${k === 'more' ? state.view : k}" data-v="${k}" class="${on ? 'on' : ''}">${svg(k)}<span>${l}</span>${badge ? '<i class="dot"></i>' : ''}</a>`;
+  }).join('');
+}
+function setBadges(s){
+  state.badge = { inbox: s.inbox_new || 0, comm: s.comm_open || 0, listing: s.listings_new || 0, fav: s.favs || 0 };
+  buildNav();
+}
+$('side').addEventListener('click', e => { const a = e.target.closest('a[data-v]'); if (!a) return; e.preventDefault(); go(a.dataset.v); });
+$('bnav').addEventListener('click', e => {
+  const a = e.target.closest('a[data-v]'); if (!a) return; e.preventDefault();
+  if (a.dataset.v === 'more') return openMore();
+  go(a.dataset.v);
+});
+function openMore(){
+  const items = [['comm', '커뮤니티 리드', '카페 글·댓글·쪽지 준 분'], ['listing', '양도 매물', '어사이드로 들어온 매물'], ['db', '전체 매장 DB', '목록·보드로 전체 검색'], ['script', '영업 스크립트', '통화하면서 보는 문구']];
+  $('more-sheet').innerHTML = '<div class="sheet-hd">더보기</div>' + items.map(([k, t, d]) =>
+    `<button data-v="${k}">${svg(k)}<span><b>${t}</b><small>${d}</small></span>${state.badge[k] ? `<em>${state.badge[k]}</em>` : ''}</button>`).join('') +
+    `<a href="https://menyamatsuri.work/">매장관리로 돌아가기</a><button data-v="logout" class="lo">로그아웃</button>`;
+  $('more-sheet').hidden = false; $('scrim').hidden = false;
+}
+$('more-sheet').addEventListener('click', async e => {
+  const b = e.target.closest('button[data-v]'); if (!b) return;
+  if (b.dataset.v === 'logout') { await SB.auth.signOut(); location.reload(); return; }
+  closePanel(); go(b.dataset.v);
+});
+const VIEWS = ['map', 'fav', 'log', 'inbox', 'comm', 'listing', 'db', 'script'];
+function go(v){
+  if (!VIEWS.includes(v)) v = 'map';
+  state.view = v;
+  VIEWS.forEach(k => $('sec-' + k).hidden = k !== v);
+  $('filters').hidden = !(v === 'map' || v === 'db');
+  document.querySelectorAll('.db-only').forEach(x => x.hidden = v !== 'db');
+  if (location.hash !== '#' + v) history.replaceState(null, '', '#' + v);
+  buildNav(); window.scrollTo(0, 0);
+  if (v === 'map') { const [s, g] = ($('f-region').value || '|').split('|'); if (s !== state.geo.sido || g !== state.geo.sigungu) state.geo = { sido: s || '', sigungu: g || '', dong: '' }; }
   load(true);
 }
-$('v-map').addEventListener('click', () => setView('map'));
+window.addEventListener('hashchange', () => { const v = location.hash.slice(1); if (v && v !== state.view && VIEWS.includes(v)) go(v); });
+function setDbMode(m){
+  state.dbMode = m; $('v-list').classList.toggle('on', m === 'list'); $('v-board').classList.toggle('on', m === 'board');
+  $('list-view').hidden = m !== 'list'; $('board-view').hidden = m !== 'board'; load(true);
+}
+$('v-list').addEventListener('click', () => setDbMode('list'));
+$('v-board').addEventListener('click', () => setDbMode('board'));
+state.dbMode = 'list';
+
+/* ---------- 관심 매장 (지역별 묶음) ---------- */
+state.fav = { scope: 'mine', sort: 'next', region: '', closed: {}, rows: [] };
+async function loadFav(){
+  try {
+    state.fav.rows = await rpc('lead_fav_list', { p: { scope: state.fav.scope, sort: state.fav.sort } });
+    renderFav();
+  } catch (e) { toast(errMsg(e), true); }
+}
+function renderFav(){
+  const F = state.fav, all = F.rows || [];
+  const sgg = r => [r.sido && r.sido.replace(/(특별자치|특별|광역)?(시|도)$/, ''), r.sigungu].filter(Boolean).join(' ') || '지역 미상';
+  const names = [...new Set(all.map(sgg))];
+  if (F.region && !names.includes(F.region)) F.region = '';
+  $('fav-region').innerHTML = `<button data-v="" class="${!F.region ? 'on' : ''}">전체 <small>${all.length}</small></button>` +
+    names.map(n => `<button data-v="${esc(n)}" class="${F.region === n ? 'on' : ''}">${esc(n)} <small>${all.filter(r => sgg(r) === n).length}</small></button>`).join('');
+  const list = all.filter(r => !F.region || sgg(r) === F.region);
+  $('fav-count').textContent = list.length + '곳';
+  if (!all.length) { $('fav-list').innerHTML = `<div class="empty-box">아직 관심 매장이 없어요.<br>지도나 목록에서 매장을 열고 <b>☆ 관심</b>을 눌러 담아 보세요.</div>`; return; }
+  const groups = [];
+  list.forEach(r => { const g = sgg(r) + ' · ' + (r.dong || '동 미상'); let x = groups.find(y => y.k === g); if (!x) groups.push(x = { k: g, rows: [] }); x.rows.push(r); });
+  $('fav-list').innerHTML = groups.map(g => {
+    const open = !F.closed[g.k], late = g.rows.filter(r => r.overdue).length;
+    return `<section class="grp"><button class="grp-hd" data-g="${esc(g.k)}" aria-expanded="${open}">
+      <span class="car">${open ? '▾' : '▸'}</span><b>${esc(g.k)}</b><small>${g.rows.length}곳</small>${late ? `<em>지남 ${late}</em>` : ''}</button>
+      ${open ? g.rows.map(favCard).join('') : ''}</section>`;
+  }).join('');
+}
+function favCard(r){
+  return `<article class="item" data-id="${r.id}">
+    <div class="item-top"><span class="star on" aria-hidden="true">★</span>
+      <div class="item-main"><b>${esc(r.name)}${r.branch ? ' ' + esc(r.branch) : ''}</b>
+      <small>${esc(r.cat || '')}${state.fav.scope === 'team' && r.by ? ' · 담은 사람 ' + esc(r.by) : ''}</small>
+      <span class="tags">${lunchTag(r.lunch)}${r.listing ? '<span class="tag t-B">양도 매물</span>' : ''}</span></div>
+      <span class="tag t-st">${esc(ST[r.stage])}</span></div>
+    <div class="item-bot">${r.next ? `<span class="${r.overdue ? 'late' : ''}">다음 연락 ${esc(shortDate(r.next))}${r.overdue ? ' · 지남' : ''}</span>` : '<span class="muted">다음 연락일 없음</span>'}
+      <span class="row-btns">${r.tel ? `<a class="btn sm" href="tel:${esc(r.tel)}">전화</a>` : ''}<button class="btn sm pri" data-open="${r.id}">기록</button></span></div>
+  </article>`;
+}
+$('fav-scope').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; state.fav.scope = b.dataset.v; [...$('fav-scope').children].forEach(x => x.classList.toggle('on', x === b)); state.fav.region = ''; loadFav(); });
+$('fav-sort').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; state.fav.sort = b.dataset.v; [...$('fav-sort').children].forEach(x => x.classList.toggle('on', x === b)); loadFav(); });
+$('fav-region').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; state.fav.region = b.dataset.v; renderFav(); });
+$('fav-list').addEventListener('click', e => {
+  const h = e.target.closest('.grp-hd'); if (h) { const k = h.dataset.g; state.fav.closed[k] = !state.fav.closed[k]; renderFav(); return; }
+  if (e.target.closest('a')) return;
+  const it = e.target.closest('[data-open], .item'); if (it) openLead(+(it.dataset.open || it.dataset.id));
+});
+
+/* ---------- 연락 기록 ---------- */
+function logRange(){
+  const v = $('log-range').value, t = today();
+  if (v === 'week') { const d = new Date(t + 'T00:00:00+09:00'); const wd = (d.getDay() + 6) % 7; return [addDays(-wd), t]; }
+  if (v === 'month') return [t.slice(0, 8) + '01', t];
+  return [addDays(-(+v)), t];
+}
+async function loadLog(){
+  const [from, to] = logRange();
+  try {
+    const d = await rpc('lead_feed', { p: { from, to, by: $('log-by').value, result: $('log-res').value, kind: $('log-kind').value } });
+    state.log = d; renderLog();
+  } catch (e) { toast(errMsg(e), true); }
+}
+function actLine(a){
+  const s = a.summary || {};
+  if (a.kind === 'stage') return `단계 변경: ${ST[a.from] || a.from || ''} → ${ST[a.to] || a.to || ''}`;
+  return [s.reaction, s.next_action && '다음: ' + s.next_action, s.note, s.concern && '우려: ' + s.concern].filter(Boolean).join(' / ') || '';
+}
+function renderLog(){
+  const d = state.log, s = d.sum;
+  $('log-sum').innerHTML = [['통화', s.calls], ['연결', s.connected], ['관심', s.interested], ['미팅', s.meetings]].map(([l, v]) => `<div><b>${v}</b><span>${l}</span></div>`).join('');
+  if (!d.rows.length) { $('log-list').innerHTML = '<div class="empty-box">이 기간에 남긴 기록이 없어요.</div>'; return; }
+  const days = [];
+  d.rows.forEach(r => { let x = days.find(y => y.day === r.day); if (!x) days.push(x = { day: r.day, rows: [] }); x.rows.push(r); });
+  $('log-list').innerHTML = days.map(x => `<section class="grp"><h3 class="day">${esc(shortDate(x.day))}</h3>` + x.rows.map(r => `
+    <article class="item act-${esc(r.kind)}" data-open="${r.lead_id}">
+      <div class="item-top"><span class="time">${esc(r.time)}</span><div class="item-main"><b>${esc(r.name)}${r.branch ? ' ' + esc(r.branch) : ''}</b><small>${esc(r.area)}</small></div>
+      ${r.result ? `<span class="tag t-st">${esc(RES[r.result] || r.result)}</span>` : `<span class="tag t-C">${esc(KIND[r.kind] || r.kind)}</span>`}</div>
+      ${actLine(r) ? `<p class="memo">${esc(actLine(r))}</p>` : ''}
+      <small class="muted">${esc(r.by || '')}${r.duration ? ' · ' + Math.round(r.duration / 60) + '분' : ''}${r.ai ? ' · Claude 요약' : ''}</small>
+    </article>`).join('') + '</section>').join('');
+}
+['log-range', 'log-by', 'log-res', 'log-kind'].forEach(id => $(id).addEventListener('change', loadLog));
+$('log-list').addEventListener('click', e => { const it = e.target.closest('[data-open]'); if (it) openLead(+it.dataset.open); });
+$('log-copy').addEventListener('click', async () => {
+  const d = state.log; if (!d) return;
+  const [from, to] = logRange();
+  const lines = [`[샵인샵 영업 기록] ${from} ~ ${to}`, `통화 ${d.sum.calls}건 · 연결 ${d.sum.connected}건 · 관심 ${d.sum.interested}곳 · 미팅 ${d.sum.meetings}건`, ''];
+  let day = '';
+  d.rows.slice().reverse().forEach(r => {
+    if (r.day !== day) { day = r.day; lines.push('■ ' + shortDate(day)); }
+    lines.push(`- ${r.time} ${r.name} (${r.area}) ${r.result ? '[' + (RES[r.result] || r.result) + ']' : '[' + (KIND[r.kind] || r.kind) + ']'} ${actLine(r)} - ${r.by || ''}`);
+  });
+  try { await navigator.clipboard.writeText(lines.join('\n')); toast('보고용 텍스트를 복사했어요. 카톡·메일에 붙여 넣으세요'); }
+  catch (e) { toast('복사하지 못했어요. 브라우저 권한을 확인하세요', true); }
+});
+$('log-res').innerHTML = '<option value="">결과 전체</option>' + Object.entries(RES).map(([k, v]) => `<option value="${k}">${v}</option>`).join('');
+
+/* ---------- 신청함 ---------- */
+const INBOUND = ['landing', 'openchat', 'cafe', 'referral'];
+async function loadInbox(){
+  try {
+    const d = await rpc('lead_list', { p: { sources: INBOUND, sort: 'new', limit: 300 } });
+    $('inbox-list').innerHTML = d.rows.length ? d.rows.map(r => `<article class="item" data-id="${r.id}">
+      <div class="item-top">${r.stage === 'collected' ? '<span class="tag t-late">새 신청</span>' : ''}
+        <div class="item-main"><b>${esc(r.name)}</b><small>${esc(SRC[r.source] || r.source)} · ${esc([r.sigungu, r.dong].filter(Boolean).join(' ') || '지역 미상')} · ${esc(r.created)}</small></div>
+        <span class="tag t-st">${esc(ST[r.stage])}</span></div>
+      <div class="item-bot"><span>${r.next ? `다음 연락 ${esc(shortDate(r.next))}` : '<span class="muted">아직 연락 전</span>'}</span>
+        <span class="row-btns">${r.tel ? `<a class="btn sm" href="tel:${esc(r.tel)}">전화</a>` : ''}<button class="btn sm pri" data-open="${r.id}">열기</button></span></div>
+    </article>`).join('') : '<div class="empty-box">아직 들어온 신청이 없어요.<br>랜딩페이지 연결 후에는 신청이 여기에 자동으로 쌓여요.</div>';
+  } catch (e) { toast(errMsg(e), true); }
+}
+$('inbox-list').addEventListener('click', e => { if (e.target.closest('a')) return; const it = e.target.closest('[data-open], .item'); if (it) openLead(+(it.dataset.open || it.dataset.id)); });
+$('inbox-add').addEventListener('click', () => openAdd('landing'));
+
+/* ---------- 커뮤니티 ---------- */
+const CST = { found: '찾음', dm_sent: '쪽지 보냄', applied: '랜딩 신청함', called: '통화함', dropped: '관심 없음' };
+state.comm = { status: '', data: null };
+async function loadComm(){
+  try { state.comm.data = await rpc('lead_comm_data'); renderComm(); } catch (e) { toast(errMsg(e), true); }
+}
+function renderComm(){
+  const d = state.comm.data; if (!d) return;
+  $('post-list').innerHTML = d.posts.length ? d.posts.map(p => `<article class="box post">
+      <div><b>${esc(p.title || '(제목 없음)')}</b><small class="muted">${esc(p.cafe)}${p.posted_at ? ' · ' + esc(p.posted_at) : ''}</small></div>
+      <div class="post-n"><span>댓글·쪽지 <b>${p.n}</b></span><span>신청 <b>${p.applied}</b></span></div>
+      <div class="row-btns">${p.url ? `<a class="btn sm" href="${esc(p.url)}" target="_blank" rel="noopener">글 열기</a>` : ''}<button class="btn sm" data-post="${p.id}">수정</button></div>
+    </article>`).join('') : '<div class="empty-box">등록한 글이 없어요. 카페에 글을 올리면 링크를 등록해 두세요.</div>';
+  const st = state.comm.status;
+  const cnt = k => d.people.filter(x => !k || x.status === k).length;
+  $('comm-status').innerHTML = `<button data-v="" class="${!st ? 'on' : ''}">전체 <small>${cnt('')}</small></button>` +
+    Object.entries(CST).map(([k, v]) => `<button data-v="${k}" class="${st === k ? 'on' : ''}">${v} <small>${cnt(k)}</small></button>`).join('');
+  const ppl = d.people.filter(x => !st || x.status === st);
+  $('person-list').innerHTML = ppl.length ? ppl.map(x => `<article class="item">
+      <div class="item-top"><div class="item-main"><b>${esc(x.nickname)}</b><small>${esc(x.cafe || '')}${x.post_title ? ' · ' + esc(x.post_title) : ''}${x.region ? ' · ' + esc(x.region) : ''} · ${esc(x.at)}</small></div>
+        <select data-st="${x.id}" aria-label="상태">${Object.entries(CST).map(([k, v]) => `<option value="${k}"${k === x.status ? ' selected' : ''}>${v}</option>`).join('')}</select></div>
+      ${x.content ? `<p class="memo">${esc(x.content)}</p>` : ''}
+      <div class="item-bot"><span class="muted">${x.contact_ok ? '연락처 본인 제공' + (x.phone ? ' · ' + esc(tel(x.phone)) : '') : '연락처 없음 (쪽지로 연락)'}</span>
+        <span class="row-btns"><button class="btn sm" data-edit="${x.id}">수정</button>${x.lead_id ? `<button class="btn sm pri" data-open="${x.lead_id}">매장 카드</button>` : `<button class="btn sm pri" data-tolead="${x.id}">매장 카드로 등록</button>`}</span></div>
+    </article>`).join('') : '<div class="empty-box">기록된 분이 없어요.</div>';
+}
+$('comm-status').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; state.comm.status = b.dataset.v; renderComm(); });
+$('person-list').addEventListener('change', async e => {
+  const s = e.target.closest('select[data-st]'); if (!s) return;
+  try { await rpc('lead_comm_save', { p: { id: +s.dataset.st, status: s.value } }); toast('상태를 바꿨어요'); loadComm(); refreshStats(); } catch (er) { toast(errMsg(er), true); }
+});
+$('person-list').addEventListener('click', async e => {
+  const o = e.target.closest('[data-open]'); if (o) return openLead(+o.dataset.open);
+  const t = e.target.closest('[data-tolead]');
+  if (t) { try { await rpc('lead_comm_save', { p: { id: +t.dataset.tolead, to_lead: true } }); toast('매장 카드로 등록했어요'); await loadComm(); const x = state.comm.data.people.find(y => y.id === +t.dataset.tolead); if (x && x.lead_id) openLead(x.lead_id); } catch (er) { toast(errMsg(er), true); } return; }
+  const ed = e.target.closest('[data-edit]'); if (ed) openPerson(state.comm.data.people.find(y => y.id === +ed.dataset.edit));
+});
+$('post-list').addEventListener('click', e => { const b = e.target.closest('[data-post]'); if (b) openPost(state.comm.data.posts.find(p => p.id === +b.dataset.post)); });
+$('post-add').addEventListener('click', () => openPost(null));
+$('person-add').addEventListener('click', () => openPerson(null));
+function modal(html){ $('addbox').innerHTML = html; $('scrim').hidden = false; $('addbox').hidden = false; }
+function openPost(p){
+  p = p || {};
+  modal(`<h3 id="add-title">${p.id ? '글 수정' : '우리 글 등록'}</h3><div class="grid2">
+    <div class="fld"><label for="po-cafe">카페 이름</label><input id="po-cafe" value="${esc(p.cafe || '')}" placeholder="예: 창업 준비 카페"></div>
+    <div class="fld"><label for="po-date">올린 날짜</label><input id="po-date" type="date" value="${esc(p.posted_at || today())}"></div>
+    <div class="fld full"><label for="po-title">글 제목</label><input id="po-title" value="${esc(p.title || '')}"></div>
+    <div class="fld full"><label for="po-url">글 링크</label><input id="po-url" type="url" value="${esc(p.url || '')}" placeholder="https://cafe.naver.com/..."></div>
+    <div class="fld full"><label for="po-memo">메모</label><input id="po-memo" value="${esc(p.memo || '')}"></div></div>
+    <div class="row-end"><button class="btn" type="button" id="m-cancel">취소</button><button class="btn pri" type="button" id="m-save">저장</button></div>`);
+  $('m-cancel').onclick = closePanel;
+  $('m-save').onclick = async () => {
+    try { await rpc('lead_post_save', { p: { id: p.id || '', cafe: $('po-cafe').value, title: $('po-title').value, url: $('po-url').value, posted_at: $('po-date').value, memo: $('po-memo').value } });
+      closePanel(); toast('저장했어요'); loadComm(); } catch (e) { toast(errMsg(e), true); }
+  };
+}
+function openPerson(x){
+  x = x || {}; const posts = (state.comm.data && state.comm.data.posts) || [];
+  modal(`<h3 id="add-title">${x.id ? '정보 수정' : '댓글·쪽지 준 분 추가'}</h3><div class="grid2">
+    <div class="fld"><label for="pe-nick">닉네임</label><input id="pe-nick" value="${esc(x.nickname || '')}"></div>
+    <div class="fld"><label for="pe-post">어느 글</label><select id="pe-post"><option value="">글 선택 안 함</option>${posts.map(p => `<option value="${p.id}"${p.id === x.post_id ? ' selected' : ''}>${esc(p.cafe)} · ${esc(p.title || '')}</option>`).join('')}</select></div>
+    <div class="fld"><label for="pe-cafe">카페 이름</label><input id="pe-cafe" value="${esc(x.cafe || '')}"></div>
+    <div class="fld"><label for="pe-status">상태</label><select id="pe-status">${Object.entries(CST).map(([k, v]) => `<option value="${k}"${k === (x.status || 'found') ? ' selected' : ''}>${v}</option>`).join('')}</select></div>
+    <div class="fld"><label for="pe-region">지역</label><input id="pe-region" value="${esc(x.region || '')}" placeholder="예: 천안시 서북구"></div>
+    <div class="fld"><label for="pe-cat">업종</label><input id="pe-cat" value="${esc(x.cat || '')}" placeholder="예: 이자카야"></div>
+    <div class="fld full"><label for="pe-content">남긴 내용</label><textarea id="pe-content" placeholder="예: 천안에서 이자카야 운영 중, 점심 메뉴 고민">${esc(x.content || '')}</textarea></div>
+    <div class="fld full"><label class="chk" style="border:0;padding:0;height:auto"><input type="checkbox" id="pe-ok"${x.contact_ok ? ' checked' : ''}> 본인이 쪽지 등으로 연락처를 직접 알려 줌</label></div>
+    <div class="fld full"><label for="pe-phone">연락처 (본인 제공일 때만)</label><input id="pe-phone" type="tel" value="${esc(tel(x.phone || ''))}" ${x.contact_ok ? '' : 'disabled'}></div>
+    <div class="fld full"><label for="pe-memo">메모</label><input id="pe-memo" value="${esc(x.memo || '')}"></div></div>
+    <div class="row-end"><button class="btn" type="button" id="m-cancel">취소</button><button class="btn pri" type="button" id="m-save">저장</button></div>`);
+  $('pe-ok').onchange = () => { $('pe-phone').disabled = !$('pe-ok').checked; if (!$('pe-ok').checked) $('pe-phone').value = ''; };
+  $('m-cancel').onclick = closePanel;
+  $('m-save').onclick = async () => {
+    try { await rpc('lead_comm_save', { p: { id: x.id || '', nickname: $('pe-nick').value, post_id: $('pe-post').value, cafe: $('pe-cafe').value, status: $('pe-status').value,
+        region: $('pe-region').value, cat: $('pe-cat').value, content: $('pe-content').value, contact_ok: $('pe-ok').checked, phone: $('pe-phone').value, memo: $('pe-memo').value } });
+      closePanel(); toast('저장했어요'); loadComm(); refreshStats(); } catch (e) { toast(errMsg(e), true); }
+  };
+}
+
+/* ---------- 양도 매물 ---------- */
+const man = n => n == null ? '-' : Number(n).toLocaleString() + '만';
+async function loadListing(){
+  try {
+    const rows = await rpc('lead_listing_list');
+    $('listing-list').innerHTML = rows.length ? rows.map(l => `<article class="item"${l.lead_id ? ` data-open="${l.lead_id}"` : ''}>
+      <div class="item-top"><div class="item-main"><b>${esc(l.name || l.addr || '매물')}</b><small>${esc(l.area || '')} · ${esc(l.cat || '')} · ${esc(l.site || '')}</small></div>
+        ${l.stage ? `<span class="tag t-st">${esc(ST[l.stage])}</span>` : ''}</div>
+      <div class="item-bot"><span>권리금 <b>${man(l.premium)}</b>${l.premium_prev && l.premium < l.premium_prev ? ` <s class="muted">${man(l.premium_prev)}</s> <span class="late">인하</span>` : ''} · 월세 ${man(l.rent)} · 보증금 ${man(l.deposit)}</span>
+        <span class="row-btns">${l.url ? `<a class="btn sm" href="${esc(l.url)}" target="_blank" rel="noopener">매물 보기</a>` : ''}</span></div>
+      <small class="muted">처음 확인 ${esc(l.first_seen)} · 마지막 확인 ${esc(l.last_seen)}${l.memo ? ' · ' + esc(l.memo) : ''}</small>
+    </article>`).join('') : '<div class="empty-box">아직 들어온 매물이 없어요.<br>어사이드가 자료를 보내면 여기에 자동으로 쌓여요.</div>';
+  } catch (e) { toast(errMsg(e), true); }
+}
+$('listing-list').addEventListener('click', e => { if (e.target.closest('a')) return; const it = e.target.closest('[data-open]'); if (it) openLead(+it.dataset.open); });
+
+async function refreshStats(){ try { const s = await rpc('lead_stats'); applyStats(s); } catch (e) {} }
+
 
 /* ---------- 지도: 전국 → 시도 → 시군구 → 읍면동 → 매장 (경계 색칠) ---------- */
 const STAGE_COLOR = { collected: '#9aa097', contacted: '#e0a33c', interested: '#c62429', meeting: '#7a1015', trial: '#7a1015', proposal: '#7a1015', contract: '#1f4e8c', hold: '#c9cbc4', rejected: '#4d514a' };
@@ -556,7 +992,7 @@ async function loadMap(){
 }
 
 /* ---------- 상세 ---------- */
-function closePanel(){ $('panel').hidden = true; $('scrim').hidden = true; $('addbox').hidden = true; state.cur = null; }
+function closePanel(){ $('panel').hidden = true; $('scrim').hidden = true; $('addbox').hidden = true; $('more-sheet').hidden = true; state.cur = null; }
 $('scrim').addEventListener('click', closePanel);
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('scrim').hidden) closePanel(); });
 
@@ -583,9 +1019,11 @@ function renderPanel(d){
     <div>
       <h2 id="p-name">${esc(d.name)}${d.branch ? ' ' + esc(d.branch) : ''}</h2>
       <div class="sm">${esc(d.cat_s || '')}${addr ? ' · ' + esc(addr) : ''}</div>
+      ${d.fav_by ? `<div class="sm">관심 담은 사람: ${esc(d.fav_by)}</div>` : ''}
       <div class="links"><a href="${esc(mapUrl)}" target="_blank" rel="noopener">${d.naver_url ? '네이버 플레이스 열기' : '네이버에서 찾기'}</a>${d.tel ? `<a href="tel:${esc(d.tel)}">${esc(tel(d.tel))} 전화</a>` : ''}${d.owner_tel ? `<a href="tel:${esc(d.owner_tel)}">점주 ${esc(tel(d.owner_tel))} 전화</a>` : ''}</div>
     </div>
-    <button class="x" id="p-close" aria-label="닫기">×</button>
+    <button class="favbtn ${d.fav ? 'on' : ''}" id="p-fav" aria-pressed="${d.fav ? 'true' : 'false'}">${d.fav ? '★ 관심' : '☆ 관심 담기'}</button>
+    <button class="x" id="p-close" aria-label="닫기" style="margin-left:4px">×</button>
   </div>
   <div class="panel-bd">
     <div class="box"><h4>영업 단계</h4><div class="steps" id="p-steps">${steps}</div></div>
@@ -640,6 +1078,10 @@ function renderPanel(d){
   </div>`;
 
   $('p-close').onclick = closePanel;
+  $('p-fav').onclick = async () => {
+    try { const on = await rpc('lead_fav_toggle', { p_id: d.id }); d.fav = on; toast(on ? '관심 매장에 담았어요' : '관심 매장에서 뺐어요'); renderPanel(d); refreshStats(); if (state.view === 'fav') loadFav(); }
+    catch (e) { toast(errMsg(e), true); }
+  };
   $('p-steps').onclick = async e => {
     const b = e.target.closest('button[data-stage]'); if (!b || b.dataset.stage === d.stage) return;
     await save({ id: d.id, stage: b.dataset.stage }, `${ST[b.dataset.stage]} 단계로 옮겼어요`);
@@ -712,7 +1154,8 @@ async function refreshAfter(id){
 }
 
 /* ---------- 매장 추가 ---------- */
-$('add').addEventListener('click', () => {
+$('add').addEventListener('click', () => openAdd('manual'));
+function openAdd(srcDefault){
   const b = $('addbox');
   b.innerHTML = `<h3 id="add-title">매장 추가</h3>
     <div class="grid2">
@@ -721,7 +1164,7 @@ $('add').addEventListener('click', () => {
       <div class="fld"><label for="a-dong">동</label><input id="a-dong" placeholder="예: 서교동"></div>
       <div class="fld full"><label for="a-addr">주소</label><input id="a-addr"></div>
       <div class="fld"><label for="a-tel">전화</label><input id="a-tel" type="tel"></div>
-      <div class="fld"><label for="a-src">유입 경로</label><select id="a-src">${opt(SRC, 'manual')}</select></div>
+      <div class="fld"><label for="a-src">유입 경로</label><select id="a-src">${opt(SRC, srcDefault || 'manual')}</select></div>
       <div class="fld"><label for="a-cat">업종</label><input id="a-cat" placeholder="예: 요리 주점"></div>
       <div class="fld"><label for="a-org">리드 소유</label><select id="a-org">${opt(ORG, 'menya')}</select></div>
     </div>
@@ -736,7 +1179,7 @@ $('add').addEventListener('click', () => {
       b.hidden = true; toast('매장을 추가했어요'); load(true); openLead(id);
     } catch (e) { toast(errMsg(e), true); }
   };
-});
+}
 
 boot();
 })();
