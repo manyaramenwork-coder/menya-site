@@ -211,6 +211,7 @@ td .sm{font-size:12px;color:var(--sub)}
 .crumb button:disabled{color:var(--ink);font-weight:700;cursor:default}
 .crumb span{color:var(--sub)}
 .crumb .hint{margin-left:auto;font-size:12px;color:var(--sub)}
+#map.plain{background:var(--bg)}
 #map{height:max(420px, calc(100vh - 250px));border-radius:var(--radius);border:1px solid var(--line);background:#e9ece6;z-index:0}
 .bub{display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:50%;background:rgba(198,36,41,.88);color:#fff;border:2px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.25);text-align:center;line-height:1.15;cursor:pointer;font-family:inherit}
 .bub small{font-size:11px;font-weight:500;max-width:90%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -221,16 +222,6 @@ td .sm{font-size:12px;color:var(--sub)}
 .leaflet-tooltip.lbl small{display:block;font-weight:600;color:var(--brand-d)}
 .scale{display:inline-flex;align-items:center;gap:6px}
 .scale b{display:inline-block;width:90px;height:10px;border-radius:5px;background:linear-gradient(90deg,#eceee8,rgba(198,36,41,.75))}
-/* 전국·시도 단계 블록 */
-.geo-blocks{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
-.gb{display:flex;flex-direction:column;align-items:flex-start;gap:3px;min-height:104px;padding:14px;text-align:left;font-family:inherit;color:var(--ink);cursor:pointer;
-  border:1px solid var(--line);border-radius:var(--radius);background:linear-gradient(rgba(198,36,41,var(--a)),rgba(198,36,41,var(--a))),#fff}
-.gb:hover{border-color:var(--ink)}
-.gb b{font-size:16px}
-.gb .n{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.2}
-.gb small{font-size:12px;color:var(--sub)}
-.gb.zero{background:#fff;color:var(--sub);cursor:default}
-@media (max-width:900px){.geo-blocks{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:10px;font-size:12px;color:var(--sub)}
 .legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:-1px}
 
@@ -359,7 +350,6 @@ td .sm{font-size:12px;color:var(--sub)}
     <!-- 지도 탐색 -->
     <section id="sec-map" class="sec" hidden>
       <nav class="crumb" id="crumb" aria-label="지역 단계"></nav>
-      <div class="geo-blocks" id="geo-blocks" hidden></div>
       <div class="map-wrap">
         <div id="map" role="region" aria-label="매장 지도"></div>
         <aside id="map-list" hidden aria-label="이 동의 매장 목록">
@@ -920,7 +910,7 @@ async function refreshStats(){ try { const s = await rpc('lead_stats'); applySta
 /* ---------- 지도: 전국 → 시도 → 시군구 → 읍면동 → 매장 (경계 색칠) ---------- */
 const STAGE_COLOR = { collected: '#9aa097', contacted: '#e0a33c', interested: '#c62429', meeting: '#7a1015', trial: '#7a1015', proposal: '#7a1015', contract: '#1f4e8c', hold: '#c9cbc4', rejected: '#4d514a' };
 state.geo = { sido: '', sigungu: '', dong: '' };
-let MAP = null, POLY = null, PTS = null;
+let MAP = null, POLY = null, PTS = null, TILES = null;
 const GEO = {};
 const norm = s => String(s || '').replace(/\s/g, '');
 function geoFile(name){
@@ -932,11 +922,18 @@ function geoFile(name){
 function ensureMap(){
   if (MAP) { setTimeout(() => MAP.invalidateSize(), 0); return; }
   MAP = L.map('map', { zoomControl: true, zoomSnap: .25 }).setView([36.2, 127.8], 7);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, opacity: .55,
-    attribution: '&copy; OpenStreetMap · 경계: 통계청 SGIS, admdongkor(CC BY 4.0)' }).addTo(MAP);
+  TILES = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, opacity: .55,
+    attribution: '&copy; OpenStreetMap' });
+  MAP.attributionControl.addAttribution('경계: 통계청 SGIS, admdongkor(CC BY 4.0)');
   POLY = L.layerGroup().addTo(MAP); PTS = L.layerGroup().addTo(MAP);
   $('legend').innerHTML = '<span class="scale">매장 적음<b></b>많음</span>' + [['collected', '수집'], ['contacted', '1차 통화'], ['interested', '관심'], ['meeting', '미팅~제안'], ['contract', '계약'], ['hold', '보류'], ['rejected', '거절']]
     .map(([k, v]) => `<span><i style="background:${STAGE_COLOR[k]}"></i>${v}</span>`).join('') + '<span>테두리 굵은 점 = 재연락 기한 지남</span>';
+}
+function setTiles(on){
+  if (!MAP || !TILES) return;
+  if (on && !MAP.hasLayer(TILES)) TILES.addTo(MAP);
+  if (!on && MAP.hasLayer(TILES)) MAP.removeLayer(TILES);
+  $('map').classList.toggle('plain', !on);
 }
 function renderCrumb(level){
   const g = state.geo, parts = [`<button data-l="0" ${!g.sido ? 'disabled' : ''}>전국</button>`];
@@ -965,26 +962,14 @@ function fillFor(n, max){
 }
 let mapSeq = 0;
 async function loadMap(){
+  ensureMap();
   const seq = ++mapSeq;
   const f = filters();
   if (!state.geoNav) { const [s, g] = ($('f-region').value || '|').split('|'); if (s !== state.geo.sido || g !== state.geo.sigungu) state.geo = { sido: s || '', sigungu: g || '', dong: '' }; }
   state.geoNav = false;
   const G = state.geo;
   const level = !G.sido ? 'sido' : !G.sigungu ? 'sgg' : !G.dong ? 'dong' : 'store';
-  // 전국(시도 목록)·시도(시군구 목록) 단계는 블록으로, 시군구 안(동·매장)부터 지도로
-  const blocks = level === 'sido' || level === 'sgg';
-  $('geo-blocks').hidden = !blocks;
-  document.querySelector('.map-wrap').hidden = blocks;
-  $('legend').hidden = blocks;
-  if (blocks) {
-    try {
-      const grp = await rpc('lead_geo', { p: { ...f, sido: G.sido, sigungu: '', dong: '' } });
-      if (seq !== mapSeq || state.view !== 'map') return;
-      renderCrumb(level); renderGeoBlocks(grp.groups || []);
-    } catch (e) { toast(errMsg(e), true); }
-    return;
-  }
-  ensureMap();
+  setTiles(level === 'store');
   try {
     const [feats, grp, pts] = await Promise.all([
       geoFile(level === 'sido' ? 'sido' : level === 'sgg' ? 'sgg' : 'dong'),
@@ -1055,27 +1040,6 @@ async function loadMap(){
     }
   } catch (e) { toast(errMsg(e), true); }
 }
-
-/* 전국·시도 블록 */
-function renderGeoBlocks(groups){
-  const gs = groups.slice().sort((a, b) => (b.n || 0) - (a.n || 0));
-  const max = Math.max(1, ...gs.map(g => g.n || 0));
-  $('geo-blocks').innerHTML = gs.length ? gs.map(g => {
-    const n = g.n || 0;
-    if (!n) return `<div class="gb zero"><b>${esc(g.name)}</b><small>조건에 맞는 매장 없음</small></div>`;
-    return `<button class="gb" data-name="${esc(g.name)}" style="--a:${(.06 + .4 * Math.sqrt(n / max)).toFixed(2)}">
-      <b>${esc(g.name)}</b><span class="n">${n.toLocaleString()}곳</span>
-      <small>가장 많은 업종 ${esc(g.top_cat || '-')}</small>
-      <small>영업 진행 ${(g.active || 0).toLocaleString()} · 계약 ${(g.contract || 0).toLocaleString()}</small></button>`;
-  }).join('') : '<div class="empty-box">조건에 맞는 매장이 없어요.</div>';
-}
-$('geo-blocks').addEventListener('click', e => {
-  const b = e.target.closest('button.gb'); if (!b) return;
-  const nm = b.dataset.name;
-  state.geo = state.geo.sido ? { sido: state.geo.sido, sigungu: nm, dong: '' } : { sido: nm, sigungu: '', dong: '' };
-  syncRegion(); state.geoNav = true; loadMap();
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-});
 
 /* 동 안 매장 목록 ↔ 지도 연결 */
 let MARKS = {};
