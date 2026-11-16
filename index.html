@@ -8234,7 +8234,7 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
     const nNew = L.filter(o => o.status === 'received').length, nShip = L.filter(o => o.status === 'confirmed').length;
     box.innerHTML = `
       <div class="data-note"><span class="status-dot"></span><span>접수 대기 ${nNew}건 · 발송 대기 ${nShip}건</span><span class="tag">점주 앱과 바로 연동</span>
-        <button class="btn ghost mp-ref" onclick="mpReload()">새로고침</button></div>
+        <button class="btn primary mp-ref" onclick="mpProxy()">＋ 대신 발주 넣기</button><button class="btn ghost" onclick="mpReload()">새로고침</button></div>
       <section class="card"><div class="mp-bar"><div class="fnn-tabs" role="tablist">${tabs.map(([k, t, n]) => `<button type="button" role="tab" aria-selected="${MP.tab === k}" class="${MP.tab === k ? 'on' : ''}" onclick="mpTab('${k}')">${t} ${n}</button>`).join('')}</div>
         <input type="search" class="fnn-q" placeholder="매장·품목·발주번호" value="${h(MP.q)}" oninput="mpQ(this.value)"></div>
         <div class="mp-list">${shown.length ? shown.map(card).join('') : `<div class="mp-empty">${MP.tab === 'todo' ? '처리할 발주가 없어요.' : '해당하는 발주가 없어요.'}</div>`}</div></section>`;
@@ -8267,6 +8267,52 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
         <details class="mp-log"><summary>처리 기록 ${o.logs.length}</summary>${o.logs.map(l => `<div><time>${h(l.at)}</time>${h(l.act)} · ${h(l.who || '')}${l.note ? ` · ${h(l.note)}` : ''}</div>`).join('')}</details></div>` : ''}
     </article>`;
   }
+  /* 본사 대리 발주: 전화로 받은 주문을 매장을 골라 대신 넣음 → 바로 '접수 완료' */
+  const PX = { form: null, store: '', qty: {}, memo: '전화 주문' };
+  window.mpProxy = async () => {
+    try { if (!PX.form) { const { data, error } = await SB.rpc('mst_hq_order_form'); if (error) throw error; PX.form = data; } }
+    catch (e) { toast('불러오지 못했어요: ' + (e.message || e)); return; }
+    PX.store = ''; PX.qty = {}; PX.memo = '전화 주문'; pxDraw();
+  };
+  function pxTotal(){ return (PX.form.items || []).reduce((a, i) => a + (PX.qty[i.id] || 0) * Number(i.price || 0), 0); }
+  function pxDraw(){
+    const F = PX.form, cats = [...new Set(F.items.map(i => i.cat || '기타'))];
+    let m = document.getElementById('mp-px'); if (!m) { m = document.createElement('div'); m.id = 'mp-px'; document.body.appendChild(m); }
+    const n = Object.values(PX.qty).filter(v => v > 0).length;
+    m.innerHTML = `<div class="px-bg" onclick="pxClose()"></div><div class="px-box" role="dialog" aria-modal="true" aria-label="대신 발주 넣기">
+      <div class="px-h"><b>대신 발주 넣기</b><button class="px-x" onclick="pxClose()" aria-label="닫기">✕</button></div>
+      <p class="px-sub">전화로 받은 주문을 매장 대신 넣어요. 바로 <b>접수 완료</b>로 들어가고, 점주 앱에도 보이고 알림이 가요.</p>
+      <div class="px-body">
+        <label class="px-l">매장</label>
+        <select id="px-s" onchange="pxStore(this.value)"><option value="">매장을 골라 주세요</option>
+          ${F.stores.map(st => `<option value="${st.id}" ${String(PX.store) === String(st.id) ? 'selected' : ''}>${h(st.name)}${st.direct ? ' (직영)' : ''}${st.owner ? ' · ' + h(st.owner) : ''}</option>`).join('')}</select>
+        <label class="px-l">품목 <small>수량을 넣은 품목만 발주돼요</small></label>
+        <div class="px-items">${cats.map(c => `<div class="px-cat">${h(c)}</div>${F.items.filter(i => (i.cat || '기타') === c).map(i => `<div class="px-row ${PX.qty[i.id] ? 'on' : ''}">
+          <span class="px-nm">${h(i.name)}<small>${h(i.unit || '')} · ${i.price ? won(i.price) + '원' : '단가 미정'}</small></span>
+          <span class="px-q"><button type="button" onclick="pxQ(${i.id},-1)" aria-label="빼기">−</button><input inputmode="numeric" value="${PX.qty[i.id] || ''}" placeholder="0" oninput="pxSet(${i.id},this.value)" aria-label="${h(i.name)} 수량"><button type="button" onclick="pxQ(${i.id},1)" aria-label="더하기">＋</button></span></div>`).join('')}`).join('')}</div>
+        <label class="px-l">메모 <small>점주 앱 발주 내역에 보여요</small></label>
+        <input id="px-m" maxlength="500" value="${h(PX.memo)}" oninput="pxMemo(this.value)">
+      </div>
+      <div class="px-f"><span class="px-tot">${n}개 품목 · <b id="px-tot">${won(pxTotal())}원</b></span><button class="btn ghost" onclick="pxClose()">취소</button><button class="btn primary" id="px-go" onclick="pxGo()">발주 넣기</button></div></div>`;
+  }
+  window.pxClose = () => document.getElementById('mp-px')?.remove();
+  window.pxStore = v => { PX.store = v; };
+  window.pxMemo = v => { PX.memo = v; };
+  window.pxQ = (id, d) => { PX.qty[id] = Math.max(0, Math.min(9999, (PX.qty[id] || 0) + d)); pxDraw(); };
+  window.pxSet = (id, v) => { PX.qty[id] = Math.min(9999, parseInt(String(v).replace(/\D/g, ''), 10) || 0);
+    const t = document.getElementById('px-tot'); if (t) t.textContent = won(pxTotal()) + '원'; };
+  window.pxGo = async () => {
+    const items = Object.entries(PX.qty).filter(([, q]) => q > 0).map(([id, qty]) => ({ id: +id, qty }));
+    if (!PX.store) return toast('매장을 골라 주세요');
+    if (!items.length) return toast('품목 수량을 넣어 주세요');
+    const st = PX.form.stores.find(x => String(x.id) === String(PX.store));
+    if (!confirm(`${st ? st.name : ''}에 ${items.length}개 품목, ${won(pxTotal())}원 발주를 넣을까요?`)) return;
+    const b = document.getElementById('px-go'); b.disabled = true;
+    const { data, error } = await SB.rpc('mst_hq_order_create', { p: { store_id: +PX.store, items, memo: PX.memo } });
+    if (error) { b.disabled = false; return toast(error.message); }
+    pxClose(); toast('발주를 넣었어요. 점주 앱에도 보여요.');
+    MP.tab = 'todo'; MP.open = data && data.id; await load(true); draw();
+  };
   window.mpMemo = id => setOrder({ id, memo: (document.getElementById('mp-m-' + id).value || '').trim() }, '안내를 저장했어요. 점주 앱 발주 화면에 보여요.');
   window.mpReload = async () => { try { await load(true); draw(); } catch (e) { toast('불러오지 못했어요'); } };
   window.mpTab = k => { MP.tab = k; draw(); };
@@ -8397,6 +8443,25 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
   .mp-act{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;align-items:center}
   .mp-ship select,.mp-ship input{height:38px;border:1px solid #d9ded2;border-radius:8px;padding:0 10px;font:inherit;font-size:13px;background:#fff}
   .mp-ship input{flex:1;min-width:160px;letter-spacing:.02em}
+  #mp-px{position:fixed;inset:0;z-index:300;display:grid;place-items:center;padding:16px}
+  #mp-px .px-bg{position:absolute;inset:0;background:rgba(20,22,18,.45)}
+  #mp-px .px-box{position:relative;background:#fff;border-radius:16px;width:min(620px,100%);max-height:calc(100vh - 32px);display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+  #mp-px .px-h{display:flex;align-items:center;justify-content:space-between;padding:18px 20px 6px}#mp-px .px-h b{font-size:17px}
+  #mp-px .px-x{border:0;background:none;font-size:16px;cursor:pointer;color:#6b7266}
+  #mp-px .px-sub{margin:0 20px 6px;font-size:12.5px;color:#5f6858}
+  #mp-px .px-body{overflow:auto;padding:4px 20px 12px}
+  #mp-px .px-l{display:block;font-size:12.5px;font-weight:700;color:#4a5244;margin:14px 0 6px}#mp-px .px-l small{font-weight:500;color:#909b84;margin-left:6px}
+  #mp-px select,#mp-px #px-m{box-sizing:border-box;width:100%;height:42px;border:1px solid #dcdfd5;border-radius:10px;padding:0 12px;font-size:14px;background:#fff}
+  #mp-px .px-items{border:1px solid #e6e8e0;border-radius:12px;overflow:hidden}
+  #mp-px .px-cat{background:#f5f6f2;font-size:12px;font-weight:800;color:#5f6858;padding:7px 12px}
+  #mp-px .px-row{display:flex;align-items:center;gap:10px;padding:8px 12px;border-top:1px solid #f0f1ec}
+  #mp-px .px-row.on{background:#fff7f6}
+  #mp-px .px-nm{flex:1;min-width:0;font-size:13.5px;font-weight:600}#mp-px .px-nm small{display:block;font-weight:500;color:#909b84;font-size:12px}
+  #mp-px .px-q{display:flex;align-items:center;gap:4px}
+  #mp-px .px-q button{width:30px;height:30px;border:1px solid #dcdfd5;border-radius:8px;background:#fff;font-size:16px;cursor:pointer}
+  #mp-px .px-q input{width:52px;height:30px;text-align:center;border:1px solid #dcdfd5;border-radius:8px;font-size:14px}
+  #mp-px .px-f{display:flex;align-items:center;gap:8px;padding:12px 20px 16px;border-top:1px solid #eef0ea}
+  #mp-px .px-tot{margin-right:auto;font-size:13px;color:#4a5244}#mp-px .px-tot b{font-size:16px;color:#1f241c}
   .mp-steps{list-style:none;display:flex;gap:6px;margin:14px 0 4px;padding:0}
   .mp-steps li{flex:1;display:flex;align-items:center;gap:6px;font-size:12px;color:#909b84;padding:7px 9px;border-radius:9px;background:#f5f6f2}
   .mp-steps li b{display:grid;place-items:center;width:19px;height:19px;border-radius:50%;background:#dfe3d8;color:#fff;font-size:11px;flex-shrink:0}
