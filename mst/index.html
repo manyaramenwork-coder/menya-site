@@ -307,7 +307,7 @@ html.plg-on #app{max-width:none;margin:0;padding:0}
 .plg .pref input:checked:after{content:'✓';color:#fff;font-weight:900;font-size:12px}
 .plg .login{height:56px;width:100%;background:var(--pa);border:0;border-radius:13px;color:#fff;font-size:16px;font-weight:850;letter-spacing:-.03em;box-shadow:0 9px 16px #c6242b23;display:flex;align-items:center;justify-content:center;gap:10px;cursor:pointer;transition:transform .15s,background .15s}
 .plg .login:hover{background:#ad1e25}.plg .login:active{transform:scale(.99)}.plg .login:disabled{opacity:.7}.plg .login span{font-size:20px;font-weight:400}
-.plg .help{margin-top:22px;display:flex;justify-content:center;gap:13px;align-items:center;color:#8f8881;font-size:12px;flex-wrap:wrap}
+.plg .help{margin-top:22px;display:flex;justify-content:center;gap:13px;align-items:center;color:#8f8881;font-size:12px;flex-wrap:wrap;text-align:center;line-height:1.6}
 .plg .help a{color:#726a63;text-decoration:underline;text-underline-offset:3px}
 .plg .pfoot{font-size:9px;text-align:center;color:#aaa39a;letter-spacing:.075em;margin-top:22px;font-weight:650}
 .plg #lerr{margin-top:10px}
@@ -536,7 +536,7 @@ function showLogin(msg){
         <button class="login" id="lbtn" type="submit">파트너 로그인 <span aria-hidden="true">→</span></button>
         <div id="lerr">${msg ? errBox(msg) : ''}</div>
       </form>
-      <div class="help"><span>로그인에 문제가 있으신가요?</span><a href="tel:0415676907">본사 문의 041-567-6907</a></div>
+      <div class="help"><span>로그인에 문제가 있으신가요?<br>담당자에게 문의하시면 빠르게 도와드리겠습니다.</span></div>
       <div class="pfoot">© MENYAMATSURI COMPANY · PARTNER PORTAL</div>
     </section></main>`;
   if (saved) setTimeout(() => { try { $('#lpw').focus(); } catch (e) {} }, 0);
