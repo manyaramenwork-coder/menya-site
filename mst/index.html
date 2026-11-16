@@ -770,11 +770,10 @@ ROUTES.order = async (id, tok) => {
 
 function payBox(o){
   if (!o.bank || ['canceled', 'rejected'].includes(o.status)) return '';
-  if (o.paid) return `<div class="box pay ok" style="margin-top:12px">${ic('check')}입금 확인됐어요 <span style="color:var(--mut);font-weight:500;font-size:13px">${h(o.paid)}</span></div>`;
   return `<div class="sec"><h2>입금 안내</h2></div><div class="box pay">
-    <dl><dt>입금 금액</dt><dd class="amt">${won(o.total)}원</dd>
+    <dl><dt>발주 금액</dt><dd class="amt">${won(o.total)}원</dd>
     <dt>은행</dt><dd>${h(o.bank.bank)}</dd><dt>계좌번호</dt><dd>${h(o.bank.account)}</dd><dt>예금주</dt><dd>${h(o.bank.holder)}</dd></dl>
-    <p class="hint" style="margin:10px 0 0">사업자등록증의 점주님 성함으로 입금해 주세요. 입금이 확인되면 물품을 보내 드려요.</p>
+    <p class="hint" style="margin:10px 0 0">발주하실 때마다 또는 매월 말에 한 번에 입금해 주세요. 입금자명은 사업자등록증의 점주님 성함으로 해 주세요.</p>
     <div class="acts"><button class="btn sm dark" id="pcopy">${ic('copy')}계좌번호 복사</button></div></div>`;
 }
 
@@ -810,7 +809,7 @@ ROUTES.stmt = async (id, tok) => {
       <thead><tr><th>품명</th><th>규격</th><th>수량</th><th>단가</th><th>공급가액</th><th>세액</th></tr></thead>
       <tbody>${rows}</tbody>
       <tfoot><tr><td>합계</td><td></td><td></td><td></td><td>${won(sup)}</td><td>${won(tax)}</td></tr></tfoot></table>
-    <div class="ft"><span>입금자 : ${h(d.payer || '')}${d.paid ? ' <span class="paid no-print">· 입금 확인 ' + h(d.paid) + '</span>' : ''}</span><span>인수자</span><span>(인)</span></div>
+    <div class="ft"><span>입금자 : ${h(d.payer || '')}</span><span>인수자</span><span>(인)</span></div>
   </div>`;
   setView(topbar('거래명세서', back) + `
     <div class="no-print" style="display:flex;gap:8px;margin:4px 0 10px"><button class="btn sm" id="sprint">${ic('file')}인쇄 · PDF 저장</button></div>
