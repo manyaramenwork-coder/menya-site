@@ -209,6 +209,45 @@ svg.i{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stro
 .steps div.done{color:var(--ink);font-weight:650} .steps div.done::before,.steps div.done::after{background:var(--ok)}
 .kv{display:flex;justify-content:space-between;gap:12px;padding:11px 16px;border-top:1px solid var(--line);font-size:14px}
 .kv:first-child{border-top:0} .kv span:first-child{color:var(--mut)} .kv b{font-weight:700}
+.pay{padding:16px}
+.pay .ttl{display:flex;align-items:center;justify-content:space-between;gap:8px;font-weight:750;font-size:15px;margin-bottom:10px}
+.pay dl{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;margin:0;font-size:14.5px}
+.pay dt{color:var(--mut)} .pay dd{margin:0;font-weight:600}
+.pay .amt{font-size:19px;font-weight:800;color:var(--red)}
+.pay .acts{display:flex;gap:8px;margin-top:12px} .pay .acts .btn{flex:1}
+.pay.ok{display:flex;align-items:center;gap:10px;color:var(--ok);font-weight:700}
+/* 거래명세서 — 본사 엑셀 양식(하늘색 머리줄·가로선) 그대로 */
+.stmt-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:6px -4px 0;padding:4px}
+.stmt{min-width:720px;background:#fff;color:#111;padding:26px 26px 22px;font-family:'Nanum Gothic','NanumGothic',var(--font,sans-serif);font-size:11px;line-height:1.45;border:1px solid var(--line);border-radius:6px}
+.stmt+.stmt{margin-top:14px}
+.stmt .shd{display:grid;grid-template-columns:1fr 1fr;gap:22px;align-items:start}
+.stmt .l h2{margin:0;font-size:29px;font-weight:800;letter-spacing:-.02em;display:flex;align-items:flex-start;gap:14px}
+.stmt .l h2 small{font-size:9px;font-weight:400;margin-top:4px}
+.stmt .l .to{font-size:15.5px;margin:10px 0 6px 46px;display:flex;gap:34px}
+.stmt .l .bk{display:flex;gap:46px;font-weight:800;font-size:11.5px;margin:4px 0}
+.stmt .l .dt{font-weight:800;font-size:11.5px;margin:4px 0 6px}
+.stmt .l .tot{display:flex;align-items:baseline;gap:96px;font-size:13px}
+.stmt .l .tot b{font-size:19px;font-weight:400}
+.stmt table{width:100%;border-collapse:collapse}
+.stmt .sup td{padding:5px 4px;border-bottom:1px solid #222;font-size:10.5px;vertical-align:top}
+.stmt .sup tr.h td{background:#b7dee8;font-weight:800;border-top:1px solid #222}
+.stmt .sup td.k{width:62px}
+.stmt .lines{margin-top:10px}
+.stmt .lines th{background:#b7dee8;font-weight:800;text-align:right;padding:4px 2px;border-top:1px solid #222;border-bottom:1px solid #222;font-size:11px}
+.stmt .lines th:first-child,.stmt .lines td:first-child{text-align:left}
+.stmt .lines td{padding:3px 2px;text-align:right;font-size:11px;height:18px}
+.stmt .lines tfoot td{background:#b7dee8;font-weight:800;border-top:1px solid #222;border-bottom:1px solid #222}
+.stmt .ft{display:flex;justify-content:space-between;font-size:13px;margin-top:8px}
+.stmt .ft span:nth-child(2){margin-left:auto;margin-right:200px}
+.stmt .paid{color:var(--ok);font-weight:700}
+@media print{
+  body{background:#fff} #tabs,#view>.top,.no-print,.cartbar,.composer,#toast{display:none!important}
+  #app{padding:0!important;max-width:none!important} #view{padding:0!important;max-width:none!important}
+  .stmt-wrap{overflow:visible;margin:0;padding:0} .stmt{min-width:0;border:0;border-radius:0;padding:0 0 10mm;break-inside:avoid}
+  .stmt+.stmt{margin-top:14mm}
+  @page{size:A4;margin:14mm 12mm}
+}
+}
 .inv{display:flex;align-items:center;gap:10px;padding:14px 16px}
 .inv .n{flex:1;font-size:17px;font-weight:750;letter-spacing:.02em} .inv small{display:block;color:var(--mut);font-size:12.5px;font-weight:500;letter-spacing:0}
 table.items{width:100%;border-collapse:collapse;font-size:14px}
@@ -341,6 +380,7 @@ const IC = {
   clip: '<path d="M21 11.5 12.5 20a5 5 0 0 1-7-7L14 4.5a3.3 3.3 0 0 1 4.7 4.7L10.2 17.7a1.7 1.7 0 0 1-2.4-2.4L15.5 7.6"/>',
   truck: '<path d="M2 6h12v10H2zM14 10h4l3 3v3h-7"/><circle cx="6.5" cy="17.5" r="1.8"/><circle cx="17.5" cy="17.5" r="1.8"/>',
   copy: '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a1 1 0 0 1 1-1h10"/>',
+  check: '<path d="m5 12 5 5 9-10"/>',
   file: '<path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8z"/><path d="M14 3v5h5"/>',
   plus: '<path d="M12 5v14M5 12h14"/>',
   edit: '<path d="M4 20h4L19 9l-4-4L4 16z"/>',
@@ -707,6 +747,9 @@ ROUTES.order = async (id, tok) => {
       ${at >= 0 ? `<div class="steps">${lab.map((l, i) => `<div class="${i <= at ? 'done' : ''}">${l}</div>`).join('')}</div>`
         : `<div class="note" style="margin-bottom:0">${o.status === 'rejected' ? '본사가 반려한 발주예요. 자세한 내용은 본사에 문의해 주세요.' : '취소된 발주예요.'}</div>`}
     </div>
+    ${payBox(o)}
+    ${o.hq_memo ? `<div class="sec"><h2>본사 안내</h2></div><div class="box" style="padding:14px 16px;font-size:14px">${rich(o.hq_memo)}</div>` : ''}
+    ${o.stmt ? `<a class="btn ghost" style="margin-top:12px;text-decoration:none" href="#stmt/${o.id}">${ic('file')}거래명세서 보기</a>` : ''}
     ${o.invoice ? `<div class="sec"><h2>배송</h2></div><div class="box"><div class="inv">${ic('truck')}<div class="n">${h(o.invoice)}<small>${h(o.courier || '롯데택배')}${o.shipped ? ' · ' + h(o.shipped) + ' 발송' : ''}</small></div>
       <button class="btn sm ghost" onclick="copyText('${h(o.invoice)}')">${ic('copy')}복사</button></div>
       <div style="padding:0 16px 14px"><a class="btn dark sm" style="width:100%;text-decoration:none" href="${h(CFG.track(o.invoice))}" target="_blank" rel="noopener">배송 조회</a></div></div>` : ''}
@@ -717,11 +760,63 @@ ROUTES.order = async (id, tok) => {
     ${o.memo ? `<div class="sec"><h2>남긴 말</h2></div><div class="box" style="padding:14px 16px;font-size:14px">${rich(o.memo)}</div>` : ''}
     ${(o.logs || []).length ? `<div class="sec"><h2>처리 기록</h2></div><div class="box logs">${o.logs.map(l => `<div><time>${h(l.at)}</time><span>${h(l.act || '')}</span></div>`).join('')}</div>` : ''}
     ${o.can_cancel ? '<button class="btn line" style="margin-top:18px" id="ocancel">발주 취소</button><p class="hint" style="text-align:center">본사가 접수하기 전까지만 취소할 수 있어요.</p>' : ''}`);
+  const pc = $('#pcopy'); if (pc) pc.onclick = () => copyText(`${o.bank.bank} ${o.bank.account}`);
   const c = $('#ocancel');
   if (c) c.onclick = async () => {
     if (!await confirmSheet('이 발주를 취소할까요?', '취소하면 본사에 알림이 가요. 다시 필요하면 새로 발주해 주세요.', '발주 취소', true)) return;
     try { await rpc('mst_order_cancel', { p_id: o.id }); toast('발주를 취소했어요'); route(); } catch (e) { toast(cleanErr(e)); }
   };
+};
+
+function payBox(o){
+  if (!o.bank || ['canceled', 'rejected'].includes(o.status)) return '';
+  if (o.paid) return `<div class="box pay ok" style="margin-top:12px">${ic('check')}입금 확인됐어요 <span style="color:var(--mut);font-weight:500;font-size:13px">${h(o.paid)}</span></div>`;
+  return `<div class="sec"><h2>입금 안내</h2></div><div class="box pay">
+    <dl><dt>입금 금액</dt><dd class="amt">${won(o.total)}원</dd>
+    <dt>은행</dt><dd>${h(o.bank.bank)}</dd><dt>계좌번호</dt><dd>${h(o.bank.account)}</dd><dt>예금주</dt><dd>${h(o.bank.holder)}</dd></dl>
+    <p class="hint" style="margin:10px 0 0">사업자등록증의 점주님 성함으로 입금해 주세요. 입금이 확인되면 물품을 보내 드려요.</p>
+    <div class="acts"><button class="btn sm dark" id="pcopy">${ic('copy')}계좌번호 복사</button></div></div>`;
+}
+
+/* 거래명세서: 점주(자기 매장)와 본사 모두 볼 수 있음. 워크스페이스에서 #stmt/발주번호 로 바로 열 수 있음 */
+ROUTES.stmt = async (id, tok) => {
+  const back = isMst() ? '#order/' + id : '#a-notices';
+  setView(topbar('거래명세서', back) + loading());
+  if (!document.getElementById('nanum')) { const l = document.createElement('link'); l.id = 'nanum'; l.rel = 'stylesheet'; l.href = 'https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;800&display=swap'; document.head.appendChild(l); }
+  const d = await rpc('mst_statement', { p_id: +id }); if (!live(tok)) return;
+  const c = d.company || {}, it = d.items || [];
+  const sup = it.reduce((a, i) => a + Number(i.supply || 0), 0), tax = it.reduce((a, i) => a + Number(i.tax || 0), 0);
+  const [yy, mm, dd] = String(d.date || '').split('-');
+  const dt = yy ? `${yy}년 ${+mm}월 ${+dd}일` : '';
+  const ceo = String(c.ceo || '').split('').join(' ');
+  const rows = it.map(i => `<tr><td>${h(i.name)}</td><td>${h(i.spec || '')}</td><td>${Number(i.qty)}</td><td>${won(Math.round(Number(i.price || 0) / 1.1))}</td><td>${won(i.supply)}</td><td>${won(i.tax)}</td></tr>`).join('')
+    + '<tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td></tr>'.repeat(Math.max(0, 9 - it.length));
+  const copy = kind => `<div class="stmt">
+    <div class="shd">
+      <div class="l"><h2>거래명세서<small>(${kind})</small></h2>
+        <div class="to"><span>멘야마쯔리 ${h(d.store)}</span><span>귀하</span></div>
+        <div class="bk"><span>${h(c.bank || '')} ${h(c.account || '')}</span><span>예금주 : ${h(c.holder || '')}</span></div>
+        <div class="dt">${dt}</div>
+        <div class="tot"><span>합계 (부가세 포함)</span><b>₩${won(d.total)}</b></div></div>
+      <table class="sup"><tbody>
+        <tr class="h"><td colspan="5">공급자</td></tr>
+        <tr><td class="k">상호</td><td>${h(c.name || '')}</td><td>대표자</td><td>${h(ceo)}</td><td>(인)</td></tr>
+        <tr><td class="k">등록번호</td><td colspan="4">${h(c.biz_no || '')}</td></tr>
+        <tr><td class="k">주소</td><td colspan="4" style="height:36px">${h(c.addr || '')}</td></tr>
+        <tr><td class="k">전화</td><td>${h(c.tel || '')}</td><td>팩스</td><td colspan="2">${h(c.fax || '')}</td></tr>
+      </tbody></table>
+    </div>
+    <table class="lines"><colgroup><col style="width:30%"><col style="width:12%"><col style="width:12%"><col style="width:14%"><col style="width:18%"><col style="width:14%"></colgroup>
+      <thead><tr><th>품명</th><th>규격</th><th>수량</th><th>단가</th><th>공급가액</th><th>세액</th></tr></thead>
+      <tbody>${rows}</tbody>
+      <tfoot><tr><td>합계</td><td></td><td></td><td></td><td>${won(sup)}</td><td>${won(tax)}</td></tr></tfoot></table>
+    <div class="ft"><span>입금자 : ${h(d.payer || '')}${d.paid ? ' <span class="paid no-print">· 입금 확인 ' + h(d.paid) + '</span>' : ''}</span><span>인수자</span><span>(인)</span></div>
+  </div>`;
+  setView(topbar('거래명세서', back) + `
+    <div class="no-print" style="display:flex;gap:8px;margin:4px 0 10px"><button class="btn sm" id="sprint">${ic('file')}인쇄 · PDF 저장</button></div>
+    <div class="stmt-wrap">${isHq() ? copy('공급자용') : ''}${copy('공급받는자용')}</div>
+    <p class="hint no-print" style="margin-top:12px">${isHq() ? '본사 화면에서는 공급자용·공급받는자용 두 장이 한 장에 나와요. ' : ''}휴대폰에서는 인쇄 화면에서 "PDF로 저장"을 고르면 파일로 보관할 수 있어요.</p>`);
+  $('#sprint').onclick = () => window.print();
 };
 
 /* ==========================================================
