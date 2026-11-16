@@ -353,6 +353,7 @@ td .sm{font-size:12px;color:var(--sub)}
         </select>
         <label class="chk db-only"><input type="checkbox" id="f-mine">내 담당만</label>
         <label class="chk db-only"><input type="checkbox" id="f-due">재연락 대상만</label>
+        <label class="chk" title="기본은 체인점을 숨겨요"><input type="checkbox" id="f-chain">체인 포함</label>
       </div>
       <div class="cats" id="cats" aria-label="업종"></div>
     </div>
@@ -458,6 +459,7 @@ td .sm{font-size:12px;color:var(--sub)}
         <div class="ig-run-row"><select id="ig-code" aria-label="실행할 시군구"></select><button class="btn pri" id="ig-go">지금 실행</button></div>
         <p class="muted" style="margin:0">자동 수집은 매일 새벽 2시~6시에만 돌아요. 6시가 되면 처리 중인 배치까지만 올리고 멈춘 뒤, 다음 새벽에 멈춘 자리부터 이어서 돌아요. 영업 기록(단계·통화·관심·메모)은 건드리지 않고, 사람이 수정한 적 없는 매장의 공공데이터 칸만 갱신해요.</p>
       </div>
+      <div class="box ig-run" id="ig-chain"></div>
       <div class="chips" id="ig-filter"></div>
       <div class="tbl-wrap">
         <table>
@@ -511,6 +513,8 @@ const ORG = { menya: '멘야마쯔리', oyumi: '오유미당', joint: '공동' }
 const SRC = { public: '공공데이터', license: '인허가', landing: '랜딩 신청', openchat: '오픈톡', cafe: '카페', listing: '양도 매물', referral: '거래처 소개', manual: '직접 입력' };
 const RES = { interested: '관심', hold: '보류', rejected: '거절', no_answer: '부재', meeting_set: '미팅 확정', wrong_number: '번호 오류' };
 const RES_STAGE = { interested: 'interested', meeting_set: 'meeting', hold: 'hold', rejected: 'rejected' };
+const SEG = { izakaya: '이자카야·일식', delivery: '배달' };
+const chainTag = r => r.chain || r.is_chain ? ' <span class="tag t-C">체인</span>' : '';
 const KIND = { call: '통화', sms: '문자', meeting: '미팅', memo: '메모', landing: '랜딩 신청', stage: '단계 변경', import: '수집' };
 
 const state = { view: 'map', cats: [], offset: 0, rows: [], users: [], regions: [], cur: null };
@@ -581,7 +585,7 @@ function fillFilters(s){
 function filters(){
   const [sido, sigungu] = ($('f-region').value || '|').split('|');
   return { sido, sigungu, stage: $('f-stage').value, lunch: $('f-lunch').value, org: $('f-org').value,
-    mine: $('f-mine').checked, due: $('f-due').checked, q: $('f-q').value.trim(), cats: state.cats };
+    mine: $('f-mine').checked, due: $('f-due').checked, chain: $('f-chain').checked, q: $('f-q').value.trim(), cats: state.cats };
 }
 function renderCats(cats){
   const keys = Object.keys(cats || {}).sort((a, b) => cats[b] - cats[a]);
@@ -594,7 +598,7 @@ $('cats').addEventListener('click', e => {
   if (!c) state.cats = []; else state.cats = state.cats.includes(c) ? state.cats.filter(x => x !== c) : state.cats.concat(c);
   load(true);
 });
-['f-region', 'f-stage', 'f-lunch', 'f-org', 'f-mine', 'f-due'].forEach(id => $(id).addEventListener('change', () => load(true)));
+['f-region', 'f-stage', 'f-lunch', 'f-org', 'f-mine', 'f-due', 'f-chain'].forEach(id => $(id).addEventListener('change', () => load(true)));
 let qT; $('f-q').addEventListener('input', () => { clearTimeout(qT); qT = setTimeout(() => load(true), 300); });
 
 /* ---------- 목록 ---------- */
@@ -622,8 +626,8 @@ function renderRows(total){
   const tb = $('rows');
   if (!state.rows.length) { tb.innerHTML = `<tr><td colspan="8" class="muted" style="text-align:center;padding:40px">조건에 맞는 매장이 없어요. 필터를 줄이거나 매장을 추가하세요.</td></tr>`; $('more').hidden = true; return; }
   tb.innerHTML = state.rows.map(r => `<tr data-id="${r.id}">
-    <td><div class="nm">${esc(r.name)}${r.branch ? ' ' + esc(r.branch) : ''}<a class="nv" href="${esc(naverLink(r))}" target="_blank" rel="noopener" title="네이버 플레이스">N ${r.naver ? '플레이스' : '검색'}</a></div><div class="sm">${esc(SRC[r.source] || r.source)}${r.tel ? ' · ' + esc(tel(r.tel)) : ''}</div></td>
-    <td>${esc(r.cat || '')}</td>
+    <td><div class="nm">${esc(r.name)}${r.branch ? ' ' + esc(r.branch) : ''}${chainTag(r)}<a class="nv" href="${esc(naverLink(r))}" target="_blank" rel="noopener" title="네이버 플레이스">N ${r.naver ? '플레이스' : '검색'}</a></div><div class="sm">${esc(SRC[r.source] || r.source)}${r.tel ? ' · ' + esc(tel(r.tel)) : ''}</div></td>
+    <td>${esc(r.cat || '')}${r.segment ? `<div class="sm">${esc(SEG[r.segment] || r.segment)}</div>` : ''}</td>
     <td>${esc([r.sigungu, r.dong].filter(Boolean).join(' '))}</td>
     <td><span class="tag t-st">${esc(ST[r.stage])}</span></td>
     <td>${lunchTag(r.lunch)}</td>
@@ -753,6 +757,20 @@ function renderIngest(){
     ['실패', (s['실패'] || 0) + '곳', (s['실패'] || 0) > 0], ['임시 적재', (d.stage_rows || 0).toLocaleString() + '건'],
     ['자동 실행', d.in_window ? '도는 중' : '쉬는 시간']
   ].map(([l, v, a]) => `<div class="stat${a ? ' alert' : ''}"><b>${esc(v)}</b><span>${esc(l)}</span></div>`).join('');
+  const c = d.chain || {};
+  const segTxt = Object.entries(c.segment || {}).map(([k, n]) => `${SEG[k] || k} ${Number(n).toLocaleString()}`).join(' · ');
+  $('ig-chain').innerHTML = `<h4>체인 판정 기준<small class="muted">지점명이 있거나, 같은 상호가 전국에 기준 수 이상이면 체인</small></h4>
+    <div class="ig-run-row"><label class="chk" style="flex:none">같은 상호 전국 <input id="ig-thr" type="number" min="2" step="1" value="${esc(c.threshold ?? 10)}" style="width:70px;border:1px solid var(--line);border-radius:6px;padding:4px 6px"> 곳 이상</label>
+      <button class="btn" id="ig-thr-save">기준 저장 후 다시 판정</button></div>
+    <p class="muted" style="margin:0">체인 ${(c.chain || 0).toLocaleString()}곳 / 전체 ${(c.total || 0).toLocaleString()}곳 (지점명 기준 ${(c.by_branch || 0).toLocaleString()}곳 포함, 직원 수동 지정 ${(c.by_override || 0).toLocaleString()}곳)${segTxt ? ' · 구분: ' + esc(segTxt) : ''}<br>
+    ${c.all_done ? '전 지역 수집이 끝난 기준이에요.' : '<b style="color:var(--warn)">아직 전 지역 수집이 끝나지 않았어요.</b> 지역이 들어올 때마다 전국 기준으로 다시 세기 때문에 체인 숫자가 계속 바뀔 수 있어요.'}</p>`;
+  $('ig-thr-save').onclick = async () => {
+    const v = parseInt($('ig-thr').value, 10);
+    if (!(v >= 2)) { toast('2 이상의 숫자를 넣어 주세요', true); return; }
+    if (!confirm(`기준을 '같은 상호 전국 ${v}곳 이상'으로 바꾸고 전체 매장을 다시 판정할까요?`)) return;
+    try { const r = await rpc('lead_setting_set', { p_key: 'chain_min_same_name', p_value: v }); toast(`기준을 바꿨어요 (다시 판정된 매장 ${(r.changed || 0).toLocaleString()}곳)`); loadIngest(); }
+    catch (e) { toast(errMsg(e), true); }
+  };
   $('ig-filter').innerHTML = [['', '전체'], ['진행중', '진행중'], ['실패', '실패'], ['대기', '대기'], ['완료', '완료']]
     .map(([k, l]) => `<button data-f="${k}" class="${f === k ? 'on' : ''}">${l}${k ? ` <small>${s[k] || 0}</small>` : ''}</button>`).join('');
   const sel = $('ig-code'), cur = sel.value;
@@ -1154,7 +1172,7 @@ function renderMapList(){
   $('ml-count').textContent = ps.length.toLocaleString() + '곳';
   $('ml-items').innerHTML = ps.length ? ps.map(p => `<div class="ml-item${state.mlSel === p.id ? ' on' : ''}" data-id="${p.id}" role="button" tabindex="0">
       <span class="dot" style="background:${STAGE_COLOR[p.stage] || '#9aa097'}"></span>
-      <span class="tx"><b>${esc(p.name)}${p.branch ? ' ' + esc(p.branch) : ''}</b>
+      <span class="tx"><b>${esc(p.name)}${p.branch ? ' ' + esc(p.branch) : ''}${chainTag(p)}</b>
         <small>${esc(p.cat || '')} · ${esc(ST[p.stage])}${p.overdue ? ' · <span class="late">재연락 지남</span>' : ''}</small>
         <span class="tags">${lunchTag(p.lunch)}</span></span>
       <button class="go" data-open="${p.id}">상세</button></div>`).join('')
@@ -1206,7 +1224,7 @@ function renderPanel(d){
   <div class="panel-hd">
     <div>
       <h2 id="p-name">${esc(d.name)}${d.branch ? ' ' + esc(d.branch) : ''}</h2>
-      <div class="sm">${esc(d.cat_s || '')}${addr ? ' · ' + esc(addr) : ''}</div>
+      <div class="sm">${esc(d.cat_s || '')}${d.segment ? ' · ' + esc(SEG[d.segment] || d.segment) : ''}${addr ? ' · ' + esc(addr) : ''}${chainTag(d)}</div>
       ${d.fav_by ? `<div class="sm">관심 담은 사람: ${esc(d.fav_by)}</div>` : ''}
       <div class="links"><a href="${esc(mapUrl)}" target="_blank" rel="noopener">${d.naver_url ? '네이버 플레이스 열기' : '네이버에서 찾기'}</a>${d.tel ? `<a href="tel:${esc(d.tel)}">${esc(tel(d.tel))} 전화</a>` : ''}${d.owner_tel ? `<a href="tel:${esc(d.owner_tel)}">점주 ${esc(tel(d.owner_tel))} 전화</a>` : ''}</div>
     </div>
@@ -1215,6 +1233,16 @@ function renderPanel(d){
   </div>
   <div class="panel-bd">
     <div class="box"><h4>영업 단계</h4><div class="steps" id="p-steps">${steps}</div></div>
+
+    <div class="box">
+      <h4>체인 판정 <span class="tag ${d.is_chain ? 't-A' : 't-C'}" style="margin-left:4px">${d.is_chain ? '체인' : '체인 아님'}</span></h4>
+      <p class="muted" style="margin:0 0 10px">${esc(d.chain_reason || '판정 근거 없음 (지점명 없음, 같은 상호 1곳)')}${d.chain_threshold ? ` · 기준: 같은 상호 전국 ${esc(d.chain_threshold)}곳 이상 또는 지점명 있음` : ''}</p>
+      <div class="pick" id="p-chain">
+        <button type="button" data-v="auto" class="${d.chain_override == null ? 'on' : ''}">자동 판정</button>
+        <button type="button" data-v="chain" class="${d.chain_override === true ? 'on' : ''}">체인 맞음</button>
+        <button type="button" data-v="not" class="${d.chain_override === false ? 'on' : ''}">체인 아님</button>
+      </div>
+    </div>
 
     <div class="box">
       <h4>통화 결과 남기기</h4>
@@ -1269,6 +1297,11 @@ function renderPanel(d){
   $('p-fav').onclick = async () => {
     try { const on = await rpc('lead_fav_toggle', { p_id: d.id }); d.fav = on; toast(on ? '관심 매장에 담았어요' : '관심 매장에서 뺐어요'); renderPanel(d); refreshStats(); if (state.view === 'fav') loadFav(); }
     catch (e) { toast(errMsg(e), true); }
+  };
+  $('p-chain').onclick = async e => {
+    const b = e.target.closest('button[data-v]'); if (!b || b.classList.contains('on')) return;
+    try { await rpc('lead_chain_set', { p_id: d.id, p_value: b.dataset.v }); toast(b.dataset.v === 'auto' ? '자동 판정으로 돌렸어요' : '체인 표시를 바꿨어요'); await refreshAfter(d.id); }
+    catch (er) { toast(errMsg(er), true); }
   };
   $('p-steps').onclick = async e => {
     const b = e.target.closest('button[data-stage]'); if (!b || b.dataset.stage === d.stage) return;
