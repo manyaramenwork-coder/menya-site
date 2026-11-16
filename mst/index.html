@@ -148,6 +148,11 @@ textarea.in{height:auto;min-height:120px;padding:12px 14px;line-height:1.6;resiz
 .tg:checked{background:var(--ok)} .tg:checked::after{left:21px}
 
 /* 아래 탭 */
+#pvbar{position:sticky;top:0;z-index:40;display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:calc(var(--safe-t) + 8px) 14px 8px;background:#232621;color:#fff;font-size:12.5px}
+#pvbar span{flex:1;min-width:0}#pvbar b{color:#ffd9da}
+#pvbar button,#pvbar a{border:1px solid #ffffff40;background:none;color:#fff;border-radius:8px;padding:5px 10px;font-size:12px;font-weight:700;text-decoration:none;cursor:pointer}
+@media (min-width:900px){#pvbar{margin-left:248px}}
+body.pv-on #app{padding-top:0}
 #tabs{position:fixed;left:0;right:0;bottom:0;z-index:30;background:rgba(255,255,255,.97);border-top:1px solid var(--line);
   padding-bottom:var(--safe-b);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
 #tabs .in{max-width:560px;margin:0 auto;display:flex;height:var(--tab);border:0;padding:0;background:none;border-radius:0}
@@ -269,6 +274,51 @@ table.items tfoot td{font-weight:800;border-top:1px solid var(--ink)}
   padding:11px 18px;border-radius:12px;font-size:14px;max-width:88vw;opacity:0;pointer-events:none;transition:opacity .2s}
 #toast.on{opacity:1}
 
+/* 로그인 (2026-11-16 시안: MENYAMATSURI PARTNERS) */
+html.plg-on,html.plg-on body{background:#161614}
+html.plg-on #app{max-width:none;margin:0;padding:0}
+.plg{--pk:#181716;--pa:#c6242b;--pc:#f7f4ef;min-height:100vh;min-height:100svh;background:var(--pc);display:flex;flex-direction:column;overflow:hidden;color:var(--pk);letter-spacing:-.035em}
+.plg .visual{height:370px;min-height:350px;position:relative;isolation:isolate;background:#171715}
+.plg .visual::before{content:'';position:absolute;inset:0;background:url('login-photo.jpg') center 52%/cover;z-index:-2;filter:saturate(.91)}
+.plg .visual::after{content:'';position:absolute;inset:0;z-index:-1;background:linear-gradient(90deg,rgba(8,9,9,.65) 0%,rgba(9,9,10,.12) 45%,rgba(6,7,7,.16) 90%),linear-gradient(0deg,rgba(9,9,9,.88) 0%,transparent 42%)}
+.plg .vin{height:100%;position:relative;padding:calc(var(--safe-t) + 27px) 28px 55px;display:flex;flex-direction:column;justify-content:space-between;color:#fff}
+.plg .brand{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.plg .brand img{display:block;width:min(190px,56%);height:auto;flex:none}
+.plg .vtag{margin-left:auto;font-size:9px;font-weight:800;letter-spacing:.12em;padding:7px 10px;border:1px solid #ffffff82;border-radius:30px;white-space:nowrap}
+.plg .eyebrow{display:flex;align-items:center;gap:11px;font-weight:900;letter-spacing:.14em;font-size:15px;white-space:nowrap;color:#fff;text-shadow:0 1px 8px #000b}
+.plg .eyebrow:before{content:'';width:28px;height:3px;background:#e12d32;border-radius:2px}
+.plg .panel{position:relative;background:var(--pc);border-radius:28px 28px 0 0;margin-top:-27px;box-shadow:0 -8px 30px #00000024;padding:31px 29px calc(24px + var(--safe-b));flex:1}
+.plg .phead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:20px}
+.plg .kicker{color:var(--pa);font-size:10px;font-weight:900;letter-spacing:.23em}
+.plg .imark{color:#a8a29c;font-weight:800;font-size:10px;border:1px solid #ded8d0;padding:5px 8px;border-radius:20px;letter-spacing:.04em}
+.plg h2{font-size:25px;line-height:1.3;letter-spacing:-.065em;margin:0;font-weight:850}
+.plg .intro{margin:7px 0 25px;color:#878179;font-size:12.5px}
+.plg .field{margin:0 0 15px}.plg .field label{display:block;font-size:12px;font-weight:800;margin:0 0 8px;color:#37332e}
+.plg .iw{height:52px;display:flex;align-items:center;gap:11px;border:1px solid #ddd7cd;border-radius:13px;background:#fff;padding:0 15px;transition:border-color .2s,box-shadow .2s}
+.plg .iw:focus-within{border-color:var(--pa);box-shadow:0 0 0 3px #c6242b1b}
+.plg .iw svg{width:18px;height:18px;color:#a59e96;flex:none}
+.plg .iw input{flex:1;min-width:0;border:0;outline:0;background:transparent;color:#1f1e1c;font-size:16px;letter-spacing:0;height:100%}
+.plg .iw input::placeholder{color:#aaa49e;letter-spacing:-.02em;font-size:14px}
+.plg .showpw{display:grid;place-items:center;border:0;background:transparent;padding:4px;color:#8a847e;cursor:pointer}
+.plg .pref{display:flex;align-items:center;gap:18px;flex-wrap:wrap;margin:7px 0 23px}
+.plg .pref label{display:flex;align-items:center;gap:7px;font-size:12.5px;color:#655e57;cursor:pointer}
+.plg .pref input{appearance:none;-webkit-appearance:none;width:18px;height:18px;background:#fff;border:1.5px solid #c5bdb5;border-radius:5px;margin:0;display:grid;place-items:center;cursor:pointer}
+.plg .pref input:checked{background:var(--pa);border-color:var(--pa)}
+.plg .pref input:checked:after{content:'✓';color:#fff;font-weight:900;font-size:12px}
+.plg .login{height:56px;width:100%;background:var(--pa);border:0;border-radius:13px;color:#fff;font-size:16px;font-weight:850;letter-spacing:-.03em;box-shadow:0 9px 16px #c6242b23;display:flex;align-items:center;justify-content:center;gap:10px;cursor:pointer;transition:transform .15s,background .15s}
+.plg .login:hover{background:#ad1e25}.plg .login:active{transform:scale(.99)}.plg .login:disabled{opacity:.7}.plg .login span{font-size:20px;font-weight:400}
+.plg .help{margin-top:22px;display:flex;justify-content:center;gap:13px;align-items:center;color:#8f8881;font-size:12px;flex-wrap:wrap}
+.plg .help a{color:#726a63;text-decoration:underline;text-underline-offset:3px}
+.plg .pfoot{font-size:9px;text-align:center;color:#aaa39a;letter-spacing:.075em;margin-top:22px;font-weight:650}
+.plg #lerr{margin-top:10px}
+@media(min-width:800px){
+  html.plg-on #app{min-height:100vh;display:grid;place-items:center;padding:30px}
+  .plg{width:min(1080px,100%);min-height:730px;display:grid;grid-template-columns:1.05fr .95fr;border-radius:24px;box-shadow:0 24px 75px #0008}
+  .plg .visual{height:100%;min-height:730px}.plg .vin{padding:48px 44px 60px}.plg .brand img{width:280px;max-width:66%}.plg .vtag{font-size:11px}
+  .plg .panel{border-radius:0;margin:0;box-shadow:none;display:flex;flex-direction:column;justify-content:center;padding:70px 66px}
+  .plg h2{font-size:31px}.plg .intro{font-size:14px}.plg .pfoot{margin-top:40px}}
+@media(max-width:365px){.plg .brand img{width:160px}.plg .visual{height:350px}.plg .vin{padding:calc(var(--safe-t) + 21px) 22px 52px}.plg .panel{padding:26px 22px}.plg h2{font-size:23px}}
+
 /* 로그인 */
 .auth{min-height:100vh;display:flex;flex-direction:column;padding:0 22px}
 .auth .hero{margin:0 -22px;background:var(--red);color:#fff;padding:calc(var(--safe-t) + 56px) 28px 64px;position:relative}
@@ -366,7 +416,7 @@ const h = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&
 const won = n => Number(n || 0).toLocaleString('ko-KR');
 const rich = s => h(s).replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>').replace(/\n/g, '<br>');
 const kb = n => { n = Number(n || 0); return n >= 1048576 ? (n / 1048576).toFixed(1) + 'MB' : Math.max(1, Math.round(n / 1024)) + 'KB'; };
-const isMst = () => S.me && S.me.role === 'mst';
+const isMst = () => S.me && (S.me.role === 'mst' || !!S.preview);   // 본사 미리보기도 점주 화면으로
 const isHq = () => S.me && (S.me.role === 'admin' || S.me.role === 'hq');
 const isAdm = () => S.me && S.me.role === 'admin';
 
@@ -400,7 +450,11 @@ function cleanErr(e){
   if (/JWT|jwt expired|refresh token/i.test(m)) return '로그인이 만료됐어요. 다시 로그인해 주세요.';
   return m || '처리하지 못했어요.';
 }
-async function rpc(fn, args){ const { data, error } = await SB.rpc(fn, args || {}); if (error) throw new Error(cleanErr(error)); return data; }
+const PV_BLOCK = ['mst_order_create', 'mst_order_cancel', 'mst_notice_ack', 'mst_notice_comment', 'push_subscribe', 'push_prefs_save', 'push_test'];
+async function rpc(fn, args){
+  if (S.preview && PV_BLOCK.includes(fn)) throw new Error('본사 미리보기에서는 할 수 없어요. 점주 화면을 확인하는 용도예요.');
+  const { data, error } = await SB.rpc(fn, args || {}); if (error) throw new Error(cleanErr(error)); return data;
+}
 const loading = () => '<div class="load">불러오는 중...</div>';
 const errBox = e => `<div class="err">${h(cleanErr(e))}</div>`;
 function topbar(title, back, act){
@@ -460,18 +514,34 @@ async function filesHtml(bucket, files){
 /* ==========================================================
    로그인 · 비밀번호 변경 · 시작
    ========================================================== */
+const LS = { get(k){ try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v){ try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch (e) {} } };
 function showLogin(msg){
-  S.me = null; renderTabs();
-  document.getElementById('app').innerHTML = `<div class="auth">
-    <div class="hero"><b>멘야마쯔리<br>파트너</b><span>가맹점 공지 · 발주 · 레시피</span></div>
-    <form id="lf" autocomplete="on">
-      <div class="f"><label for="lid">아이디</label><input class="in" id="lid" name="username" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="본사에서 받은 아이디"></div>
-      <div class="f"><label for="lpw">비밀번호</label><input class="in" id="lpw" name="password" type="password" autocomplete="current-password"></div>
-      <div id="lerr">${msg ? errBox(msg) : ''}</div>
-      <button class="btn" id="lbtn" type="submit" style="margin-top:8px">로그인</button>
-      <p class="hint" style="text-align:center;margin-top:14px">비밀번호를 잊으셨으면 본사에 초기화를 요청해 주세요.</p>
-    </form>
-    <div class="foot">멘야마쯔리 본사</div></div>`;
+  S.me = null; renderTabs(); document.documentElement.classList.add('plg-on');
+  document.getElementById('pvbar')?.remove(); document.body.classList.remove('pv-on');
+  const saved = LS.get('mst-saved-id') || '', keep = LS.get('mst-keep') !== '0', save = LS.get('mst-save-off') !== '1';
+  document.getElementById('app').innerHTML = `<main class="plg">
+    <section class="visual" aria-label="멘야마쯔리 라멘"><div class="vin">
+      <header class="brand"><img src="logo-light.png" alt="멘야마쯔리"><span class="vtag">FOR OUR PARTNERS</span></header>
+      <div class="eyebrow">MENYAMATSURI PARTNERS</div></div></section>
+    <section class="panel" aria-label="점주 전용 로그인">
+      <div class="phead"><span class="kicker">PARTNER WORKSPACE</span><span class="imark">OWNER ACCESS</span></div>
+      <h2>점주님, 안녕하세요.</h2><p class="intro">매장 운영을 위한 전용 공간입니다.</p>
+      <form id="lf" autocomplete="on" novalidate>
+        <div class="field"><label for="lid">아이디</label><div class="iw"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M4.5 20c0-4.3 3.4-7 7.5-7s7.5 2.7 7.5 7"/></svg>
+          <input id="lid" name="username" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="아이디를 입력해주세요" value="${h(saved)}"></div></div>
+        <div class="field"><label for="lpw">비밀번호</label><div class="iw"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="5.5" y="10" width="13" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+          <input id="lpw" name="password" type="password" autocomplete="current-password" placeholder="비밀번호를 입력해주세요">
+          <button class="showpw" id="lshow" type="button" aria-label="비밀번호 표시"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M2.5 12s3.5-6.5 9.5-6.5S21.5 12 21.5 12s-3.5 6.5-9.5 6.5S2.5 12 2.5 12z"/><circle cx="12" cy="12" r="2.6"/></svg></button></div></div>
+        <div class="pref"><label><input type="checkbox" id="lsave" ${save ? 'checked' : ''}> 아이디 저장</label><label><input type="checkbox" id="lkeep" ${keep ? 'checked' : ''}> 로그인 유지</label></div>
+        <button class="login" id="lbtn" type="submit">파트너 로그인 <span aria-hidden="true">→</span></button>
+        <div id="lerr">${msg ? errBox(msg) : ''}</div>
+      </form>
+      <div class="help"><span>로그인에 문제가 있으신가요?</span><a href="tel:0415676907">본사 문의 041-567-6907</a></div>
+      <div class="pfoot">© MENYAMATSURI COMPANY · PARTNER PORTAL</div>
+    </section></main>`;
+  if (saved) setTimeout(() => { try { $('#lpw').focus(); } catch (e) {} }, 0);
+  $('#lshow').onclick = () => { const p = $('#lpw'); p.type = p.type === 'password' ? 'text' : 'password'; $('#lshow').setAttribute('aria-label', p.type === 'password' ? '비밀번호 표시' : '비밀번호 숨기기'); };
+  const btnHtml = '파트너 로그인 <span aria-hidden="true">→</span>';
   $('#lf').onsubmit = async e => {
     e.preventDefault();
     const id = $('#lid').value.trim().toLowerCase(), pw = $('#lpw').value, b = $('#lbtn');
@@ -480,10 +550,13 @@ function showLogin(msg){
     const email = id.includes('@') ? id : id + CFG.idDomain;
     const { data, error } = await SB.auth.signInWithPassword({ email, password: pw });
     if (error) {
-      b.disabled = false; b.textContent = '로그인';
+      b.disabled = false; b.innerHTML = btnHtml;
       const m = /Invalid login/i.test(error.message) ? '아이디 또는 비밀번호가 맞지 않아요.' : /banned/i.test(error.message) ? '사용이 중지된 계정이에요. 본사에 문의해 주세요.' : cleanErr(error);
       $('#lerr').innerHTML = errBox(m); return;
     }
+    const sv = $('#lsave').checked, kp = $('#lkeep').checked;
+    LS.set('mst-saved-id', sv ? id : null); LS.set('mst-save-off', sv ? null : '1'); LS.set('mst-keep', kp ? null : '0');
+    try { sessionStorage.setItem('mst-alive', '1'); } catch (e) {}
     await start(data.session);
   };
 }
@@ -495,11 +568,44 @@ async function start(session){
   if (!p) { await SB.auth.signOut(); return showLogin('계정 정보가 등록되지 않았어요. 본사에 문의해 주세요.'); }
   if (!p.active) { await SB.auth.signOut(); return showLogin('사용이 중지된 계정이에요. 본사에 문의해 주세요.'); }
   S.me = { uid: session.user.id, id: p.login_id, name: p.name || p.login_id, role: p.role, storeId: p.store_id };
-  if (p.role !== 'mst') return showBlocked();   // 2026-11-16: 점주 전용 앱. 본사·직영 업무는 워크스페이스에서
+  if (p.role === 'admin' || p.role === 'hq') {   // 2026-11-16: 본사는 '점주 화면 미리보기'(읽기 전용)
+    if (p.must_change) return showPw(true);
+    S.preview = true; return pvStart();
+  }
+  if (p.role !== 'mst') return showBlocked();
   if (p.must_change) return showPw(true);
   enter();
 }
+/* ---------- 본사 미리보기: 매장을 골라 점주 화면을 그대로 봄 (읽기 전용) ---------- */
+async function pvStart(){
+  let d; try { d = await rpc('mst_preview_stores'); } catch (e) { return showLogin(cleanErr(e)); }
+  S.pv = d; const cur = (d.stores || []).find(x => x.id === d.cur);
+  if (!cur) return pvPick();
+  S.pvStore = cur.name; S.home = null; enter();
+}
+function pvPick(){
+  const L = (S.pv && S.pv.stores) || [];
+  document.getElementById('tabs')?.remove(); document.getElementById('pvbar')?.remove();
+  document.getElementById('app').innerHTML = `<main id="view"><div class="page-h"><h1>점주 화면 미리보기</h1><p>매장을 고르면 그 매장 점주가 보는 화면을 그대로 볼 수 있어요. 보기만 할 수 있고, 발주·확인·댓글은 할 수 없어요.</p></div>
+    <input class="in" id="pvq" placeholder="매장 이름 찾기" style="margin-bottom:10px">
+    <div class="list" id="pvl"></div>
+    <div class="btns" style="margin-top:14px"><a class="btn ghost" href="${CFG.workspace}" style="text-decoration:none">워크스페이스로 가기</a><button class="btn ghost" onclick="logout()">로그아웃</button></div></main>`;
+  const draw = q => { $('#pvl').innerHTML = L.filter(x => !q || x.name.includes(q)).map(x => `<button class="row" data-pv="${x.id}"><div class="main"><div class="t"><span class="tx">${h(x.name)}</span></div>
+    <div class="s"><span>${x.direct ? '직영' : '가맹'}</span><span>점주 계정 ${x.accounts}</span></div></div>${ic('chev')}</button>`).join('') || '<div class="empty">찾는 매장이 없어요.</div>'; };
+  draw(''); $('#pvq').oninput = e => draw(e.target.value.trim());
+  $('#pvl').onclick = async e => { const b = e.target.closest('[data-pv]'); if (!b) return;
+    try { await rpc('mst_preview_set', { p_store: +b.dataset.pv }); S.cart = {}; S.items = null; location.hash = '#home'; pvStart(); } catch (err) { toast(cleanErr(err)); } };
+}
+function pvBar(){
+  document.getElementById('pvbar')?.remove();
+  if (!S.preview) return;
+  const b = document.createElement('div'); b.id = 'pvbar';
+  b.innerHTML = `<span>본사 미리보기 · <b>${h(S.pvStore || '')}</b> 점주 화면 (보기 전용)</span><button type="button" onclick="pvPick()">매장 바꾸기</button><a href="${CFG.workspace}">워크스페이스</a>`;
+  document.body.prepend(b); document.body.classList.add('pv-on');
+}
+
 function showBlocked(){
+  document.documentElement.classList.remove('plg-on');
   const hq = S.me.role === 'admin' || S.me.role === 'hq';
   document.getElementById('app').innerHTML = `<div class="auth"><div class="hero"><b>워크스페이스를<br>이용해 주세요</b><span>이 앱은 가맹점주 전용이에요</span></div>
     <div style="padding:26px 0"><p>${h(S.me.name)}님의 계정은 ${hq ? '본사' : '직영점'} 계정이에요. ${hq ? '공지·발주·품목·레시피·점주 계정은 워크스페이스 &gt; 가맹점에서 관리해 주세요.' : '업무는 워크스페이스에서 확인해 주세요.'}</p>
@@ -522,25 +628,29 @@ async function savePw(first){
   else { closeSheet(); toast('비밀번호를 바꿨어요'); }
 }
 function showPw(){
+  document.documentElement.classList.remove('plg-on');
   document.getElementById('app').innerHTML = `<div class="auth"><div class="hero"><b>비밀번호를<br>바꿔 주세요</b><span>처음 로그인했어요. ${h(S.me.name)}님만 아는 비밀번호로 정해 주세요.</span></div>
     <div style="padding:22px 0">${pwForm(true)}<button class="btn ghost" style="margin-top:8px" onclick="logout()">로그아웃</button></div></div>`;
   $('#pbtn').onclick = () => savePw(true);
 }
 async function logout(){
-  try { await pushOff(true); } catch (e) {}
+  if (!S.preview) { try { await pushOff(true); } catch (e) {} }
   await SB.auth.signOut({ scope: 'local' });
-  S.me = null; S.cart = {}; S.items = null; S.home = null; location.hash = '';
+  S.me = null; S.cart = {}; S.items = null; S.home = null; S.preview = false; location.hash = '';
+  document.getElementById('pvbar')?.remove(); document.body.classList.remove('pv-on');
   showLogin();
 }
 
 function enter(){
+  document.documentElement.classList.remove('plg-on');
   document.getElementById('app').innerHTML = '<main id="view"></main>';
   renderTabs();
   const q = new URLSearchParams(location.search), go = q.get('go'), id = q.get('id');
   if (go) { history.replaceState(null, '', location.pathname + (go === 'notice' && id ? '#notice/' + id : go === 'order' && id ? '#order/' + id : '#' + go)); }
   if (!location.hash || location.hash === '#') location.hash = isMst() ? '#home' : '#a-notices';
   else route();
-  if (isMst()) pushRelink();
+  if (S.me.role === 'mst') pushRelink();
+  pvBar();
 }
 
 /* ==========================================================
@@ -560,7 +670,7 @@ function renderTabs(){
   const base = { '#notice': '#notices', '#order': '#orders', '#order-new': '#orders', '#recipe': '#recipes', '#a-notice': '#a-notices', '#a-recipe': '#a-recipes' };
   const on = base[cur] || cur;
   const unread = S.home ? (S.home.unread || 0) + (S.home.replies || 0) : 0;
-  t.innerHTML = `<div class="brand"><small>멘야마쯔리</small><b>파트너</b></div><div class="in">${def.map(([href, icon, label]) => `<a href="${href}" class="${on === href ? 'on' : ''}">${ic(icon)}<span>${label}</span>${href === '#notices' && unread ? `<span class="bd">${unread > 99 ? '99+' : unread}</span>` : ''}</a>`).join('')}</div><div class="who"><b>${h(S.me.name)}</b>${isMst() ? (S.home && S.home.store ? h(S.home.store) + ' 점주' : '가맹점주') : (isAdm() ? '관리자' : '본사')}</div>`;
+  t.innerHTML = `<div class="brand"><small>멘야마쯔리</small><b>파트너</b></div><div class="in">${def.map(([href, icon, label]) => `<a href="${href}" class="${on === href ? 'on' : ''}">${ic(icon)}<span>${label}</span>${href === '#notices' && unread ? `<span class="bd">${unread > 99 ? '99+' : unread}</span>` : ''}</a>`).join('')}</div><div class="who"><b>${h(S.me.name)}</b>${S.preview ? '본사 미리보기' : isMst() ? (S.home && S.home.store ? h(S.home.store) + ' 점주' : '가맹점주') : (isAdm() ? '관리자' : '본사')}</div>`;
 }
 const ROUTES = {};
 function route(){
@@ -570,7 +680,7 @@ function route(){
   S.nav.push(location.hash); if (S.nav.length > 30) S.nav.shift();
   const fn = ROUTES[k] || (isMst() ? ROUTES.home : ROUTES['a-notices']);
   if (!fn) return;
-  if (k.startsWith('a-') && !isHq()) { location.hash = '#home'; return; }
+  if (k.startsWith('a-') && (!isHq() || S.preview)) { location.hash = '#home'; return; }
   if (['home', 'notices', 'notice', 'orders', 'order', 'order-new', 'recipes', 'recipe'].includes(k) && !isMst()) {
     if (isHq() && (k === 'recipes' || k === 'recipe')) { /* 본사는 레시피 미리보기 허용 */ } else { location.hash = '#a-notices'; return; }
   }
@@ -879,7 +989,7 @@ async function pushRelink(){
     if (sub) { const j = sub.toJSON(); await rpc('push_subscribe', { p: { endpoint: j.endpoint, p256dh: j.keys.p256dh, auth: j.keys.auth, ua: ua.slice(0, 200) } }); } } catch (e) {}
 }
 async function pushHint(){
-  const el = $('#push-hint'); if (!el || !isMst()) return;
+  const el = $('#push-hint'); if (!el || !isMst() || S.preview) return;
   const st = await pushState();
   if (st === 'on' || st === 'unsupported' || localStorage.getItem('mst-push-later') === '1') return;
   const msg = st === 'install' ? '홈 화면에 추가하면 공지·발주 알림을 받을 수 있어요.' : st === 'inapp' ? '카카오톡·네이버 앱 안에서는 알림을 받을 수 없어요. 사파리나 크롬으로 열어 주세요.'
@@ -1264,6 +1374,8 @@ function userSheet(stores, u){
     });
   }
   SB.auth.onAuthStateChange((ev) => { if (ev === 'SIGNED_OUT' && S.me) { S.me = null; showLogin(); } });
+  let alive = false; try { alive = sessionStorage.getItem('mst-alive') === '1'; } catch (e) {}
+  if (LS.get('mst-keep') === '0' && !alive) { try { await SB.auth.signOut({ scope: 'local' }); } catch (e) {} }
   const { data } = await SB.auth.getSession();
   await start(data && data.session);
 })();
