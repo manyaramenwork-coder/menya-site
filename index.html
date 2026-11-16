@@ -57,7 +57,7 @@
 </script>
 <script>/* 화면 스타일: 저장된 버전을 먼저 적용(깜빡임 방지), ?skin=1 이면 1 기본으로 */(function(){try{var q=new URLSearchParams(location.search).get('skin');if(q==='1'||q==='2')localStorage.setItem('mm_skin',q);if(localStorage.getItem('mm_skin')==='2')document.documentElement.classList.add('mm-skin2');}catch(e){}})();</script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
-<title>멘야마쯔리 매장관리</title>
+<title>워크스페이스</title>
 <link rel="icon" href="favicon.ico" sizes="48x48">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
@@ -1619,7 +1619,7 @@ PATHS.partner = 'M3 21h18 M5 21V8l7-5 7 5v13 M9 12h2 M13 12h2 M9 16h2 M13 16h2';
     if (error) throw error;
     if (!p) return stop('계정 정보가 아직 등록되지 않았어요. 관리자에게 문의하세요.');
     if (p.active === false) return stop('사용이 중지된 계정이에요. 관리자에게 문의하세요.');
-    if (p.role === 'mst') return stop('가맹점주 계정은 멘야마쯔리 파트너 앱(store.menyamatsuri.work)을 이용해 주세요.');
+    if (p.role === 'mst') return stop('가맹점주 계정은 멘야 파트너스 앱(store.menyamatsuri.work)을 이용해 주세요.');
     const id = p.login_id || String(session.user.email || '').replace(CFG.idDomain, '');
     const u = { id: id, name: p.name || id, title: p.title || '', org: p.dept || '', role: p.role, storeId: p.store_id, status: '사용', uid: session.user.id };
     SESSION = { token: session.access_token, user: u, mustChange: !!p.must_change };
@@ -7826,7 +7826,7 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
   /* ---------- 목록 ---------- */
   function shell(){
     document.getElementById('main').innerHTML = simpleHero(['FC다움', 'FC다움 공지'], 'FCDAUM NOTICE', 'FC다움 공지',
-      'FC다움 스마트공지를 10분마다 가져와요. 공지 작성과 매장 댓글 답글은 FC다움에서 해 주세요. 파트너 앱 공지는 가맹점 > 공지에서 봐요.') +
+      'FC다움 스마트공지를 10분마다 가져와요. 공지 작성과 매장 댓글 답글은 FC다움에서 해 주세요. 멘야 파트너스 공지는 가맹점 > 공지에서 봐요.') +
       `<div id="fnn-body"><section class="card"><div class="fnn-empty">불러오는 중...</div></section></div>` + pageFoot();
   }
   async function pageList(){
@@ -8205,7 +8205,7 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
   /* ---------- 화면 ---------- */
   async function page(){
     document.getElementById('main').innerHTML = simpleHero(['가맹점', '발주'], 'FRANCHISE ORDERS', '발주',
-      '점주님이 파트너 앱에서 넣은 발주와 본사가 대신 넣은 발주예요. 접수 → 거래명세서·발송 → 완료 순서로 처리하면 점주 앱에 바로 보이고 알림이 가요.') +
+      '점주님이 멘야 파트너스에서 넣은 발주와 본사가 대신 넣은 발주예요. 접수 → 거래명세서·발송 → 완료 순서로 처리하면 점주 앱에 바로 보이고 알림이 가요.') +
       `<div id="mp-body"><section class="card"><div class="mp-empty">불러오는 중...</div></section></div>` + pageFoot();
     try { await load(true); } catch (e) { document.getElementById('mp-body').innerHTML = `<section class="card"><div class="mp-empty">불러오지 못했어요: ${h(e.message || e)}</div></section>`; return; }
     draw();
@@ -8590,7 +8590,7 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
         <div class="gm-chips-bar"><button type="button" class="gm-chip" id="ne-fc">가맹점 전체</button><button type="button" class="gm-chip" id="ne-acc">계정 있는 매장</button><button type="button" class="gm-chip" id="ne-none">모두 해제</button></div>
         <input class="gm-in" id="ne-q" placeholder="매장 이름 찾기">
         <div class="gm-chips" id="ne-chips"></div>
-        <p class="gm-hint">'계정 n'은 파트너 앱을 쓰는 점주 수예요. 계정이 없는 매장은 공지를 받아도 볼 사람이 없어요.</p>
+        <p class="gm-hint">'계정 n'은 멘야 파트너스를 쓰는 점주 수예요. 계정이 없는 매장은 공지를 받아도 볼 사람이 없어요.</p>
         <label class="gm-l">설정</label>
         <div class="gm-sw"><label><span><b>필독 (고정 공지)</b><small>점주 앱 맨 위에 고정하고 '필독 공지'로 알림</small></span><input type="checkbox" id="ne-pin" ${n && n.pin ? 'checked' : ''}></label>
           <label><span><b>댓글 받기</b><small>점주가 본사와 1:1로 대화할 수 있어요</small></span><input type="checkbox" id="ne-talk" ${!n || n.talk ? 'checked' : ''}></label>
@@ -8776,9 +8776,9 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
     return data;
   }
   const tempPw = () => { const c = 'abcdefghjkmnpqrstuvwxyz23456789'; let s = ''; crypto.getRandomValues(new Uint32Array(8)).forEach(x => s += c[x % c.length]); return s.slice(0, 4) + s.slice(4).replace(/[a-z]/g, d => String(d.charCodeAt(0) % 10)); };
-  const guide = (id, pw) => `[멘야마쯔리 파트너]\n주소: ${STORE_URL}\n아이디: ${id}\n임시 비밀번호: ${pw}\n\n처음 로그인하면 비밀번호를 바꿔 주세요.\n휴대폰 홈 화면에 추가하면 앱처럼 쓸 수 있어요.`;
+  const guide = (id, pw) => `[멘야 파트너스]\n주소: ${STORE_URL}\n아이디: ${id}\n임시 비밀번호: ${pw}\n\n처음 로그인하면 비밀번호를 바꿔 주세요.\n휴대폰 홈 화면에 추가하면 앱처럼 쓸 수 있어요.`;
   async function acPage(){
-    gmShell('점주 계정', 'OWNER ACCOUNTS', '점주 계정', '여기서 만든 계정은 파트너 앱(store.menyamatsuri.work)에만 들어갈 수 있어요. 워크스페이스 사용자 목록에는 보이지 않아요. (관리자만)');
+    gmShell('점주 계정', 'OWNER ACCOUNTS', '점주 계정', '여기서 만든 계정은 멘야 파트너스(store.menyamatsuri.work)에만 들어갈 수 있어요. 워크스페이스 사용자 목록에는 보이지 않아요. (관리자만)');
     try { const d = await rx('mst_admin_data'); AC.users = d.users || []; AC.stores = d.stores || []; } catch (e) { return gmFail(e); }
     acList();
   }
@@ -8907,7 +8907,7 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
           <small>읽음 ${n.read}/${n.targets}${n.ack ? ` · 확인 ${n.acked}/${n.targets}` : ''}</small>${n.pending ? `<span class="mp-st new">답변 ${n.pending}</span>` : un ? `<span class="mp-st off">안 읽음 ${un}</span>` : ua ? `<span class="mp-st off">미확인 ${ua}</span>` : ''}</button>`; }).join('')
         : '<div class="gmd-empty">게시 중인 공지가 없어요.</div>'}</section>`;
   }
-  /* 대시보드 순서: 1 본사 공지 · 2 FC다움 가맹점 공지 · 3 FC다움 가맹점 발주 · 4 파트너 앱 공지 · 5 파트너 앱 발주 · 6 제때 공급 현황 (바로가기 없음) */
+  /* 대시보드 순서: 1 본사 공지 · 2 FC다움 가맹점 공지 · 3 FC다움 가맹점 발주 · 4 파트너스 공지 · 5 파트너스 발주 · 6 제때 공급 현황 (바로가기 없음) */
   function gmDashOrder(){
     const main = document.getElementById('main'); if (!main) return;
     const secs = [...main.querySelectorAll('.dash-sec')]; if (!secs.length) return;
@@ -8934,9 +8934,9 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
     if (main.querySelector('.gmd-n')) { gmDashOrder(); return true; }
     const secs = [...main.querySelectorAll('.dash-sec')]; if (!secs.length) return false;
     const mk = (cls, t, sub, inner) => { const x = document.createElement('section'); x.className = 'dash-sec ' + cls;
-      x.innerHTML = secHead('', t, { cls: 'mp', t: '파트너 앱' }, sub) + `<div class="gmd-box">${inner}</div>`; return x; };
-    const pn = mk('gmd-n', '파트너 앱 공지', '게시 중 · 읽음·확인·답변 대기', '<div class="gmd-empty">불러오는 중...</div>');
-    const po = mk('gmd-o', '파트너 앱 발주', '접수 대기 · 발송 대기', '<div class="gmd-empty">불러오는 중...</div>');
+      x.innerHTML = secHead('', t, { cls: 'mp', t: '멘야 파트너스' }, sub) + `<div class="gmd-box">${inner}</div>`; return x; };
+    const pn = mk('gmd-n', '파트너스 공지', '게시 중 · 읽음·확인·답변 대기', '<div class="gmd-empty">불러오는 중...</div>');
+    const po = mk('gmd-o', '파트너스 발주', '접수 대기 · 발송 대기', '<div class="gmd-empty">불러오는 중...</div>');
     secs[secs.length - 1].after(pn); pn.after(po);
     gmDashOrder();
     Promise.all([load(true), npLoad(true)]).then(() => {
