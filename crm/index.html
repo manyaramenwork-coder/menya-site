@@ -18,7 +18,6 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/topojson-client@3.1.0/dist/topojson-client.min.js"></script>
 <script>
 /* 매장관리 사이트와 같은 Supabase·같은 계정. crm 주소는 도메인이 달라 로그인은 따로 한 번 필요 */
 window.MM_CONFIG = { url: 'https://bauaychmvbfmtqototvt.supabase.co', key: 'sb_publishable_rfd_8qDKEpokFmGACsBJ7A_qhHmQlEB', idDomain: '@menya.local' };
@@ -205,6 +204,12 @@ td .sm{font-size:12px;color:var(--sub)}
   #map-list{flex:none;height:auto;max-height:none}
 }
 
+/* 지도 위 도구줄 */
+.mapbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin-bottom:10px}
+.mapbar .chips{margin-bottom:0;padding-bottom:0}
+.mapbar .mcount{margin-left:auto;font-size:13px;color:var(--sub)}
+.legend .lg-bub{display:inline-block;width:14px;height:14px;border-radius:50%;background:rgba(198,36,41,.88);border:2px solid #fff;box-shadow:0 0 0 1px #c9ccc4;vertical-align:-2px}
+@media (max-width:900px){.mapbar .mcount{margin-left:0;width:100%}}
 /* 지도 */
 .crumb{display:flex;flex-wrap:wrap;align-items:center;gap:4px;margin-bottom:10px;font-size:14px}
 .crumb button{border:0;background:none;padding:4px 6px;border-radius:6px;color:var(--blue);font-weight:500}
@@ -361,10 +366,14 @@ td .sm{font-size:12px;color:var(--sub)}
 
     <!-- 지도 탐색 -->
     <section id="sec-map" class="sec" hidden>
-      <nav class="crumb" id="crumb" aria-label="지역 단계"></nav>
+      <div class="mapbar">
+        <div class="chips" id="m-kind" role="group" aria-label="업종"><button data-v="all" class="on">전체</button><button data-v="jp">일식</button><button data-v="pub">주점</button></div>
+        <label class="chk"><input type="checkbox" id="m-tel">전화번호 있는 곳만</label>
+        <span class="mcount" id="m-count" aria-live="polite"></span>
+      </div>
       <div class="map-wrap">
         <div id="map" role="region" aria-label="매장 지도"></div>
-        <aside id="map-list" hidden aria-label="이 동의 매장 목록">
+        <aside id="map-list" hidden aria-label="화면 안 매장 목록">
           <div class="ml-hd"><b id="ml-title"></b><small id="ml-count"></small></div>
           <div class="chips" id="ml-sort"><button data-v="score" class="on">점수순</button><button data-v="name">이름순</button><button data-v="stage">진행 중 먼저</button></div>
           <div id="ml-items"></div>
@@ -646,7 +655,7 @@ async function loadBoard(){
   const f = filters(); const bv = $('board-view');
   bv.innerHTML = '<p class="muted">불러오는 중…</p>';
   try {
-    const res = await Promise.all(STAGES.map(([k]) => rpc('lead_list', { p: { ...f, stage: k, limit: 30 } })));
+    const res = await Promise.all(STAGES.map(([k]) => rpc('lead_list', { p: { ...f, stage: k, limit: 30, nocats: k !== STAGES[0][0] } })));
     renderCats(res[0].cats);
     bv.innerHTML = STAGES.map(([k, v], i) => {
       const d = res[i];
@@ -721,10 +730,10 @@ function go(v){
   state.view = v;
   VIEWS.forEach(k => $('sec-' + k).hidden = k !== v);
   $('filters').hidden = !(v === 'map' || v === 'db');
+  $('cats').hidden = v === 'map';
   document.querySelectorAll('.db-only').forEach(x => x.hidden = v !== 'db');
   if (location.hash !== '#' + v) history.replaceState(null, '', '#' + v);
   buildNav(); window.scrollTo(0, 0);
-  if (v === 'map') { const [s, g] = ($('f-region').value || '|').split('|'); if (s !== state.geo.sido || g !== state.geo.sigungu) state.geo = { sido: s || '', sigungu: g || '', dong: '' }; }
   load(true);
 }
 window.addEventListener('hashchange', () => { const v = location.hash.slice(1); if (v && v !== state.view && VIEWS.includes(v)) go(v); });
@@ -1047,163 +1056,116 @@ $('listing-list').addEventListener('click', e => { if (e.target.closest('a')) re
 async function refreshStats(){ try { const s = await rpc('lead_stats'); applyStats(s); } catch (e) {} }
 
 
-/* ---------- 지도: 전국 → 시도 → 시군구 → 읍면동 → 매장 (경계 색칠) ---------- */
+/* ---------- 지도: 화면 범위 기반 (멀리 보면 숫자 원, 가까이 보면 매장 점) ---------- */
 const STAGE_COLOR = { collected: '#9aa097', contacted: '#e0a33c', interested: '#c62429', meeting: '#7a1015', trial: '#7a1015', proposal: '#7a1015', contract: '#1f4e8c', hold: '#c9cbc4', rejected: '#4d514a' };
-state.geo = { sido: '', sigungu: '', dong: '' };
-let MAP = null, POLY = null, PTS = null, TILES = null;
-const GEO = {};
-const norm = s => String(s || '').replace(/\s/g, '');
-function geoFile(name){
-  if (!GEO[name]) GEO[name] = fetch('geo/' + name + '.json').then(r => { if (!r.ok) throw new Error('경계 파일을 못 불러왔어요 (geo/' + name + '.json)'); return r.json(); })
-    .then(tp => topojson.feature(tp, tp.objects[name]).features)
-    .catch(e => { delete GEO[name]; throw e; });
-  return GEO[name];
-}
+state.geo = { sido: '', sigungu: '', dong: '' }; // 예전 코드 호환용
+state.mkind = 'all'; state.mapFitKey = '';
+const KOREA = [[33.1, 124.9], [38.6, 130.95]];
+let MAP = null, PTS = null, RENDER = null, MARKS = {};
 function ensureMap(){
   if (MAP) { setTimeout(() => MAP.invalidateSize(), 0); return; }
-  MAP = L.map('map', { zoomControl: true, zoomSnap: .25 }).setView([36.2, 127.8], 7);
-  TILES = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, opacity: .55,
-    attribution: '&copy; OpenStreetMap' });
-  MAP.attributionControl.addAttribution('경계: 통계청 SGIS, admdongkor(CC BY 4.0)');
-  POLY = L.layerGroup().addTo(MAP); PTS = L.layerGroup().addTo(MAP);
-  $('legend').innerHTML = '<span class="scale">매장 적음<b></b>많음</span>' + [['collected', '수집'], ['contacted', '1차 통화'], ['interested', '관심'], ['meeting', '미팅~제안'], ['contract', '계약'], ['hold', '보류'], ['rejected', '거절']]
+  RENDER = L.canvas({ padding: .3 });
+  MAP = L.map('map', { zoomControl: true, zoomSnap: .5, preferCanvas: true, minZoom: 6, maxBounds: [[31.5, 122.5], [39.8, 132.5]] });
+  MAP.fitBounds(KOREA);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, opacity: .7, attribution: '&copy; OpenStreetMap' }).addTo(MAP);
+  PTS = L.layerGroup().addTo(MAP);
+  MAP.on('moveend', () => { if (state.view === 'map') queueMap(); });
+  $('legend').innerHTML = '<span><i class="lg-bub"></i>숫자 원 = 그 근처 매장 수 (누르면 확대)</span>' + [['collected', '수집'], ['contacted', '1차 통화'], ['interested', '관심'], ['meeting', '미팅~제안'], ['contract', '계약'], ['hold', '보류'], ['rejected', '거절']]
     .map(([k, v]) => `<span><i style="background:${STAGE_COLOR[k]}"></i>${v}</span>`).join('') + '<span>테두리 굵은 점 = 재연락 기한 지남</span>';
 }
-function setTiles(on){
-  if (!MAP || !TILES) return;
-  if (on && !MAP.hasLayer(TILES)) TILES.addTo(MAP);
-  if (!on && MAP.hasLayer(TILES)) MAP.removeLayer(TILES);
-  $('map').classList.toggle('plain', !on);
+function mapFilters(){
+  const f = filters();
+  return { sido: f.sido, sigungu: f.sigungu, stage: f.stage, lunch: f.lunch, chain: f.chain, q: f.q, kind: state.mkind, tel: $('m-tel').checked };
 }
-function renderCrumb(level){
-  const g = state.geo, parts = [`<button data-l="0" ${!g.sido ? 'disabled' : ''}>전국</button>`];
-  if (g.sido) parts.push('<span>›</span>', `<button data-l="1" ${!g.sigungu ? 'disabled' : ''}>${esc(g.sido)}</button>`);
-  if (g.sigungu) parts.push('<span>›</span>', `<button data-l="2" ${!g.dong ? 'disabled' : ''}>${esc(g.sigungu)}</button>`);
-  if (g.dong) parts.push('<span>›</span>', `<button data-l="3" disabled>${esc(g.dong)}</button>`);
-  const hint = level === 'store' ? '점을 누르면 매장 상세가 열려요 · 다른 동을 눌러 바꿀 수 있어요' : '지역을 누르면 한 단계 들어가요';
-  $('crumb').innerHTML = parts.join('') + `<span class="hint">${hint}</span>`;
-}
-$('crumb').addEventListener('click', e => {
-  const b = e.target.closest('button[data-l]'); if (!b || b.disabled) return;
-  const l = b.dataset.l;
-  if (l === '0') state.geo = { sido: '', sigungu: '', dong: '' };
-  else if (l === '1') state.geo = { sido: state.geo.sido, sigungu: '', dong: '' };
-  else state.geo.dong = '';
-  syncRegion(); state.geoNav = true; loadMap();
-});
-function syncRegion(){
-  const v = state.geo.sigungu ? state.geo.sido + '|' + state.geo.sigungu : '';
-  $('f-region').value = [...$('f-region').options].some(o => o.value === v) ? v : '';
-}
-const BASE = { color: '#ffffff', weight: 1.2 };
-function fillFor(n, max){
-  if (!n) return { fillColor: '#eceee8', fillOpacity: .55 };
-  return { fillColor: '#c62429', fillOpacity: .12 + .63 * Math.sqrt(n / max) };
-}
-let mapSeq = 0;
+// 필터가 바뀌면: 지역·검색어가 바뀐 경우엔 그 결과가 있는 곳으로 이동, 아니면 지금 화면을 다시 그림
 async function loadMap(){
   ensureMap();
-  const seq = ++mapSeq;
-  const f = filters();
-  if (!state.geoNav) { const [s, g] = ($('f-region').value || '|').split('|'); if (s !== state.geo.sido || g !== state.geo.sigungu) state.geo = { sido: s || '', sigungu: g || '', dong: '' }; }
-  state.geoNav = false;
-  const G = state.geo;
-  const level = !G.sido ? 'sido' : !G.sigungu ? 'sgg' : !G.dong ? 'dong' : 'store';
-  setTiles(level === 'store');
+  const f = mapFilters(), key = [f.sido, f.sigungu, f.q].join('|');
+  if (key !== state.mapFitKey) {
+    state.mapFitKey = key;
+    if (!f.sido && !f.q) { MAP.fitBounds(KOREA); queueMap(); return; }
+    try {
+      const b = await rpc('lead_map', { p: { ...f, fit: true } });
+      if (state.view !== 'map') return;
+      if (!b.total) { toast('조건에 맞는 매장이 없어요'); loadMapNow(); return; }
+      const bb = L.latLngBounds([b.minlat, b.minlng], [b.maxlat, b.maxlng]);
+      MAP.flyToBounds(bb.pad(.05), { padding: [20, 20], maxZoom: 17, duration: .5 });
+      return; // 이동이 끝나면 moveend에서 다시 그림
+    } catch (e) { toast(errMsg(e), true); }
+  }
+  loadMapNow();
+}
+let mapT; function queueMap(){ clearTimeout(mapT); mapT = setTimeout(loadMapNow, 250); }
+let mapSeq = 0;
+async function loadMapNow(){
+  if (!MAP) return;
+  const seq = ++mapSeq, bd = MAP.getBounds().pad(.15), z = Math.round(MAP.getZoom());
+  $('m-count').textContent = '불러오는 중…';
   try {
-    const [feats, grp, pts] = await Promise.all([
-      geoFile(level === 'sido' ? 'sido' : level === 'sgg' ? 'sgg' : 'dong'),
-      rpc('lead_geo', { p: { ...f, sido: G.sido, sigungu: G.sigungu, dong: '' } }),
-      level === 'store' ? rpc('lead_geo', { p: { ...f, sido: G.sido, sigungu: G.sigungu, dong: G.dong } }) : null
-    ]);
+    const d = await rpc('lead_map', { p: { ...mapFilters(), zoom: z,
+      minlat: bd.getSouth(), maxlat: bd.getNorth(), minlng: bd.getWest(), maxlng: bd.getEast() } });
     if (seq !== mapSeq || state.view !== 'map') return;
-    renderCrumb(level);
-    const counts = {}; (grp.groups || []).forEach(x => counts[norm(x.name)] = x);
-    const keyOf = level === 'sido' ? (p => p.sidonm) : level === 'sgg' ? (p => p.sggk) : (p => p.dong);
-    const nameOf = level === 'sido' ? (p => p.sidonm) : level === 'sgg' ? (p => p.sggnm) : (p => p.dong);
-    const list = feats.filter(ft => level === 'sido' ? true : level === 'sgg' ? ft.properties.sidonm === G.sido
-      : ft.properties.sidonm === G.sido && ft.properties.sggk === norm(G.sigungu));
-    POLY.clearLayers(); PTS.clearLayers();
-    if (!list.length) { toast('이 지역 경계를 찾지 못했어요', true); return; }
-    const max = Math.max(1, ...list.map(ft => (counts[norm(keyOf(ft.properties))] || {}).n || 0));
-    let selectedLayer = null;
-    const styleOf = ft => {
-      const c = counts[norm(keyOf(ft.properties))], n = c ? c.n : 0;
-      if (level === 'store') {
-        if (ft.properties.dong === G.dong) return { color: '#1f4e8c', weight: 3, fillColor: '#1f4e8c', fillOpacity: .12 };
-        return { ...BASE, ...fillFor(n, max), fillOpacity: n ? .18 : .35 };
-      }
-      return { ...BASE, ...fillFor(n, max) };
-    };
-    const layer = L.geoJSON({ type: 'FeatureCollection', features: list }, {
-      style: styleOf,
-      onEachFeature: (ft, lyr) => {
-        const c = counts[norm(keyOf(ft.properties))], n = c ? c.n : 0, nm = nameOf(ft.properties);
-        const isSel = level === 'store' && ft.properties.dong === G.dong;
-        if (isSel) selectedLayer = lyr;
-        if (n && level !== 'store') lyr.bindTooltip(`${esc(nm)}<small>${n.toLocaleString()}</small>`, { permanent: true, direction: 'center', className: 'lbl' });
-        else lyr.bindTooltip(`<b>${esc(nm)}</b> ${n.toLocaleString()}곳${c ? `<br>가장 많은 업종: ${esc(c.top_cat || '-')}<br>영업 진행 ${c.active.toLocaleString()} · 계약 ${c.contract.toLocaleString()}` : ''}`, { sticky: true });
-        lyr.on('mouseover', () => { if (!isSel) { const s = styleOf(ft); lyr.setStyle({ color: '#232621', weight: 2.5, fillOpacity: Math.min(.92, (s.fillOpacity || .3) + .2) }); lyr.bringToFront(); } });
-        lyr.on('mouseout', () => { lyr.setStyle(styleOf(ft)); });
-        lyr.on('click', () => {
-          if (isSel) return;
-          lyr.setStyle({ color: '#1f4e8c', weight: 3, fillColor: '#1f4e8c', fillOpacity: .5 }); lyr.bringToFront();
-          // 누른 지역으로 바로 확대 (확대 애니메이션이 끝날 즈음 안쪽 경계를 그림)
-          MAP.flyToBounds(lyr.getBounds(), { padding: [10, 10], duration: .55, maxZoom: level === 'dong' ? 17 : 15 });
-          const p = ft.properties;
-          if (level === 'sido') state.geo = { sido: p.sidonm, sigungu: '', dong: '' };
-          else if (level === 'sgg') state.geo = { sido: G.sido, sigungu: c && c.name ? c.name : p.sggnm, dong: '' };
-          else state.geo = { sido: G.sido, sigungu: G.sigungu, dong: p.dong };
-          setTimeout(() => { syncRegion(); state.geoNav = true; loadMap(); }, 450);
+    PTS.clearLayers(); MARKS = {};
+    if (d.mode === 'clusters') {
+      const cs = d.clusters || [], max = Math.max(1, ...cs.map(c => c.n));
+      cs.forEach(c => {
+        const s = Math.round(28 + 30 * Math.sqrt(c.n / max));
+        const label = c.n >= 10000 ? (c.n / 10000).toFixed(1) + '만' : c.n >= 1000 ? (c.n / 1000).toFixed(1) + '천' : c.n;
+        const m = L.marker([c.lat, c.lng], { icon: L.divIcon({ className: '', iconSize: [s, s],
+          html: `<div class="bub" style="width:${s}px;height:${s}px"><b>${label}</b></div>` }), keyboard: false });
+        m.on('click', () => {
+          const bb = L.latLngBounds([c.minlat, c.minlng], [c.maxlat, c.maxlng]);
+          if (bb.getNorthEast().equals(bb.getSouthWest())) MAP.flyTo(bb.getCenter(), Math.min(17, MAP.getZoom() + 3), { duration: .4 });
+          else MAP.flyToBounds(bb, { padding: [30, 30], maxZoom: 17, duration: .4 });
         });
-      }
-    }).addTo(POLY);
-
-    showMapList(level === 'store');
-    if (level === 'store') {
-      const ps = (pts && pts.points) || [];
-      MARKS = {}; state.mlPoints = ps; state.mlSel = null;
+        PTS.addLayer(m);
+      });
+      state.mlPoints = []; state.mlSel = null; showMapList(false);
+      $('m-count').textContent = `이 화면 ${d.total.toLocaleString()}곳 · 확대하면 매장이 보여요`;
+    } else {
+      const ps = d.points || [];
+      state.mlPoints = ps; if (!ps.some(p => p.id === state.mlSel)) state.mlSel = null;
       ps.forEach(p => {
-        const m = L.circleMarker([p.lat, p.lng], markStyle(p, false));
-        m.bindTooltip(`<b>${esc(p.name)}${p.branch ? ' ' + esc(p.branch) : ''}</b><br>${esc(p.cat || '')} · ${esc(ST[p.stage])} · ${esc(LUNCH[p.lunch] || '')}`, { direction: 'top' });
+        const m = L.circleMarker([p.lat, p.lng], { renderer: RENDER, ...markStyle(p, p.id === state.mlSel) });
+        m.bindTooltip(`<b>${esc(p.name)}${p.branch ? ' ' + esc(p.branch) : ''}</b><br>${esc(p.cat || '')} · ${esc(ST[p.stage])}${p.tel ? ' · ' + esc(tel(p.tel)) : ''}`, { direction: 'top' });
         m.on('click', () => { selectMark(p.id, false); openLead(p.id); });
         MARKS[p.id] = m; PTS.addLayer(m);
       });
-      $('ml-title').textContent = G.dong; renderMapList();
-      const b = selectedLayer ? selectedLayer.getBounds() : (ps.length ? L.latLngBounds(ps.map(p => [p.lat, p.lng])) : layer.getBounds());
-      MAP.flyToBounds(b, { padding: [12, 12], maxZoom: 17, duration: .4 });
-      if (!ps.length) toast('이 동에는 조건에 맞는 매장이 없어요');
-    } else {
-      // 선택한 지역이 지도 화면을 꽉 채우게
-      if (level === 'sido') MAP.fitBounds(layer.getBounds(), { padding: [8, 8] });
-      else MAP.flyToBounds(layer.getBounds(), { padding: [8, 8], duration: .4 });
+      showMapList(true); $('ml-title').textContent = '화면 안 매장'; renderMapList();
+      $('m-count').textContent = d.total > ps.length ? `이 화면 ${d.total.toLocaleString()}곳 중 점수 높은 ${ps.length.toLocaleString()}곳` : `이 화면 ${d.total.toLocaleString()}곳`;
+      if (!ps.length) $('m-count').textContent = '이 화면에는 조건에 맞는 매장이 없어요';
     }
-  } catch (e) { toast(errMsg(e), true); }
+  } catch (e) { if (seq === mapSeq) { $('m-count').textContent = ''; toast(errMsg(e), true); } }
 }
+$('m-kind').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  state.mkind = b.dataset.v; [...$('m-kind').children].forEach(x => x.classList.toggle('on', x === b)); loadMapNow();
+});
+$('m-tel').addEventListener('change', () => loadMapNow());
 
-/* 동 안 매장 목록 ↔ 지도 연결 */
-let MARKS = {};
+/* 화면 안 매장 목록 ↔ 지도 연결 */
 state.mlSort = 'score';
 function markStyle(p, sel){
   return sel ? { radius: 11, weight: 3, color: '#1f4e8c', fillColor: STAGE_COLOR[p.stage] || '#9aa097', fillOpacity: 1 }
              : { radius: 6, weight: p.overdue ? 3 : 1, color: p.overdue ? '#232621' : '#ffffff', fillColor: STAGE_COLOR[p.stage] || '#9aa097', fillOpacity: .95 };
 }
 function showMapList(on){
+  const was = !$('map-list').hidden;
   $('map-list').hidden = !on;
   document.querySelector('.map-wrap').classList.toggle('has-list', on);
-  if (MAP) setTimeout(() => MAP.invalidateSize(), 0);
+  if (MAP && was !== on) setTimeout(() => MAP.invalidateSize(), 0);
 }
 function renderMapList(){
   const ps = (state.mlPoints || []).slice(), s = state.mlSort;
   const prog = p => ['collected', 'rejected'].includes(p.stage) ? 1 : 0;
   ps.sort((a, b) => s === 'name' ? a.name.localeCompare(b.name, 'ko') : s === 'stage' ? prog(a) - prog(b) || b.score - a.score : b.score - a.score);
   $('ml-count').textContent = ps.length.toLocaleString() + '곳';
-  $('ml-items').innerHTML = ps.length ? ps.map(p => `<div class="ml-item${state.mlSel === p.id ? ' on' : ''}" data-id="${p.id}" role="button" tabindex="0">
+  $('ml-items').innerHTML = ps.length ? ps.slice(0, 300).map(p => `<div class="ml-item${state.mlSel === p.id ? ' on' : ''}" data-id="${p.id}" role="button" tabindex="0">
       <span class="dot" style="background:${STAGE_COLOR[p.stage] || '#9aa097'}"></span>
       <span class="tx"><b>${esc(p.name)}${p.branch ? ' ' + esc(p.branch) : ''}${chainTag(p)}</b>
-        <small>${esc(p.cat || '')} · ${esc(ST[p.stage])}${p.overdue ? ' · <span class="late">재연락 지남</span>' : ''}</small>
+        <small>${esc(p.cat || '')} · ${esc(ST[p.stage])}${p.tel ? ' · ' + esc(tel(p.tel)) : ''}${p.overdue ? ' · <span class="late">재연락 지남</span>' : ''}</small>
         <span class="tags">${lunchTag(p.lunch)}</span></span>
-      <button class="go" data-open="${p.id}">상세</button></div>`).join('')
+      <button class="go" data-open="${p.id}">상세</button></div>`).join('') + (ps.length > 300 ? `<div class="empty-box">목록은 300곳까지 보여요. 지도를 더 확대하세요.</div>` : '')
     : '<div class="empty-box">조건에 맞는 매장이 없어요.</div>';
 }
 function selectMark(id, move){
@@ -1211,7 +1173,7 @@ function selectMark(id, move){
   const pts = state.mlPoints || [];
   if (prev && MARKS[prev]) MARKS[prev].setStyle(markStyle(pts.find(x => x.id === prev) || {}, false));
   const p = pts.find(x => x.id === id), m = MARKS[id];
-  if (m && p) { m.setStyle(markStyle(p, true)); m.bringToFront(); m.openTooltip(); if (move) MAP.flyTo([p.lat, p.lng], Math.max(MAP.getZoom(), 18), { duration: .5 }); }
+  if (m && p) { m.setStyle(markStyle(p, true)); m.bringToFront(); m.openTooltip(); if (move) MAP.flyTo([p.lat, p.lng], Math.max(MAP.getZoom(), 17), { duration: .5 }); }
   document.querySelectorAll('#ml-items .ml-item').forEach(el => el.classList.toggle('on', +el.dataset.id === id));
   const el = document.querySelector(`#ml-items .ml-item[data-id="${id}"]`);
   if (el && !move) el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
@@ -1399,7 +1361,7 @@ async function logCall(kind){
 }
 async function refreshAfter(id){
   const [d, s] = await Promise.all([rpc('lead_get', { p_id: id }), rpc('lead_stats')]);
-  state.cur = d; renderPanel(d); applyStats(s); if (state.view !== 'map') load(true);
+  state.cur = d; renderPanel(d); applyStats(s); if (state.view !== 'map') load(true); else queueMap();
 }
 
 /* ---------- 매장 추가 ---------- */
