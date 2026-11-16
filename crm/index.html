@@ -264,6 +264,16 @@ td .sm{font-size:12px;color:var(--sub)}
 .act dt{color:var(--sub)}
 .act dd{margin:0}
 .muted{color:var(--sub);font-size:13px}
+/* 수집 현황(관리자) */
+.ig-run{margin-bottom:14px}
+.ig-run h4 small{font-weight:500;margin-left:6px}
+.ig-run-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.ig-run-row select{flex:1;min-width:220px;height:38px;border:1px solid var(--line);border-radius:10px;background:#fff;padding:0 10px;font:inherit}
+.ig-st{display:inline-block;padding:2px 9px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap}
+.st-wait{background:#eef0ea;color:var(--sub)} .st-run{background:var(--blue-soft);color:var(--blue)}
+.st-done{background:#e7f2ea;color:var(--ok)} .st-fail{background:var(--brand-soft);color:var(--brand)}
+.ig-err{color:var(--brand);font-size:12px;min-width:180px;max-width:320px;white-space:normal}
+.ig-sm{font-size:12px;color:var(--sub)}
 .nv{display:inline-block;font-size:11px;font-weight:600;color:#03702f;border:1px solid #9fd6b3;background:#effaf3;border-radius:5px;padding:1px 6px;margin-left:6px;text-decoration:none;vertical-align:1px}
 .nv:hover{background:#dff3e6;color:#025a26}
 
@@ -437,6 +447,26 @@ td .sm{font-size:12px;color:var(--sub)}
       <div id="board-view" class="board" hidden></div>
     </section>
 
+    <!-- 수집 현황 (관리자) -->
+    <section id="sec-ingest" class="sec" hidden>
+      <div class="sec-hd"><h1>수집 현황 <small id="ig-now"></small></h1>
+        <div class="row-btns"><button class="btn" id="ig-refresh">새로고침</button></div>
+      </div>
+      <section class="stats" id="ig-stats" aria-label="수집 요약"></section>
+      <div class="box ig-run">
+        <h4>시군구 하나 지금 실행<small class="muted">테스트용 · 시간 제한 없음</small></h4>
+        <div class="ig-run-row"><select id="ig-code" aria-label="실행할 시군구"></select><button class="btn pri" id="ig-go">지금 실행</button></div>
+        <p class="muted" style="margin:0">자동 수집은 매일 새벽 2시~6시에만 돌아요. 6시가 되면 처리 중인 배치까지만 올리고 멈춘 뒤, 다음 새벽에 멈춘 자리부터 이어서 돌아요. 영업 기록(단계·통화·관심·메모)은 건드리지 않고, 사람이 수정한 적 없는 매장의 공공데이터 칸만 갱신해요.</p>
+      </div>
+      <div class="chips" id="ig-filter"></div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>지역</th><th>상태</th><th class="num">처리 건수</th><th class="num">원본</th><th>결과</th><th>마지막 처리</th><th>실패 사유·메모</th><th></th></tr></thead>
+          <tbody id="ig-rows"></tbody>
+        </table>
+      </div>
+    </section>
+
     <!-- 영업 스크립트 -->
     <section id="sec-script" class="sec" hidden>
       <div class="sec-hd"><h1>영업 스크립트</h1></div>
@@ -522,8 +552,9 @@ async function boot(){
   try {
     const s = await rpc('lead_stats');
     show('app');
-    const { data: me } = await SB.from('profiles').select('name').eq('id', data.session.user.id).maybeSingle();
+    const { data: me } = await SB.from('profiles').select('name, role').eq('id', data.session.user.id).maybeSingle();
     $('me').textContent = me && me.name ? me.name : '';
+    state.admin = !!(me && me.role === 'admin');
     applyStats(s); fillFilters(s); go(location.hash.slice(1) || 'map');
   } catch (e) {
     if (/권한/.test(e.message || '')) show('noperm'); else { show('app'); toast(errMsg(e), true); }
@@ -577,6 +608,7 @@ async function load(reset){
   if (v === 'comm') return loadComm();
   if (v === 'listing') return loadListing();
   if (v === 'script') return;
+  if (v === 'ingest') return loadIngest();
   if (state.dbMode === 'board') return loadBoard();
   if (reset) { state.offset = 0; state.rows = []; }
   try {
@@ -635,6 +667,7 @@ const IC = {
   listing: '<path d="M3 21h18M5 21V8l7-5 7 5v13M9 21v-6h6v6"/>',
   db: '<ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/>',
   script: '<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/>',
+  ingest: '<path d="M21 12a9 9 0 1 1-2.6-6.4L21 8"/><path d="M21 3v5h-5"/>',
   more: '<circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/>'
 };
 const svg = k => `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[k]}</svg>`;
@@ -643,10 +676,11 @@ const BNAV = [['map', '지도'], ['fav', '관심'], ['log', '기록'], ['inbox',
 state.badge = {};
 function buildNav(){
   const b = state.badge;
-  $('side').innerHTML = NAV.map(([k, l], i) => (i === 4 ? '<div class="side-gap"></div>' : '') +
+  const nav = state.admin ? NAV.concat([['ingest', '수집 현황']]) : NAV;
+  $('side').innerHTML = nav.map(([k, l], i) => (i === 4 ? '<div class="side-gap"></div>' : '') +
     `<a href="#${k}" data-v="${k}" class="${state.view === k ? 'on' : ''}" ${state.view === k ? 'aria-current="page"' : ''}>${svg(k)}<span>${l}</span>${b[k] ? `<em>${b[k]}</em>` : ''}</a>`).join('') +
     '<div class="side-gap"></div><a href="https://menyamatsuri.work/" class="ext">매장관리로 돌아가기</a>';
-  const inMore = ['comm', 'listing', 'db', 'script'].includes(state.view);
+  const inMore = ['comm', 'listing', 'db', 'script', 'ingest'].includes(state.view);
   $('bnav').innerHTML = BNAV.map(([k, l]) => {
     const on = k === 'more' ? inMore : state.view === k;
     const badge = k === 'more' ? (b.comm || b.listing) : b[k];
@@ -665,6 +699,7 @@ $('bnav').addEventListener('click', e => {
 });
 function openMore(){
   const items = [['comm', '커뮤니티 리드', '카페 글·댓글·쪽지 준 분'], ['listing', '양도 매물', '어사이드로 들어온 매물'], ['db', '전체 매장 DB', '목록·보드로 전체 검색'], ['script', '영업 스크립트', '통화하면서 보는 문구']];
+  if (state.admin) items.push(['ingest', '수집 현황', '지역 수집 진행·실패 확인 (관리자)']);
   $('more-sheet').innerHTML = '<div class="sheet-hd">더보기</div>' + items.map(([k, t, d]) =>
     `<button data-v="${k}">${svg(k)}<span><b>${t}</b><small>${d}</small></span>${state.badge[k] ? `<em>${state.badge[k]}</em>` : ''}</button>`).join('') +
     `<a href="https://menyamatsuri.work/">매장관리로 돌아가기</a><button data-v="logout" class="lo">로그아웃</button>`;
@@ -675,9 +710,9 @@ $('more-sheet').addEventListener('click', async e => {
   if (b.dataset.v === 'logout') { await SB.auth.signOut(); location.reload(); return; }
   closePanel(); go(b.dataset.v);
 });
-const VIEWS = ['map', 'fav', 'log', 'inbox', 'comm', 'listing', 'db', 'script'];
+const VIEWS = ['map', 'fav', 'log', 'inbox', 'comm', 'listing', 'db', 'script', 'ingest'];
 function go(v){
-  if (!VIEWS.includes(v)) v = 'map';
+  if (!VIEWS.includes(v) || (v === 'ingest' && !state.admin)) v = 'map';
   state.view = v;
   VIEWS.forEach(k => $('sec-' + k).hidden = k !== v);
   $('filters').hidden = !(v === 'map' || v === 'db');
@@ -695,6 +730,65 @@ function setDbMode(m){
 $('v-list').addEventListener('click', () => setDbMode('list'));
 $('v-board').addEventListener('click', () => setDbMode('board'));
 state.dbMode = 'list';
+
+/* ---------- 수집 현황 (관리자) ---------- */
+state.ig = { filter: '', jobs: [], d: null, timer: null };
+const IG_ST = { '대기': 'st-wait', '진행중': 'st-run', '완료': 'st-done', '실패': 'st-fail' };
+const kstTime = t => t ? new Date(t).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }) : '-';
+async function loadIngest(){
+  clearTimeout(state.ig.timer);
+  try {
+    const d = await rpc('lead_ingest_status');
+    state.ig.d = d; state.ig.jobs = d.jobs || [];
+    renderIngest();
+    // 돌고 있는 지역이 있으면 8초마다 새로고침
+    if (state.view === 'ingest' && state.ig.jobs.some(j => j.running)) state.ig.timer = setTimeout(loadIngest, 8000);
+  } catch (e) { toast(errMsg(e), true); }
+}
+function renderIngest(){
+  const d = state.ig.d || {}; const s = d.summary || {}; const f = state.ig.filter;
+  $('ig-now').textContent = d.now_kst ? d.now_kst + ' 기준' : '';
+  $('ig-stats').innerHTML = [
+    ['대기', (s['대기'] || 0) + '곳'], ['진행중', (s['진행중'] || 0) + '곳'], ['완료', (s['완료'] || 0) + '곳'],
+    ['실패', (s['실패'] || 0) + '곳', (s['실패'] || 0) > 0], ['임시 적재', (d.stage_rows || 0).toLocaleString() + '건'],
+    ['자동 실행', d.in_window ? '도는 중' : '쉬는 시간']
+  ].map(([l, v, a]) => `<div class="stat${a ? ' alert' : ''}"><b>${esc(v)}</b><span>${esc(l)}</span></div>`).join('');
+  $('ig-filter').innerHTML = [['', '전체'], ['진행중', '진행중'], ['실패', '실패'], ['대기', '대기'], ['완료', '완료']]
+    .map(([k, l]) => `<button data-f="${k}" class="${f === k ? 'on' : ''}">${l}${k ? ` <small>${s[k] || 0}</small>` : ''}</button>`).join('');
+  const sel = $('ig-code'), cur = sel.value;
+  const opts = state.ig.jobs.slice().sort((a, b) => (a.sido + ' ' + a.sigungu).localeCompare(b.sido + ' ' + b.sigungu, 'ko'));
+  sel.innerHTML = '<option value="">시군구 선택</option>' + opts.map(j => `<option value="${esc(j.code)}">${esc(j.sido)} ${esc(j.sigungu)} · ${esc(j.status)}</option>`).join('');
+  if (cur) sel.value = cur;
+  const rows = state.ig.jobs.filter(j => !f || j.status === f);
+  $('ig-rows').innerHTML = rows.length ? rows.map(j => {
+    const prog = j.status === '진행중' && j.total_pages ? ` <span class="ig-sm">${Math.min(j.next_page - 1, j.total_pages)}/${j.total_pages}쪽</span>` : '';
+    const res = j.status === '완료' && j.inserted != null ? `신규 ${j.inserted} · 갱신 ${j.updated ?? 0} · 폐업 의심 ${j.closed ?? 0}` : '';
+    const label = j.status === '완료' ? '다시 수집' : j.status === '실패' ? '다시 시도' : '지금 실행';
+    return `<tr>
+      <td><b>${esc(j.sigungu)}</b><div class="ig-sm">${esc(j.sido)} · ${esc(j.code)}</div></td>
+      <td><span class="ig-st ${IG_ST[j.status] || ''}">${esc(j.status)}</span>${j.manual ? ' <span class="ig-sm">수동</span>' : ''}${prog}</td>
+      <td class="num">${(j.processed || 0).toLocaleString()}</td>
+      <td class="num">${(j.fetched || 0).toLocaleString()}</td>
+      <td class="ig-sm">${esc(res)}</td>
+      <td class="ig-sm">${esc(kstTime(j.last_at))}</td>
+      <td class="ig-err">${esc(j.error || '')}</td>
+      <td>${j.running ? '' : `<button class="btn sm" data-run="${esc(j.code)}">${label}</button>`}</td></tr>`;
+  }).join('') : '<tr><td colspan="8" class="muted" style="text-align:center;padding:30px">해당하는 지역이 없어요.</td></tr>';
+}
+async function runIngest(code){
+  if (!code) { toast('시군구를 골라 주세요', true); return; }
+  const j = state.ig.jobs.find(x => x.code === code);
+  if (!confirm(`${j ? j.sido + ' ' + j.sigungu : code} 수집을 지금 실행할까요?\n영업 기록은 건드리지 않고 공공데이터 칸만 갱신해요.`)) return;
+  try {
+    await rpc('lead_ingest_run', { p_code: code });
+    toast('실행을 시작했어요. 잠시 후 상태가 바뀌어요.');
+    setTimeout(loadIngest, 3000);
+  } catch (e) { toast(errMsg(e), true); }
+}
+$('ig-go').addEventListener('click', () => runIngest($('ig-code').value));
+$('ig-rows').addEventListener('click', e => { const b = e.target.closest('button[data-run]'); if (b) runIngest(b.dataset.run); });
+$('ig-filter').addEventListener('click', e => { const b = e.target.closest('button[data-f]'); if (!b) return; state.ig.filter = b.dataset.f; renderIngest(); });
+$('ig-refresh').addEventListener('click', loadIngest);
 
 /* ---------- 관심 매장 (지역별 묶음) ---------- */
 state.fav = { scope: 'mine', sort: 'next', region: '', closed: {}, rows: [] };
