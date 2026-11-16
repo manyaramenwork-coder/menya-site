@@ -8249,7 +8249,8 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
         ${steps}
         ${act}
         ${memo}
-        <details class="mp-log"><summary>처리 기록 ${o.logs.length}</summary>${o.logs.map(l => `<div><time>${h(l.at)}</time>${h(l.act)} · ${h(l.who || '')}${l.note ? ` · ${h(l.note)}` : ''}</div>`).join('')}</details></div>` : ''}
+        <details class="mp-log"><summary>처리 기록 ${o.logs.length}</summary>${o.logs.map(l => `<div><time>${h(l.at)}</time>${h(l.act)} · ${h(l.who || '')}${l.note ? ` · ${h(l.note)}` : ''}</div>`).join('')}
+          ${['shipped', 'done'].includes(o.status) ? '' : `<button type="button" class="mp-del" onclick="mpDel(${o.id})">이 발주 삭제 (시험·잘못 넣은 발주)</button>`}</details></div>` : ''}
     </article>`;
   }
   /* 본사 대리 발주: 전화로 받은 주문을 매장을 골라 대신 넣음 → 바로 '접수 완료' */
@@ -8297,6 +8298,13 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
     if (error) { b.disabled = false; return toast(error.message); }
     pxClose(); toast('발주를 넣었어요. 점주 앱에도 보여요.');
     MP.tab = 'todo'; MP.open = data && data.id; await load(true); draw();
+  };
+  window.mpDel = async id => {
+    const o = (MP.list || []).find(x => x.id === id); if (!o) return;
+    if (!confirm(`${o.store} ${won(o.total)}원 발주를 삭제할까요?\n점주 앱에서도 사라지고 되돌릴 수 없어요. 시험이나 잘못 넣은 발주일 때만 지워 주세요.`)) return;
+    const { error } = await SB.rpc('mst_hq_order_delete', { p_id: id });
+    if (error) return toast(error.message);
+    toast('삭제했어요'); MP.open = null; await load(true); draw();
   };
   window.mpMemo = id => setOrder({ id, memo: (document.getElementById('mp-m-' + id).value || '').trim() }, '안내를 저장했어요. 점주 앱 발주 화면에 보여요.');
   window.mpReload = async () => { try { await load(true); draw(); } catch (e) { toast('불러오지 못했어요'); } };
@@ -8447,6 +8455,7 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
   #mp-px .px-q input{width:52px;height:30px;text-align:center;border:1px solid #dcdfd5;border-radius:8px;font-size:14px}
   #mp-px .px-f{display:flex;align-items:center;gap:8px;padding:12px 20px 16px;border-top:1px solid #eef0ea}
   #mp-px .px-tot{margin-right:auto;font-size:13px;color:#4a5244}#mp-px .px-tot b{font-size:16px;color:#1f241c}
+  .mp-del{display:block;margin-top:10px;border:0;background:none;color:#a3262c;font-size:12px;cursor:pointer;padding:4px 0;text-decoration:underline}
   .mp-steps{list-style:none;display:flex;gap:6px;margin:14px 0 4px;padding:0}
   .mp-steps li{flex:1;display:flex;align-items:center;gap:6px;font-size:12px;color:#909b84;padding:7px 9px;border-radius:9px;background:#f5f6f2}
   .mp-steps li b{display:grid;place-items:center;width:19px;height:19px;border-radius:50%;background:#dfe3d8;color:#fff;font-size:11px;flex-shrink:0}
@@ -8878,36 +8887,62 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
   /* ==========================================================
      대시보드: 가맹점 앱 (처리할 발주 · 공지 현황)
      ========================================================== */
-  function dashHtml(){
+  function dashOrders(){
     const O = (MP.list || []).filter(o => o.status === 'received' || o.status === 'confirmed')
       .sort((a, b) => (a.status === 'received' ? 0 : 1) - (b.status === 'received' ? 0 : 1));
+    const nNew = O.filter(o => o.status === 'received').length, nShip = O.length - nNew;
+    return `<section class="card gmd-c"><div class="gmd-top"><span><em class="${nNew ? 'red' : ''}">${nNew}</em> 접수 대기</span><span><em>${nShip}</em> 발송 대기</span>
+        <button class="btn ghost" onclick="go('${PAGE}')">발주 열기</button></div>
+      ${O.length ? O.slice(0, 6).map(o => `<button type="button" class="gmd-row" onclick="mpOpen(${o.id})"><span class="mp-st ${o.status === 'received' ? 'new' : 'ing'}">${o.status === 'received' ? '접수 대기' : '발송 대기'}</span>
+        <b>${h(o.store)}</b><span class="t">${h(o.items[0] ? o.items[0].name : '')}${o.items.length > 1 ? ` 외 ${o.items.length - 1}건` : ''}</span><small>${won(o.total)}원</small></button>`).join('')
+        + (O.length > 6 ? `<div class="gmd-more">외 ${O.length - 6}건</div>` : '') : '<div class="gmd-empty">처리할 발주가 없어요.</div>'}</section>`;
+  }
+  function dashNotices(){
     const N = (MN.list || []).filter(n => n.status === 'active');
     const pend = (MN.list || []).reduce((s, n) => s + (n.pending || 0), 0);
-    const nNew = O.filter(o => o.status === 'received').length, nShip = O.length - nNew;
-    return `<div class="gmd">
-      <section class="card gmd-c"><div class="gmd-top"><b>발주</b><span><em class="${nNew ? 'red' : ''}">${nNew}</em> 접수 대기</span><span><em>${nShip}</em> 발송 대기</span>
-        <button class="btn ghost" onclick="go('${PAGE}')">발주 열기</button></div>
-        ${O.length ? O.slice(0, 5).map(o => `<button type="button" class="gmd-row" onclick="mpOpen(${o.id})"><span class="mp-st ${o.status === 'received' ? 'new' : 'ing'}">${o.status === 'received' ? '접수 대기' : '발송 대기'}</span>
-          <b>${h(o.store)}</b><span class="t">${h(o.items[0] ? o.items[0].name : '')}${o.items.length > 1 ? ` 외 ${o.items.length - 1}건` : ''}</span><small>${won(o.total)}원</small></button>`).join('')
-          + (O.length > 5 ? `<div class="gmd-more">외 ${O.length - 5}건</div>` : '') : '<div class="gmd-empty">처리할 발주가 없어요.</div>'}</section>
-      <section class="card gmd-c"><div class="gmd-top"><b>공지</b><span><em>${N.length}</em> 게시 중</span><span><em class="${pend ? 'red' : ''}">${pend}</em> 답변 대기</span>
-        <button class="btn ghost" onclick="go('${NP}')">공지 열기</button></div>
-        ${N.length ? N.slice(0, 5).map(n => { const un = n.targets - n.read, ua = n.ack ? n.targets - n.acked : 0;
-          return `<button type="button" class="gmd-row" onclick="npOpen(${n.id})">${n.pin ? '<em class="fnn-pin">필독</em>' : ''}<span class="t">${h(n.title)}</span>
-            <small>읽음 ${n.read}/${n.targets}${n.ack ? ` · 확인 ${n.acked}/${n.targets}` : ''}</small>${n.pending ? `<span class="mp-st new">답변 ${n.pending}</span>` : un ? `<span class="mp-st off">안 읽음 ${un}</span>` : ua ? `<span class="mp-st off">미확인 ${ua}</span>` : ''}</button>`; }).join('')
-          : '<div class="gmd-empty">게시 중인 공지가 없어요.</div>'}
-        <button type="button" class="gmd-new" onclick="npEdit('new')">＋ 새 공지 쓰기</button></section></div>`;
+    return `<section class="card gmd-c"><div class="gmd-top"><span><em>${N.length}</em> 게시 중</span><span><em class="${pend ? 'red' : ''}">${pend}</em> 답변 대기</span>
+        <span class="gmd-btns"><button class="btn ghost" onclick="npEdit('new')">＋ 새 공지</button><button class="btn ghost" onclick="go('${NP}')">공지 열기</button></span></div>
+      ${N.length ? N.slice(0, 5).map(n => { const un = n.targets - n.read, ua = n.ack ? n.targets - n.acked : 0;
+        return `<button type="button" class="gmd-row" onclick="npOpen(${n.id})">${n.pin ? '<em class="fnn-pin">필독</em>' : ''}<span class="t">${h(n.title)}</span>
+          <small>읽음 ${n.read}/${n.targets}${n.ack ? ` · 확인 ${n.acked}/${n.targets}` : ''}</small>${n.pending ? `<span class="mp-st new">답변 ${n.pending}</span>` : un ? `<span class="mp-st off">안 읽음 ${un}</span>` : ua ? `<span class="mp-st off">미확인 ${ua}</span>` : ''}</button>`; }).join('')
+        : '<div class="gmd-empty">게시 중인 공지가 없어요.</div>'}</section>`;
+  }
+  /* 대시보드 순서: 1 본사 공지 · 2 FC다움 가맹점 공지 · 3 FC다움 가맹점 발주 · 4 파트너 앱 공지 · 5 파트너 앱 발주 · 6 제때 공급 현황 (바로가기 없음) */
+  function gmDashOrder(){
+    const main = document.getElementById('main'); if (!main) return;
+    const secs = [...main.querySelectorAll('.dash-sec')]; if (!secs.length) return;
+    const title = x => ((x.querySelector('.sec-head h2') || {}).textContent || '').trim();
+    const find = (...ts) => secs.find(x => ts.includes(title(x)));
+    const hq = main.querySelector('#nt-dash-sec') || find('본사 공지');
+    const fn = find('가맹점 공지', '최근 점주 공지', 'FC다움 가맹점 공지');
+    const fo = find('가맹점 발주', '본사 택배 발주', 'FC다움 가맹점 발주');
+    const pn = main.querySelector('.gmd-n'), po = main.querySelector('.gmd-o');
+    const jt = find('제때 공급 현황');
+    const sc = find('바로가기'); if (sc) sc.remove();
+    if (fn) fn.querySelector('.sec-head h2').textContent = 'FC다움 가맹점 공지';
+    if (fo) fo.querySelector('.sec-head h2').textContent = 'FC다움 가맹점 발주';
+    const order = [hq, fn, fo, pn, po, jt].filter(Boolean);
+    const rest = secs.filter(x => !order.includes(x) && x !== sc);
+    const anchor = order[0] || rest[0]; if (!anchor) return;
+    const box = document.createElement('div'); anchor.before(box);
+    [...order, ...rest].forEach(x => box.before(x)); box.remove();
+    let n = 0; main.querySelectorAll('.dash-sec .sec-n').forEach(x => { x.textContent = String(++n); });
   }
   function gmDashInsert(){
     if (!can() || window.__curPage && window.__curPage !== 'dash') return false;
-    const main = document.getElementById('main'); if (!main || main.querySelector('.gmd-sec')) return true;
+    const main = document.getElementById('main'); if (!main) return false;
+    if (main.querySelector('.gmd-n')) { gmDashOrder(); return true; }
     const secs = [...main.querySelectorAll('.dash-sec')]; if (!secs.length) return false;
-    const sec = document.createElement('section'); sec.className = 'dash-sec gmd-sec';
-    sec.innerHTML = secHead(String(secs.length + 1), '가맹점 앱', { cls: 'mp', t: '파트너 앱' }, '처리할 발주 · 공지 읽음·확인·답변') + `<div class="gmd-box"><div class="gmd-empty">불러오는 중...</div></div>`;
-    const fc = secs.find(s => ['본사 택배 발주', '가맹점 발주'].includes((s.querySelector('.sec-head h2') || {}).textContent));
-    if (fc) fc.insertAdjacentElement('beforebegin', sec); else secs[secs.length - 1].insertAdjacentElement('afterend', sec);
-    Promise.all([load(true), npLoad(true)]).then(() => { const b = sec.querySelector('.gmd-box'); if (b) b.innerHTML = dashHtml(); })
-      .catch(e => { const b = sec.querySelector('.gmd-box'); if (b) b.innerHTML = `<div class="gmd-empty">불러오지 못했어요: ${errMsg2(e)}</div>`; });
+    const mk = (cls, t, sub, inner) => { const x = document.createElement('section'); x.className = 'dash-sec ' + cls;
+      x.innerHTML = secHead('', t, { cls: 'mp', t: '파트너 앱' }, sub) + `<div class="gmd-box">${inner}</div>`; return x; };
+    const pn = mk('gmd-n', '파트너 앱 공지', '게시 중 · 읽음·확인·답변 대기', '<div class="gmd-empty">불러오는 중...</div>');
+    const po = mk('gmd-o', '파트너 앱 발주', '접수 대기 · 발송 대기', '<div class="gmd-empty">불러오는 중...</div>');
+    secs[secs.length - 1].after(pn); pn.after(po);
+    gmDashOrder();
+    Promise.all([load(true), npLoad(true)]).then(() => {
+      const a = pn.querySelector('.gmd-box'), b = po.querySelector('.gmd-box');
+      if (a) a.innerHTML = dashNotices(); if (b) b.innerHTML = dashOrders();
+    }).catch(e => { [pn, po].forEach(x => { const b = x.querySelector('.gmd-box'); if (b) b.innerHTML = `<div class="gmd-empty">불러오지 못했어요: ${errMsg2(e)}</div>`; }); });
     return true;
   }
   window.gmDashInsert = gmDashInsert;
@@ -8971,7 +9006,7 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
   .gm-acc-f{display:flex;gap:6px;flex-wrap:wrap;padding:10px 12px;background:#f8f9f5;border-top:1px solid #eef0ea}.gm-acc-f .btn{min-height:32px;font-size:12px;padding:5px 11px}
   #mp-px .px-box.wide{width:min(820px,100%)}
   #mp-px .gm-in{margin:0}
-  .gmd{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .gmd-btns{margin-left:auto;display:flex;gap:6px}.gmd-btns .btn{margin-left:0!important}
   .gmd-c{padding:16px 18px;margin:0}
   .gmd-top{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:8px}.gmd-top b{font-size:14px}
   .gmd-top span{font-size:12px;color:#5e625b}.gmd-top em{font-style:normal;font-size:18px;font-weight:800;color:#232621;margin-right:2px}.gmd-top em.red{color:#c62429}
@@ -8985,7 +9020,7 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
   .gmd-more{font-size:11.5px;color:#8b9381;padding:6px 2px}
   .gmd-new{margin-top:8px;border:1px dashed #c9cebf;border-radius:10px;background:none;width:100%;padding:8px;font:inherit;font-size:12.5px;font-weight:700;color:#4a5244;cursor:pointer}
   .src.mp{background:#fbeaea;color:#a3262c}
-  @media(max-width:860px){.gmd{grid-template-columns:1fr}.gm-2col{grid-template-columns:1fr;gap:0}}
+  @media(max-width:860px){.gm-2col{grid-template-columns:1fr;gap:0}}
   @media(max-width:640px){.gm-form{padding:16px 14px}.gm-topbtns{margin-left:0;width:100%}.gm-topbtns .btn{flex:1}.gm-row2{grid-template-columns:1fr}
     .gm-irow{flex-wrap:wrap}.gm-ipr{margin-left:8px}}`;
   document.head.appendChild(st2);
