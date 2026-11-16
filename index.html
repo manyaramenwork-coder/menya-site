@@ -8250,14 +8250,32 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
         ${o.status === 'confirmed' ? `<button class="btn primary" onclick="mpShip(${o.id})">발송 처리</button>` : `<button class="btn ghost" onclick="mpShip(${o.id},1)">송장 저장</button><button class="btn primary" onclick="mpSet(${o.id},'done')">완료 처리</button>`}</div>`;
     return `<article class="mp-o ${open ? 'open' : ''} ${o.status}" id="mp-o-${o.id}">
       <button type="button" class="mp-h" onclick="mpToggle(${o.id})"><span class="mp-st ${s[1]}">${s[0]}</span><b>${h(o.store)}</b>
-        <span class="mp-sum">${h(o.items[0] ? o.items[0].name : '')}${o.items.length > 1 ? ` 외 ${o.items.length - 1}건` : ''}</span><span class="mp-tot">${won(o.total)}원</span><span class="mp-at">${h(o.at)}</span></button>
+        <span class="mp-sum">${h(o.items[0] ? o.items[0].name : '')}${o.items.length > 1 ? ` 외 ${o.items.length - 1}건` : ''}</span>${payTag(o)}<span class="mp-tot">${won(o.total)}원</span><span class="mp-at">${h(o.at)}</span></button>
       ${open ? `<div class="mp-d"><div class="mp-meta">${h(o.no)} · ${h(o.by || '')}${o.invoice ? ` · ${h(o.courier || '')} ${h(o.invoice)}` : ''}${o.handled ? ` · 처리 ${h(o.handled)}` : ''}</div>
         <table class="mp-t"><tbody>${items}</tbody><tfoot><tr><td>합계</td><td></td><td class="n">${won(o.total)}원</td></tr></tfoot></table>
         ${o.memo ? `<div class="mp-memo"><b>점주 메모</b>${h(o.memo)}</div>` : ''}
+        ${payRow(o)}
+        <div class="mp-act mp-ship"><input id="mp-m-${o.id}" maxlength="500" placeholder="점주에게 안내 (예: 재고 확인했어요, 금요일 출고 예정) — 점주 앱 발주 화면에 보여요" value="${h(o.hq_memo || '')}"><button class="btn ghost" onclick="mpMemo(${o.id})">안내 저장</button></div>
         ${act}
         <details class="mp-log"><summary>처리 기록 ${o.logs.length}</summary>${o.logs.map(l => `<div><time>${h(l.at)}</time>${h(l.act)} · ${h(l.who || '')}${l.note ? ` · ${h(l.note)}` : ''}</div>`).join('')}</details></div>` : ''}
     </article>`;
   }
+  const live = o => !['canceled', 'rejected'].includes(o.status);
+  function payTag(o){ return live(o) ? `<span class="mp-st ${o.paid ? 'ship' : 'pay'}">${o.paid ? '입금 확인' : '입금 전'}</span>` : ''; }
+  function payRow(o){
+    if (!live(o)) return '';
+    const stmt = ['confirmed', 'shipped', 'done'].includes(o.status)
+      ? `<a class="btn ghost" href="${STORE_URL}/#stmt/${o.id}" target="_blank" rel="noopener">거래명세서 출력</a>` : '<span class="mp-hint">접수하면 거래명세서를 출력할 수 있어요</span>';
+    return o.paid
+      ? `<div class="mp-act mp-pay"><span class="mp-paid">입금 확인 · ${h(o.payer || o.by || '')} · ${h(o.paid)}${o.paid_by ? ' · ' + h(o.paid_by) : ''}</span><button class="btn ghost" onclick="mpPay(${o.id},0)">입금 확인 취소</button>${stmt}</div>`
+      : `<div class="mp-act mp-ship mp-pay"><span class="mp-lbl">입금자</span><input id="mp-p-${o.id}" maxlength="40" placeholder="입금자 이름" value="${h(o.payer || o.by || '')}" style="flex:0 1 160px;min-width:120px"><span class="mp-due">${won(o.total)}원</span><button class="btn primary" onclick="mpPay(${o.id},1)">입금 확인</button>${stmt}</div>`;
+  }
+  window.mpPay = (id, on) => {
+    if (!on && !confirm('입금 확인을 취소할까요?')) return;
+    const p = { id, paid: !!on }; if (on) p.payer = (document.getElementById('mp-p-' + id)?.value || '').trim();
+    return setOrder(p, on ? '입금 확인했어요. 점주 앱에 표시돼요.' : '입금 확인을 취소했어요');
+  };
+  window.mpMemo = id => setOrder({ id, memo: (document.getElementById('mp-m-' + id).value || '').trim() }, '안내를 저장했어요. 점주 앱 발주 화면에 보여요.');
   window.mpReload = async () => { try { await load(true); draw(); } catch (e) { toast('불러오지 못했어요'); } };
   window.mpTab = k => { MP.tab = k; draw(); };
   let qT = 0; window.mpQ = v => { clearTimeout(qT); qT = setTimeout(() => { MP.q = v.trim(); draw(); }, 200); };
@@ -8387,6 +8405,10 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
   .mp-act{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;align-items:center}
   .mp-ship select,.mp-ship input{height:38px;border:1px solid #d9ded2;border-radius:8px;padding:0 10px;font:inherit;font-size:13px;background:#fff}
   .mp-ship input{flex:1;min-width:160px;letter-spacing:.02em}
+  .mp-st.pay{background:#fff4e0;color:#a15c00}
+  .mp-pay{padding:10px 12px;background:#fbfaf6;border:1px solid #efe9da;border-radius:10px}
+  .mp-lbl{font-size:12.5px;color:#5f6858;font-weight:600}.mp-due{font-weight:800;font-size:14px;margin-right:auto}
+  .mp-paid{font-size:13px;font-weight:700;color:#2e7a4c;margin-right:auto}.mp-hint{font-size:12px;color:#909b84}
   .mp-log{margin-top:12px;font-size:12px;color:#5f6858}.mp-log summary{cursor:pointer;color:#7a8273}.mp-log div{padding:3px 0}.mp-log time{display:inline-block;width:80px;color:#909b84}
   .np-c{font-size:12px;color:#5f6858;flex:none}
   .np-th{border-top:1px solid #f0f2ec;padding:12px 2px}.np-th:first-of-type{border-top:0}
