@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>멘야마쯔리 파트너</title>
+<title>멘야 파트너스</title>
 <meta name="theme-color" content="#c62429">
 <meta name="color-scheme" content="light">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="멘야마쯔리">
+<meta name="apple-mobile-web-app-title" content="멘야 파트너스">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
@@ -670,7 +670,7 @@ function renderTabs(){
   const base = { '#notice': '#notices', '#order': '#orders', '#order-new': '#orders', '#recipe': '#recipes', '#a-notice': '#a-notices', '#a-recipe': '#a-recipes' };
   const on = base[cur] || cur;
   const unread = S.home ? (S.home.unread || 0) + (S.home.replies || 0) : 0;
-  t.innerHTML = `<div class="brand"><small>멘야마쯔리</small><b>파트너</b></div><div class="in">${def.map(([href, icon, label]) => `<a href="${href}" class="${on === href ? 'on' : ''}">${ic(icon)}<span>${label}</span>${href === '#notices' && unread ? `<span class="bd">${unread > 99 ? '99+' : unread}</span>` : ''}</a>`).join('')}</div><div class="who"><b>${h(S.me.name)}</b>${S.preview ? '본사 미리보기' : isMst() ? (S.home && S.home.store ? h(S.home.store) + ' 점주' : '가맹점주') : (isAdm() ? '관리자' : '본사')}</div>`;
+  t.innerHTML = `<div class="brand"><small>멘야마쯔리</small><b>파트너스</b></div><div class="in">${def.map(([href, icon, label]) => `<a href="${href}" class="${on === href ? 'on' : ''}">${ic(icon)}<span>${label}</span>${href === '#notices' && unread ? `<span class="bd">${unread > 99 ? '99+' : unread}</span>` : ''}</a>`).join('')}</div><div class="who"><b>${h(S.me.name)}</b>${S.preview ? '본사 미리보기' : isMst() ? (S.home && S.home.store ? h(S.home.store) + ' 점주' : '가맹점주') : (isAdm() ? '관리자' : '본사')}</div>`;
 }
 const ROUTES = {};
 function route(){
@@ -1016,7 +1016,7 @@ ROUTES.me = async (a, tok) => {
     <div class="sec"><h2>계정</h2></div>
     <div class="list"><button class="row" id="chpw"><div class="main"><div class="t">비밀번호 바꾸기</div></div>${ic('chev')}</button>
     <button class="row" onclick="logout()"><div class="main"><div class="t" style="color:var(--red)">로그아웃</div></div></button></div>
-    <p class="hint" style="text-align:center;margin-top:20px">멘야마쯔리 파트너</p>`);
+    <p class="hint" style="text-align:center;margin-top:20px">멘야 파트너스</p>`);
   const pon = $('#pon'); if (pon) pon.onclick = async () => { pon.disabled = true; try { await pushOn(); toast('알림을 켰어요'); route(); } catch (e) { pon.disabled = false; toast(cleanErr(e)); } };
   const poff = $('#poff'); if (poff) poff.onclick = async () => { await pushOff(); route(); };
   const inst = $('#inst'); if (inst) inst.onclick = async () => { S.installEvt.prompt(); await S.installEvt.userChoice; S.installEvt = null; route(); };
@@ -1293,7 +1293,7 @@ async function adminUsers(body){
   return data;
 }
 const tempPw = () => { const c = 'abcdefghjkmnpqrstuvwxyz23456789'; let s = ''; const r = crypto.getRandomValues(new Uint32Array(8)); r.forEach(x => s += c[x % c.length]); return s.slice(0, 4) + s.slice(4).replace(/[a-z]/g, d => String(d.charCodeAt(0) % 10)); };
-const guide = (id, pw) => `[멘야마쯔리 파트너]\n주소: ${location.origin}\n아이디: ${id}\n임시 비밀번호: ${pw}\n\n처음 로그인하면 비밀번호를 바꿔 주세요.\n휴대폰 홈 화면에 추가하면 앱처럼 쓸 수 있어요.`;
+const guide = (id, pw) => `[멘야 파트너스]\n주소: ${location.origin}\n아이디: ${id}\n임시 비밀번호: ${pw}\n\n처음 로그인하면 비밀번호를 바꿔 주세요.\n휴대폰 홈 화면에 추가하면 앱처럼 쓸 수 있어요.`;
 function guideSheet(title, id, pw){
   const t = guide(id, pw);
   sheet(`<h3>${h(title)}</h3><p class="sub">아래 안내를 점주님께 보내 주세요. 임시 비밀번호는 이 창을 닫으면 다시 볼 수 없어요.</p>
