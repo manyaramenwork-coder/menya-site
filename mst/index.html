@@ -495,13 +495,14 @@ async function start(session){
   if (!p) { await SB.auth.signOut(); return showLogin('계정 정보가 등록되지 않았어요. 본사에 문의해 주세요.'); }
   if (!p.active) { await SB.auth.signOut(); return showLogin('사용이 중지된 계정이에요. 본사에 문의해 주세요.'); }
   S.me = { uid: session.user.id, id: p.login_id, name: p.name || p.login_id, role: p.role, storeId: p.store_id };
-  if (p.role === 'store' || p.role === 'staff') return showBlocked();
+  if (p.role !== 'mst') return showBlocked();   // 2026-11-16: 점주 전용 앱. 본사·직영 업무는 워크스페이스에서
   if (p.must_change) return showPw(true);
   enter();
 }
 function showBlocked(){
-  document.getElementById('app').innerHTML = `<div class="auth"><div class="hero"><b>워크스페이스를<br>이용해 주세요</b><span>직영점 계정은 이 앱을 쓰지 않아요</span></div>
-    <div style="padding:26px 0"><p>${h(S.me.name)}님의 계정은 직영점 계정이에요. 업무는 워크스페이스에서 확인해 주세요.</p>
+  const hq = S.me.role === 'admin' || S.me.role === 'hq';
+  document.getElementById('app').innerHTML = `<div class="auth"><div class="hero"><b>워크스페이스를<br>이용해 주세요</b><span>이 앱은 가맹점주 전용이에요</span></div>
+    <div style="padding:26px 0"><p>${h(S.me.name)}님의 계정은 ${hq ? '본사' : '직영점'} 계정이에요. ${hq ? '공지·발주·품목·레시피·점주 계정은 워크스페이스 &gt; 가맹점에서 관리해 주세요.' : '업무는 워크스페이스에서 확인해 주세요.'}</p>
     <a class="btn dark" href="${CFG.workspace}" style="text-decoration:none;margin-top:10px">워크스페이스로 가기</a>
     <button class="btn ghost" style="margin-top:8px" onclick="logout()">로그아웃</button></div></div>`;
 }
