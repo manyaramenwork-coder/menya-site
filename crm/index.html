@@ -18,6 +18,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/topojson-client@3.1.0/dist/topojson-client.min.js"></script>
 <script>
 /* 매장관리 사이트와 같은 Supabase·같은 계정. crm 주소는 도메인이 달라 로그인은 따로 한 번 필요 */
 window.MM_CONFIG = { url: 'https://bauaychmvbfmtqototvt.supabase.co', key: 'sb_publishable_rfd_8qDKEpokFmGACsBJ7A_qhHmQlEB', idDomain: '@menya.local' };
@@ -225,6 +226,8 @@ td .sm{font-size:12px;color:var(--sub)}
 .leaflet-tooltip.lbl{background:transparent;border:0;box-shadow:none;padding:0;font-weight:700;font-size:12px;color:#232621;text-align:center;line-height:1.2;text-shadow:0 0 3px #fff,0 0 3px #fff,0 0 2px #fff;pointer-events:none}
 .leaflet-tooltip.lbl::before{display:none}
 .leaflet-tooltip.lbl small{display:block;font-weight:600;color:var(--brand-d)}
+.leaflet-tooltip.lbl.sm{font-size:11px;font-weight:600}
+.leaflet-tooltip.lbl.sm small{font-size:10px}
 .scale{display:inline-flex;align-items:center;gap:6px}
 .scale b{display:inline-block;width:90px;height:10px;border-radius:5px;background:linear-gradient(90deg,#eceee8,rgba(198,36,41,.75))}
 .legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:10px;font-size:12px;color:var(--sub)}
@@ -1056,21 +1059,37 @@ $('listing-list').addEventListener('click', e => { if (e.target.closest('a')) re
 async function refreshStats(){ try { const s = await rpc('lead_stats'); applyStats(s); } catch (e) {} }
 
 
-/* ---------- 지도: 화면 범위 기반 (멀리 보면 숫자 원, 가까이 보면 매장 점) ---------- */
+/* ---------- 지도: 멀리 보면 지역 블록(시도→시군구), 가까이 보면 지도 위 숫자 원·매장 점 ---------- */
+const Z_SGG = 9, Z_DETAIL = 12; // 이 확대 단계부터 시군구 블록 / 실제 지도
 const STAGE_COLOR = { collected: '#9aa097', contacted: '#e0a33c', interested: '#c62429', meeting: '#7a1015', trial: '#7a1015', proposal: '#7a1015', contract: '#1f4e8c', hold: '#c9cbc4', rejected: '#4d514a' };
 state.geo = { sido: '', sigungu: '', dong: '' }; // 예전 코드 호환용
 state.mkind = 'all'; state.mapFitKey = '';
 const KOREA = [[33.1, 124.9], [38.6, 130.95]];
-let MAP = null, PTS = null, RENDER = null, MARKS = {};
+let MAP = null, PTS = null, RENDER = null, TILES = null, MARKS = {};
+const GEO = {};
+const norm = s => String(s || '').replace(/\s/g, '');
+function geoFile(name){
+  if (!GEO[name]) GEO[name] = fetch('geo/' + name + '.json').then(r => { if (!r.ok) throw new Error('경계 파일을 못 불러왔어요 (geo/' + name + '.json)'); return r.json(); })
+    .then(tp => topojson.feature(tp, tp.objects[name]).features)
+    .catch(e => { delete GEO[name]; throw e; });
+  return GEO[name];
+}
+function setTiles(on){
+  if (!MAP || !TILES) return;
+  if (on && !MAP.hasLayer(TILES)) TILES.addTo(MAP);
+  if (!on && MAP.hasLayer(TILES)) MAP.removeLayer(TILES);
+  $('map').classList.toggle('plain', !on);
+}
 function ensureMap(){
   if (MAP) { setTimeout(() => MAP.invalidateSize(), 0); return; }
   RENDER = L.canvas({ padding: .3 });
   MAP = L.map('map', { zoomControl: true, zoomSnap: .5, preferCanvas: true, minZoom: 6, maxBounds: [[31.5, 122.5], [39.8, 132.5]] });
   MAP.fitBounds(KOREA);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, opacity: .7, attribution: '&copy; OpenStreetMap' }).addTo(MAP);
-  PTS = L.layerGroup().addTo(MAP);
+  TILES = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, opacity: .7, attribution: '&copy; OpenStreetMap' });
+  MAP.attributionControl.addAttribution('경계: 통계청 SGIS, admdongkor(CC BY 4.0)');
+  REG.group = L.layerGroup().addTo(MAP); PTS = L.layerGroup().addTo(MAP);
   MAP.on('moveend', () => { if (state.view === 'map') queueMap(); });
-  $('legend').innerHTML = '<span><i class="lg-bub"></i>숫자 원 = 그 근처 매장 수 (누르면 확대)</span>' + [['collected', '수집'], ['contacted', '1차 통화'], ['interested', '관심'], ['meeting', '미팅~제안'], ['contract', '계약'], ['hold', '보류'], ['rejected', '거절']]
+  $('legend').innerHTML = '<span class="scale">매장 적음<b></b>많음</span><span><i class="lg-bub"></i>숫자 원 = 그 근처 매장 수</span>' + [['collected', '수집'], ['contacted', '1차 통화'], ['interested', '관심'], ['meeting', '미팅~제안'], ['contract', '계약'], ['hold', '보류'], ['rejected', '거절']]
     .map(([k, v]) => `<span><i style="background:${STAGE_COLOR[k]}"></i>${v}</span>`).join('') + '<span>테두리 굵은 점 = 재연락 기한 지남</span>';
 }
 function mapFilters(){
@@ -1097,9 +1116,55 @@ async function loadMap(){
 }
 let mapT; function queueMap(){ clearTimeout(mapT); mapT = setTimeout(loadMapNow, 250); }
 let mapSeq = 0;
+const REG = { group: null, layer: null, level: '', key: '', data: null };
+function fillFor(n, max){
+  if (!n) return { fillColor: '#eceee8', fillOpacity: .55 };
+  return { fillColor: '#c62429', fillOpacity: .12 + .63 * Math.sqrt(n / max) };
+}
+async function drawRegions(level, seq){
+  setTiles(false); PTS.clearLayers(); MARKS = {}; state.mlPoints = []; showMapList(false);
+  const f = mapFilters(), key = level + JSON.stringify(f);
+  if (REG.level === level && REG.key === key && REG.layer) { $('m-count').textContent = REG.label; return; }
+  $('m-count').textContent = '불러오는 중…';
+  const [feats, d] = await Promise.all([geoFile(level), rpc('lead_map', { p: { ...f, group: level } })]);
+  if (seq !== mapSeq || state.view !== 'map') return;
+  const counts = {};
+  (d.groups || []).forEach(g => { const k = level === 'sido' ? norm(g.sido) : norm(g.sido) + '|' + norm(g.sigungu); counts[k] = (counts[k] || 0) + g.n; });
+  const keyOf = level === 'sido' ? (p => norm(p.sidonm)) : (p => norm(p.sidonm) + '|' + p.sggk);
+  const nameOf = level === 'sido' ? (p => p.sidonm) : (p => p.sggnm);
+  const max = Math.max(1, ...feats.map(ft => counts[keyOf(ft.properties)] || 0));
+  if (REG.layer) REG.group.removeLayer(REG.layer);
+  const base = { color: '#ffffff', weight: level === 'sido' ? 1.5 : 1 };
+  REG.layer = L.geoJSON({ type: 'FeatureCollection', features: feats }, {
+    style: ft => ({ ...base, ...fillFor(counts[keyOf(ft.properties)] || 0, max) }),
+    onEachFeature: (ft, lyr) => {
+      const n = counts[keyOf(ft.properties)] || 0, nm = nameOf(ft.properties);
+      if (n) lyr.bindTooltip(`${esc(nm)}<small>${n.toLocaleString()}</small>`, { permanent: true, direction: 'center', className: 'lbl' + (level === 'sgg' ? ' sm' : '') });
+      else lyr.bindTooltip(`${esc(nm)} 0곳`, { sticky: true });
+      lyr.on('mouseover', () => { lyr.setStyle({ color: '#232621', weight: 2.5 }); lyr.bringToFront(); });
+      lyr.on('mouseout', () => REG.layer && REG.layer.resetStyle(lyr));
+      lyr.on('click', () => {
+        const b = lyr.getBounds();
+        const z = Math.max(level === 'sido' ? Z_SGG : Z_DETAIL, Math.min(MAP.getBoundsZoom(b, false, L.point(20, 20)), 15));
+        MAP.flyTo(b.getCenter(), z, { duration: .5 });
+      });
+    }
+  }).addTo(REG.group);
+  REG.level = level; REG.key = key;
+  REG.label = `${level === 'sido' ? '전국' : '시군구별'} ${(d.total || 0).toLocaleString()}곳 · 지역을 누르면 들어가요`;
+  $('m-count').textContent = REG.label;
+}
+function clearRegions(){ if (REG.layer) { REG.group.removeLayer(REG.layer); REG.layer = null; REG.level = ''; } }
 async function loadMapNow(){
   if (!MAP) return;
-  const seq = ++mapSeq, bd = MAP.getBounds().pad(.15), z = Math.round(MAP.getZoom());
+  const seq = ++mapSeq, zf = MAP.getZoom();
+  if (zf < Z_DETAIL) {
+    try { await drawRegions(zf < Z_SGG ? 'sido' : 'sgg', seq); }
+    catch (e) { if (seq === mapSeq) { $('m-count').textContent = ''; toast(errMsg(e), true); } }
+    return;
+  }
+  clearRegions(); setTiles(true);
+  const bd = MAP.getBounds().pad(.15), z = Math.round(zf);
   $('m-count').textContent = '불러오는 중…';
   try {
     const d = await rpc('lead_map', { p: { ...mapFilters(), zoom: z,
