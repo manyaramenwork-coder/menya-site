@@ -6818,7 +6818,7 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
       <div class="dm-shlay"><div>
         <section class="card" id="sh-sched"><div class="dm-bar">
           <div class="dm-tabs"><button class="${SH.view === 'week' ? 'on' : ''}" onclick="dmShView('week')">주간 보기</button><button class="${SH.view === 'month' ? 'on' : ''}" onclick="dmShView('month')">월간 요약</button></div>
-          ${SH.view === 'week' ? `<div class="dm-wnav"><button onclick="dmShWk(-1)" ${SH.week === 0 ? 'disabled' : ''} aria-label="이전 주">‹</button><b>${SH.week + 1}주차 · ${wkRange(SH.week)}</b><button onclick="dmShWk(1)" ${SH.week >= weeks().length - 1 ? 'disabled' : ''} aria-label="다음 주">›</button></div>` : ''}
+          ${SH.view === 'week' ? `<div class="dm-wnav"><button onclick="dmShWk(-1)" ${SH.week === 0 ? 'disabled' : ''} aria-label="이전 주">‹</button><b>${SH.week + 1}주차 · ${wkRange(SH.week)}</b><button onclick="dmShWk(1)" ${SH.week >= weeks().length - 1 ? 'disabled' : ''} aria-label="다음 주">›</button></div><button class="dmb sm" onclick="dmShShot(this)" title="이번 주 시프트를 이미지로 만들어 카톡 등으로 보내요">📷 이미지로 공유</button>` : ''}
           <span class="dm-hint">${SH.view === 'week' ? (d.can_edit ? '기본은 출근 · 이름 옆 화살표로 휴무·월차·런치·디너·반휴를 골라요 · 런치·디너는 근무 0.5일, 런치만·디너만(반휴)은 근무 0.5일·휴무 0.5일 · 날짜를 누르면 그날 전체' : '보기 전용이에요') : '표시 없음 = 풀타임 · 런 = 런치만 · 디 = 디너만 · 취소선 = 휴무 · 날짜를 누르면 그날 근무를 고칠 수 있어요'}</span></div>
           ${SH.view === 'week' ? `<div class="dm-who"><span>직원 강조</span>${['전체', ...d.roster.map(p => p.id)].map(id => { const p = d.roster.find(x => x.id === id); return `<button class="${(SH.focus || '전체') === id ? 'on' : ''}" onclick="dmShFocus(${id === '전체' ? 'null' : id})">${p ? `<i style="background:${colorOf(p.id)}"></i>${esc(p.name)}` : '전체'}</button>`; }).join('')}</div>` : ''}
           <div id="sh-view">${SH.view === 'week' ? weekHtml() : monthHtml()}</div>
@@ -6931,6 +6931,58 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
   window.dmShWk = n => { SH.week = Math.max(0, Math.min(weeks().length - 1, SH.week + n)); SH.cw = SH.week; SH.sel = null; shDraw(); shSeen(); };
   window.dmShCw = w => { SH.cw = w; if (SH.view === 'week') SH.week = w; SH.sel = null; shDraw(); shSeen(); };
   window.dmShFocus = id => { SH.focus = id; shDraw(); };
+
+  // 주간 보기 → 이미지 (휴대폰: 공유 창 / PC: 클립보드 복사 / 그 외: PNG 저장). 직원 강조 상태 그대로 찍힘
+  let SHOT = null;
+  function loadH2C(){
+    if (window.html2canvas) return Promise.resolve();
+    return new Promise((ok, no) => { const sc = document.createElement('script'); sc.src = 'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js'; sc.onload = ok; sc.onerror = () => no(new Error('이미지 도구를 불러오지 못했어요')); document.head.append(sc); });
+  }
+  window.dmShShot = async btn => {
+    const src = document.querySelector('#sh-view .dm-week'); if (!src) return;
+    if (btn) btn.disabled = true;
+    const box = document.createElement('div');
+    try {
+      await loadH2C();
+      const st = ((DM.boot && DM.boot.direct) || []).find(x => String(x.id) === String(DM.cur));
+      const [y, m] = SH.ym.split('-'); const fp = SH.focus ? SH.d.roster.find(x => x.id === SH.focus) : null;
+      box.style.cssText = 'position:fixed;left:-10000px;top:0;width:1120px;background:#fff;padding:22px;font-family:inherit;color:#2f372a';
+      box.innerHTML = `<div style="font-size:19px;font-weight:700;margin-bottom:4px">${esc(st ? st.name : '')} 시프트</div><div style="font-size:13px;color:#6b7364;margin-bottom:14px">${y}년 ${+m}월 ${SH.week + 1}주차 · ${wkRange(SH.week)}${fp ? ` · ${esc(fp.name)} 강조` : ''}</div>`;
+      const cl = src.cloneNode(true);
+      cl.style.gridTemplateColumns = 'repeat(7,minmax(0,1fr))'; cl.style.gap = '6px';
+      cl.querySelectorAll('.dm-col').forEach(c => { c.classList.remove('sel', 'flash'); c.style.display = 'block'; });
+      // 선택창은 글자 배지로 바꿈 (색은 화면 그대로)
+      const os = src.querySelectorAll('select'), cs = cl.querySelectorAll('select');
+      cs.forEach((el, i) => { const o = os[i], g = getComputedStyle(o), sp = document.createElement('span');
+        sp.textContent = o.options[o.selectedIndex] ? o.options[o.selectedIndex].text : '';
+        sp.style.cssText = `margin-left:auto;font-size:11px;font-weight:600;padding:3px 7px;border-radius:5px;color:${g.color};background:${g.backgroundColor}`;
+        el.replaceWith(sp); });
+      // 강조 테두리는 이미지에서도 보이게 실제 테두리로
+      const ol = src.querySelectorAll('.sl'), cll = cl.querySelectorAll('.sl');
+      cll.forEach((el, i) => { if (el.classList.contains('hl')) { el.style.boxShadow = 'none'; el.style.border = `2px solid ${getComputedStyle(ol[i]).getPropertyValue('--pc').trim() || '#2d3726'}`; } });
+      box.append(cl); document.body.append(box);
+      const cv = await window.html2canvas(box, { scale: 2, backgroundColor: '#ffffff', logging: false, useCORS: true });
+      const blob = await new Promise(r => cv.toBlob(r, 'image/png'));
+      if (!blob) throw new Error('이미지를 만들지 못했어요');
+      if (SHOT && SHOT.url) URL.revokeObjectURL(SHOT.url);
+      const name = `시프트_${st ? st.name : ''}_${+m}월${SH.week + 1}주차.png`.replace(/\s+/g, '');
+      SHOT = { blob, url: URL.createObjectURL(blob), file: new File([blob], name, { type: 'image/png' }), name };
+      const canShare = !!(navigator.canShare && navigator.canShare({ files: [SHOT.file] })), canCopy = !!(navigator.clipboard && window.ClipboardItem);
+      const mobile = matchMedia('(pointer:coarse)').matches;
+      modal('이미지로 공유', mobile ? '공유를 누르고 카카오톡을 고르면 단톡방에 바로 보낼 수 있어요.' : '복사한 뒤 카톡 단톡방에서 Ctrl+V로 붙여넣으면 돼요.',
+        `<img src="${SHOT.url}" alt="주간 시프트 이미지" style="width:100%;border:1px solid #dfe3d9;border-radius:8px;display:block">`,
+        `<span style="flex:1"></span>${canShare ? `<button class="dmb ${mobile ? 'pri' : ''}" onclick="dmShShotGo('share')">공유</button>` : ''}${canCopy ? `<button class="dmb ${mobile ? '' : 'pri'}" onclick="dmShShotGo('copy')">이미지 복사</button>` : ''}<button class="dmb" onclick="dmShShotGo('save')">저장</button>`, true);
+    } catch (e) { toast('이미지를 만들지 못했어요: ' + errMsg(e)); }
+    finally { box.remove(); if (btn) btn.disabled = false; }
+  };
+  window.dmShShotGo = async how => {
+    if (!SHOT) return;
+    try {
+      if (how === 'share') { await navigator.share({ files: [SHOT.file], title: SHOT.name.replace('.png', '') }); return; }
+      if (how === 'copy') { await navigator.clipboard.write([new ClipboardItem({ 'image/png': SHOT.blob })]); toast('이미지를 복사했어요. 카톡에 붙여넣으세요.'); return; }
+      const a = document.createElement('a'); a.href = SHOT.url; a.download = SHOT.name; document.body.append(a); a.click(); a.remove();
+    } catch (e) { if (e && e.name === 'AbortError') return; toast(how === 'copy' ? '이 브라우저에선 복사가 안 돼요. 저장을 눌러 주세요.' : '처리하지 못했어요: ' + errMsg(e)); }
+  };
   window.dmShSel = x => { SH.sel = x; document.getElementById('sh-cmt').innerHTML = cmtHtml(); redraw(); };
   window.dmShReply = id => { SH.reply = id; document.getElementById('sh-cmt').innerHTML = cmtHtml(); document.getElementById('sh-cin')?.focus(); };
   window.dmShGo = x => { SH.view = 'week'; SH.week = weekOf(x); SH.cw = SH.week; SH.sel = x; shDraw(); document.getElementById('sh-sched')?.scrollIntoView({ behavior:'smooth', block:'start' }); setTimeout(() => flash(x), 300); };
