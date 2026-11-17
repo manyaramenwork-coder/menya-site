@@ -6886,11 +6886,13 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
         : wk === 5 ? act.filter(x => wdi(x) < 5).length
         : wk >= 7 ? act.length
         : act.length - Math.round(act.length * (7 - wk) / 7);
-      const df = base == null ? 0 : Math.round((w - base) * 10) / 10;
-      const b = base == null ? '<span class="na">기준 없음</span>' : df === 0 ? '<span class="dm-chip ok">맞음</span>' : `<span class="dm-chip warn" title="${df > 0 ? '기준보다 더 근무' : '기준보다 덜 근무'}">근무 ${df > 0 ? '+' : ''}${df}일</span>`;
-      return `<tr><td><span class="dm-nm2"><i style="background:${colorOf(p.id)}"></i>${esc(p.name)}</span>${p.from ? ` <small class="na">${esc(p.from)}</small>` : ''}</td><td>${p.kind === 'staff' ? `주${wk}일` : `${daysTxt(p.days)} ${SLOT[p.slot] || ''}`}</td><td class="n">${w}${vc ? ` <small class="na">(월차 ${vc})</small>` : ''}</td><td class="n">${o + h / 2}${h ? ` <small class="na">(반휴 ${h})</small>` : ''}</td><td class="n">${base ?? '-'}</td><td>${b}</td></tr>`;
+      // 상태는 휴무 기준: 실 휴무(정규 휴무 + 반휴 × 0.5)를 기준 휴무와 비교
+      const offB = base == null ? null : act.length - base, offR = o + h / 2;
+      const df = offB == null ? 0 : Math.round((offR - offB) * 10) / 10;
+      const b = offB == null ? '<span class="na">기준 없음</span>' : df === 0 ? '<span class="dm-chip ok">맞음</span>' : df > 0 ? `<span class="dm-chip warn">휴무 ${df}일 초과</span>` : `<span class="dm-chip lack">휴무 ${-df}일 부족</span>`;
+      return `<tr><td><span class="dm-nm2"><i style="background:${colorOf(p.id)}"></i>${esc(p.name)}</span>${p.from ? ` <small class="na">${esc(p.from)}</small>` : ''}</td><td>${p.kind === 'staff' ? `주${wk}일` : `${daysTxt(p.days)} ${SLOT[p.slot] || ''}`}</td><td class="n">${base ?? '-'}</td><td class="n">${w}${vc ? ` <small class="na">(월차 ${vc})</small>` : ''}</td><td class="n">${offB ?? '-'}</td><td class="n">${offR}${h ? ` <small class="na">(반휴 ${h})</small>` : ''}</td><td>${b}</td></tr>`;
     }).join('');
-    return `<div class="dm-tw"><table class="dm-t"><thead><tr><th>이름</th><th>근무 형태</th><th class="n">실 근무일</th><th class="n">휴무</th><th class="n">기준 근무일</th><th></th></tr></thead><tbody>${rows || `<tr><td colspan="6" class="dm-empty">직원 현황에 직원을 먼저 등록해 주세요.</td></tr>`}</tbody></table></div>` + svHtml();
+    return `<div class="dm-tw"><table class="dm-t"><thead><tr><th>이름</th><th>근무 형태</th><th class="n">기준 근무일</th><th class="n">실 근무일</th><th class="n">기준 휴무</th><th class="n">실 휴무</th><th>상태</th></tr></thead><tbody>${rows || `<tr><td colspan="7" class="dm-empty">직원 현황에 직원을 먼저 등록해 주세요.</td></tr>`}</tbody></table></div>` + svHtml();
   }
   // 슈퍼바이저(직급 S.V) 휴무·월차 — 모든 매장 시프트 합산, 같은 날은 하루로 셈 (휴무 > 월차 > 반휴 순)
   function svHtml(){
@@ -7075,7 +7077,7 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
   .dm-miss{font-size:10.5px;color:#b0861f;background:#fff6e2;border-radius:4px;padding:1px 6px;white-space:nowrap}
   .na{color:#a7ad9e}
   .dm-chip{display:inline-block;font-size:11px;border-radius:999px;padding:2px 9px;font-weight:600;background:#f0f1ec;color:#4a5244;white-space:nowrap}
-  .dm-chip.ok{background:#e3f3e5;color:#2b7a3a}.dm-chip.warn{background:#fdecec;color:#a3262c}.dm-chip.mv{background:#e6eefc;color:#2a56a8}.dm-chip.sup{background:#f3eafa;color:#6b3f93}.dm-chip.hqc{background:#2d3726;color:#fff}
+  .dm-chip.ok{background:#e3f3e5;color:#2b7a3a}.dm-chip.warn{background:#fdecec;color:#a3262c}.dm-chip.lack{background:#fff1e0;color:#b35c00}.dm-chip.mv{background:#e6eefc;color:#2a56a8}.dm-chip.sup{background:#f3eafa;color:#6b3f93}.dm-chip.hqc{background:#2d3726;color:#fff}
   .dm-chip.tmp{background:#fff4dc;color:#946200}.dm-chip.sub{background:#e6eefc;color:#2a56a8}
   .dm-stabs{display:inline-flex;gap:4px;background:#f1f2ec;border-radius:10px;padding:4px;margin:0 0 14px;flex-wrap:wrap}
   .dm-stabs button{border:0;background:none;border-radius:7px;padding:7px 16px;font-size:13px;font-weight:600;color:#6b7364;cursor:pointer}
