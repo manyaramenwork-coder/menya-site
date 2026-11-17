@@ -6819,13 +6819,13 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
         <section class="card" id="sh-sched"><div class="dm-bar">
           <div class="dm-tabs"><button class="${SH.view === 'week' ? 'on' : ''}" onclick="dmShView('week')">주간 보기</button><button class="${SH.view === 'month' ? 'on' : ''}" onclick="dmShView('month')">월간 요약</button></div>
           ${SH.view === 'week' ? `<div class="dm-wnav"><button onclick="dmShWk(-1)" ${SH.week === 0 ? 'disabled' : ''} aria-label="이전 주">‹</button><b>${SH.week + 1}주차 · ${wkRange(SH.week)}</b><button onclick="dmShWk(1)" ${SH.week >= weeks().length - 1 ? 'disabled' : ''} aria-label="다음 주">›</button></div>` : ''}
-          <span class="dm-hint">${SH.view === 'week' ? (d.can_edit ? '기본은 출근 · 이름 옆 화살표로 휴무·월차·런치·디너·반휴를 골라요 · 런치·디너는 근무 0.5일, 런치만·디너만(반휴)은 휴무 1회 · 날짜를 누르면 그날 전체' : '보기 전용이에요') : '표시 없음 = 풀타임 · 런 = 런치만 · 디 = 디너만 · 취소선 = 휴무 · 날짜를 누르면 그날 근무를 고칠 수 있어요'}</span></div>
+          <span class="dm-hint">${SH.view === 'week' ? (d.can_edit ? '기본은 출근 · 이름 옆 화살표로 휴무·월차·런치·디너·반휴를 골라요 · 런치·디너는 근무 0.5일, 런치만·디너만(반휴)은 근무 0.5일·휴무 0.5일 · 날짜를 누르면 그날 전체' : '보기 전용이에요') : '표시 없음 = 풀타임 · 런 = 런치만 · 디 = 디너만 · 취소선 = 휴무 · 날짜를 누르면 그날 근무를 고칠 수 있어요'}</span></div>
           ${SH.view === 'week' ? `<div class="dm-who"><span>직원 강조</span>${['전체', ...d.roster.map(p => p.id)].map(id => { const p = d.roster.find(x => x.id === id); return `<button class="${(SH.focus || '전체') === id ? 'on' : ''}" onclick="dmShFocus(${id === '전체' ? 'null' : id})">${p ? `<i style="background:${colorOf(p.id)}"></i>${esc(p.name)}` : '전체'}</button>`; }).join('')}</div>` : ''}
           <div id="sh-view">${SH.view === 'week' ? weekHtml() : monthHtml()}</div>
           <div class="dm-tools">${d.can_edit ? `${SH.view === 'week' ? `<button class="dmb" onclick="dmShCopy()" ${SH.week >= weeks().length - 1 ? 'disabled' : ''}>이번 주 → 다음 주에 복사</button>` : ''}<button class="dmb" onclick="dmShRefill()">직원 현황 기준으로 다시 채우기</button>` : ''}
             <span style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap">${flowBtns()}</span></div>
         </section>
-        <section class="card"><div class="dm-sh"><strong>${+m}월 휴무 카운터</strong><small>어느 주를 보고 있어도 한 달 기준 · 기준 근무일: 주6일 = 월요일 휴무, 주5일 = 토·일 휴무 · 런치·디너·반휴는 근무 0.5일 · 월차는 근무일로 셈</small></div>${counterHtml()}</section>
+        <section class="card"><div class="dm-sh"><strong>${+m}월 휴무 카운터</strong><small>어느 주를 보고 있어도 한 달 기준 · 기준 근무일: 주6일 = 월요일 휴무, 주5일 = 토·일 휴무 · 런치·디너는 근무 0.5일 · 반휴는 근무 0.5일·휴무 0.5일 · 월차는 근무일로 셈</small></div>${counterHtml()}</section>
       </div>
       <aside class="dm-side">
         <section class="card"><div class="dm-sh"><strong>비고 (공유 사항)</strong><small>한 달 공통 · 결정된 내용만</small></div>
@@ -6888,7 +6888,7 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
         : act.length - Math.round(act.length * (7 - wk) / 7);
       const df = base == null ? 0 : Math.round((w - base) * 10) / 10;
       const b = base == null ? '<span class="na">기준 없음</span>' : df === 0 ? '<span class="dm-chip ok">맞음</span>' : `<span class="dm-chip warn" title="${df > 0 ? '기준보다 더 근무' : '기준보다 덜 근무'}">근무 ${df > 0 ? '+' : ''}${df}일</span>`;
-      return `<tr><td><span class="dm-nm2"><i style="background:${colorOf(p.id)}"></i>${esc(p.name)}</span>${p.from ? ` <small class="na">${esc(p.from)}</small>` : ''}</td><td>${p.kind === 'staff' ? `주${wk}일` : `${daysTxt(p.days)} ${SLOT[p.slot] || ''}`}</td><td class="n">${w}${vc ? ` <small class="na">(월차 ${vc})</small>` : ''}</td><td class="n">${o}${h ? ` <small class="na">(반휴 ${h})</small>` : ''}</td><td class="n">${base ?? '-'}</td><td>${b}</td></tr>`;
+      return `<tr><td><span class="dm-nm2"><i style="background:${colorOf(p.id)}"></i>${esc(p.name)}</span>${p.from ? ` <small class="na">${esc(p.from)}</small>` : ''}</td><td>${p.kind === 'staff' ? `주${wk}일` : `${daysTxt(p.days)} ${SLOT[p.slot] || ''}`}</td><td class="n">${w}${vc ? ` <small class="na">(월차 ${vc})</small>` : ''}</td><td class="n">${o + h / 2}${h ? ` <small class="na">(반휴 ${h})</small>` : ''}</td><td class="n">${base ?? '-'}</td><td>${b}</td></tr>`;
     }).join('');
     return `<div class="dm-tw"><table class="dm-t"><thead><tr><th>이름</th><th>근무 형태</th><th class="n">실 근무일</th><th class="n">휴무</th><th class="n">기준 근무일</th><th></th></tr></thead><tbody>${rows || `<tr><td colspan="6" class="dm-empty">직원 현황에 직원을 먼저 등록해 주세요.</td></tr>`}</tbody></table></div>` + svHtml();
   }
@@ -6901,7 +6901,7 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
       (sp.marks || []).forEach(([x, c]) => put(x, c)); // 다른 매장 기록
       if (sp.sup_id) for (let x = 1; x <= dim(SH.ym); x++) put(x, v(x, sp.sup_id)); // 이 매장은 화면 값으로 바로 반영
       let o = 0, vc = 0, h = 0; Object.values(m).forEach(c => { if (c === 'O') o++; else if (c === 'V') vc++; else h++; });
-      return `<tr><td><span class="dm-nm2"><i style="background:#8a8476"></i>${esc(sp.name)}</span>${sp.rank ? ` <small class="na">${esc(sp.rank)}</small>` : ''}</td><td class="n">${o}${h ? ` <small class="na">(반휴 ${h})</small>` : ''}</td><td class="n">${vc}</td></tr>`;
+      return `<tr><td><span class="dm-nm2"><i style="background:#8a8476"></i>${esc(sp.name)}</span>${sp.rank ? ` <small class="na">${esc(sp.rank)}</small>` : ''}</td><td class="n">${o + h / 2}${h ? ` <small class="na">(반휴 ${h})</small>` : ''}</td><td class="n">${vc}</td></tr>`;
     }).join('');
     return `<div class="dm-sh" style="margin-top:16px"><strong>슈퍼바이저</strong><small>모든 매장 시프트를 합쳐서 셈 · 같은 날 여러 매장에 찍혀 있으면 하루로 셈</small></div><div class="dm-tw"><table class="dm-t"><thead><tr><th>이름</th><th class="n">휴무</th><th class="n">월차</th></tr></thead><tbody>${rows}</tbody></table></div>`;
   }
@@ -6938,7 +6938,7 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
     try { await rpc('shift_set', { p_store:+DM.cur, p_day:dstr(x), p_staff:sid, p_code:code }); }
     catch (e) { SH.map[x][sid] = prev; redraw(); refreshCounts(); toast('저장하지 못했어요: ' + errMsg(e)); }
   };
-  function refreshCounts(){ const c = document.querySelector('#sh-body .dm-shlay > div > section:nth-child(2)'); if (c) c.innerHTML = `<div class="dm-sh"><strong>${+SH.ym.slice(5)}월 휴무 카운터</strong><small>어느 주를 보고 있어도 한 달 기준 · 기준 근무일: 주6일 = 월요일 휴무, 주5일 = 토·일 휴무 · 런치·디너·반휴는 근무 0.5일 · 월차는 근무일로 셈</small></div>` + counterHtml(); }
+  function refreshCounts(){ const c = document.querySelector('#sh-body .dm-shlay > div > section:nth-child(2)'); if (c) c.innerHTML = `<div class="dm-sh"><strong>${+SH.ym.slice(5)}월 휴무 카운터</strong><small>어느 주를 보고 있어도 한 달 기준 · 기준 근무일: 주6일 = 월요일 휴무, 주5일 = 토·일 휴무 · 런치·디너는 근무 0.5일 · 반휴는 근무 0.5일·휴무 0.5일 · 월차는 근무일로 셈</small></div>` + counterHtml(); }
   let DAY = null;
   window.dmShDay = x => {
     SH.sel = x; SH.cw = weekOf(x); document.getElementById('sh-cmt').innerHTML = cmtHtml(); redraw();
