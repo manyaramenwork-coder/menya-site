@@ -6264,13 +6264,13 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
 (function(){
   const WD = ['월','화','수','목','금','토','일'];
   const SLOT = {L:'런치', D:'디너', F:'풀타임'};
-  const CODE = {F:'출근', L:'런치만', D:'디너만', H:'반휴무', O:'휴무', V:'월차', N:'—'};
-  const CODES = ['F','L','D','H','O','V','N'];
-  const CODE_ST = {F:'출근', L:'런치만(반휴)', D:'디너만(반휴)', O:'휴무', V:'월차'};
+  const CODE = {F:'출근', L:'런치만', D:'디너만', LW:'런치', DW:'디너', H:'반휴무', O:'휴무', V:'월차', N:'—'};
+  const CODES = ['F','L','D','LW','DW','H','O','V','N'];
+  const CODE_ST = {F:'출근', LW:'런치', DW:'디너', L:'런치만(반휴)', D:'디너만(반휴)', O:'휴무', V:'월차'};
   const CODE_PT = {F:'풀타임', L:'런치', D:'디너', O:'휴무', N:'—'};
   const isPt = p => p && (p.kind === 'pt' || p.kind === 'tmp');
   const cOf = c => c === 'H' ? 'L' : c;
-  const codesOf = (p, cur) => { const m = isPt(p) ? CODE_PT : CODE_ST, ks = Object.keys(m); const c = cOf(cur); if (c && !ks.includes(c)) ks.push(c); return ks.map(k => [k, m[k] || CODE[k]]); };
+  const codesOf = (p, cur) => { const m = isPt(p) ? CODE_PT : CODE_ST, ks = Object.keys(m); if (p && p.kind === 'sup' && !ks.includes('N')) ks.push('N'); const c = cOf(cur); if (c && !ks.includes(c)) ks.push(c); return ks.map(k => [k, m[k] || CODE[k]]); };
   const labOf = (p, c) => { c = cOf(c); return (isPt(p) ? CODE_PT : CODE_ST)[c] || CODE[c] || ''; };
   const COLORS = ['#5b6b4e','#c62429','#2a6fb0','#c08a00','#7a4fa0','#c25a8a','#46708f','#2b8a6e','#8a8476','#b5562b','#3f8f8f','#9a4f6a'];
   const BCOLS = ['#c62429','#8a5a2b','#2a6fb0','#2b8a6e','#7a4fa0','#c08a00'];
@@ -6804,7 +6804,7 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
   window.dmShMonth = n => { SH.ym = ymAdd(SH.ym, n); shLoad(true); };
   const v = (d, sid) => (SH.map[d] || {})[sid] || 'N';
   const active = (p, d) => (p.active || []).includes(d);
-  function cnt2(d){ let l = 0, dn = 0; SH.d.roster.forEach(p => { if (!active(p, d)) return; const x = v(d, p.id); if (x === 'F') { l++; dn++; } else if (x === 'L' || x === 'H') l++; else if (x === 'D') dn++; }); return [l, dn]; }
+  function cnt2(d){ let l = 0, dn = 0; SH.d.roster.forEach(p => { if (!active(p, d)) return; const x = v(d, p.id); if (x === 'F') { l++; dn++; } else if (x === 'L' || x === 'H' || x === 'LW') l++; else if (x === 'D' || x === 'DW') dn++; }); return [l, dn]; }
   function shDraw(){
     const d = SH.d, B = document.getElementById('sh-body'); if (!B) return;
     const st = ['임시 · 매장 작성 중','제출됨 · 본사 확인 대기','확정'][d.status] || '';
@@ -6819,13 +6819,13 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
         <section class="card" id="sh-sched"><div class="dm-bar">
           <div class="dm-tabs"><button class="${SH.view === 'week' ? 'on' : ''}" onclick="dmShView('week')">주간 보기</button><button class="${SH.view === 'month' ? 'on' : ''}" onclick="dmShView('month')">월간 요약</button></div>
           ${SH.view === 'week' ? `<div class="dm-wnav"><button onclick="dmShWk(-1)" ${SH.week === 0 ? 'disabled' : ''} aria-label="이전 주">‹</button><b>${SH.week + 1}주차 · ${wkRange(SH.week)}</b><button onclick="dmShWk(1)" ${SH.week >= weeks().length - 1 ? 'disabled' : ''} aria-label="다음 주">›</button></div>` : ''}
-          <span class="dm-hint">${SH.view === 'week' ? (d.can_edit ? '기본은 출근 · 이름 옆 화살표로 휴무·월차·런치만·디너만을 골라요 · 직원의 런치만·디너만은 반휴 · 날짜를 누르면 그날 전체' : '보기 전용이에요') : '표시 없음 = 풀타임 · 런 = 런치만 · 디 = 디너만 · 취소선 = 휴무 · 날짜를 누르면 그날 근무를 고칠 수 있어요'}</span></div>
+          <span class="dm-hint">${SH.view === 'week' ? (d.can_edit ? '기본은 출근 · 이름 옆 화살표로 휴무·월차·런치·디너·반휴를 골라요 · 런치·디너는 근무 0.5일, 런치만·디너만(반휴)은 휴무 1회 · 날짜를 누르면 그날 전체' : '보기 전용이에요') : '표시 없음 = 풀타임 · 런 = 런치만 · 디 = 디너만 · 취소선 = 휴무 · 날짜를 누르면 그날 근무를 고칠 수 있어요'}</span></div>
           ${SH.view === 'week' ? `<div class="dm-who"><span>직원 강조</span>${['전체', ...d.roster.map(p => p.id)].map(id => { const p = d.roster.find(x => x.id === id); return `<button class="${(SH.focus || '전체') === id ? 'on' : ''}" onclick="dmShFocus(${id === '전체' ? 'null' : id})">${p ? `<i style="background:${colorOf(p.id)}"></i>${esc(p.name)}` : '전체'}</button>`; }).join('')}</div>` : ''}
           <div id="sh-view">${SH.view === 'week' ? weekHtml() : monthHtml()}</div>
           <div class="dm-tools">${d.can_edit ? `${SH.view === 'week' ? `<button class="dmb" onclick="dmShCopy()" ${SH.week >= weeks().length - 1 ? 'disabled' : ''}>이번 주 → 다음 주에 복사</button>` : ''}<button class="dmb" onclick="dmShRefill()">직원 현황 기준으로 다시 채우기</button>` : ''}
             <span style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap">${flowBtns()}</span></div>
         </section>
-        <section class="card"><div class="dm-sh"><strong>${+m}월 휴무 카운터</strong><small>어느 주를 보고 있어도 한 달 기준 · 직원 런치만·디너만은 반휴(휴무 1회, 근무 0.5일) · 파트 런치·디너는 근무 0.5일</small></div>${counterHtml()}</section>
+        <section class="card"><div class="dm-sh"><strong>${+m}월 휴무 카운터</strong><small>어느 주를 보고 있어도 한 달 기준 · 런치·디너는 근무 0.5일 · 직원 런치만·디너만(반휴)은 휴무 1회, 근무 0.5일</small></div>${counterHtml()}</section>
       </div>
       <aside class="dm-side">
         <section class="card"><div class="dm-sh"><strong>비고 (공유 사항)</strong><small>한 달 공통 · 결정된 내용만</small></div>
@@ -6865,7 +6865,7 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
         if (c === 'O' || c === 'V') { off.push(nm + (c === 'V' ? '<small>(월차)</small>' : '')); return `<div class="r x" style="--pc:${colorOf(p.id)}"><b>${nm}</b></div>`; }
         if (c === 'N') return `<div class="r na"><b>${nm}</b><span>-</span></div>`;
         if ((c === 'L' || c === 'D') && !isPt(p)) off.push(nm + '<small>(반휴)</small>');
-        return `<div class="r" style="--pc:${colorOf(p.id)}"><b>${nm}</b>${c === 'L' ? '<i class="L">런</i>' : c === 'D' ? '<i class="D">디</i>' : ''}</div>`;
+        return `<div class="r" style="--pc:${colorOf(p.id)}"><b>${nm}</b>${c === 'L' || c === 'LW' ? '<i class="L">런</i>' : c === 'D' || c === 'DW' ? '<i class="D">디</i>' : ''}</div>`;
       }).join('');
       return `<div class="md2 ${isWe(x) ? 'we' : ''} ${SH.sel === x ? 'sel' : ''}" id="shm${x}" onclick="dmShDay(${x})">
         <div class="mc"><div class="dd"><b class="${cls(i)}">${x}</b><span class="${cls(i)}">${WD[i]}</span>${hasC ? '<i>💬</i>' : ''}</div><div class="n"><span>런치<b>${l}</b></span><span>디너<b>${dn}</b></span></div></div>
@@ -6878,7 +6878,7 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
     const d = SH.d, n = dim(SH.ym);
     const rows = d.roster.filter(p => p.kind !== 'sup').map(p => {
       let w = 0, o = 0, h = 0;
-      (p.active || []).forEach(x => { const c = cOf(v(x, p.id)); if (c === 'F') w++; else if (c === 'L' || c === 'D') { w += .5; if (!isPt(p)) { o++; h++; } } else if (c === 'O' || c === 'V') o++; });
+      (p.active || []).forEach(x => { const c = cOf(v(x, p.id)); if (c === 'F') w++; else if (c === 'LW' || c === 'DW') w += .5; else if (c === 'L' || c === 'D') { w += .5; if (!isPt(p)) { o++; h++; } } else if (c === 'O' || c === 'V') o++; });
       const base = p.kind === 'staff' ? (p.off != null ? p.off : Math.round((p.active || []).length * (7 - (p.wk || 6)) / 7)) : null;
       const b = base == null ? '<span class="na">기준 없음</span>' : o === base ? '<span class="dm-chip ok">맞음</span>' : `<span class="dm-chip warn">${o > base ? '+' : ''}${o - base}일</span>`;
       return `<tr><td><span class="dm-nm2"><i style="background:${colorOf(p.id)}"></i>${esc(p.name)}</span>${p.from ? ` <small class="na">${esc(p.from)}</small>` : ''}</td><td>${p.kind === 'staff' ? `주${p.wk || 6}일` : `${daysTxt(p.days)} ${SLOT[p.slot] || ''}`}</td><td class="n">${w}</td><td class="n">${o}${h ? ` <small class="na">(반휴 ${h})</small>` : ''}</td><td class="n">${base ?? '-'}</td><td>${b}</td></tr>`;
@@ -6918,7 +6918,7 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
     try { await rpc('shift_set', { p_store:+DM.cur, p_day:dstr(x), p_staff:sid, p_code:code }); }
     catch (e) { SH.map[x][sid] = prev; redraw(); refreshCounts(); toast('저장하지 못했어요: ' + errMsg(e)); }
   };
-  function refreshCounts(){ const c = document.querySelector('#sh-body .dm-shlay > div > section:nth-child(2)'); if (c) c.innerHTML = `<div class="dm-sh"><strong>${+SH.ym.slice(5)}월 휴무 카운터</strong><small>어느 주를 보고 있어도 한 달 기준 · 직원 런치만·디너만은 반휴(휴무 1회, 근무 0.5일) · 파트 런치·디너는 근무 0.5일</small></div>` + counterHtml(); }
+  function refreshCounts(){ const c = document.querySelector('#sh-body .dm-shlay > div > section:nth-child(2)'); if (c) c.innerHTML = `<div class="dm-sh"><strong>${+SH.ym.slice(5)}월 휴무 카운터</strong><small>어느 주를 보고 있어도 한 달 기준 · 런치·디너는 근무 0.5일 · 직원 런치만·디너만(반휴)은 휴무 1회, 근무 0.5일</small></div>` + counterHtml(); }
   let DAY = null;
   window.dmShDay = x => {
     SH.sel = x; SH.cw = weekOf(x); document.getElementById('sh-cmt').innerHTML = cmtHtml(); redraw();
@@ -7168,7 +7168,7 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
   .sl b{font-weight:600;overflow:hidden;text-overflow:ellipsis;min-width:0}
   .sl select{margin-left:auto;border:1px solid transparent;min-width:0;-webkit-appearance:none;appearance:none;border-radius:5px;font-size:11px;font-weight:600;padding:3px 16px 3px 6px;cursor:pointer;color:#2f372a;flex:none;max-width:92px;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='6'%3E%3Cpath d='M1 1l3.5 3.5L8 1' fill='none' stroke='%23777' stroke-width='1.4'/%3E%3C/svg%3E") no-repeat right 5px center}
   .sl select:hover{border-color:#c9cdc2}
-  .sl.F select{color:#2b7a3a;background-color:#eef7ef}.sl.L select{color:#8a5a00;background-color:#ffefcc}.sl.D select{color:#284f99;background-color:#e1eafb}
+  .sl.F select{color:#2b7a3a;background-color:#eef7ef}.sl.L select,.sl.LW select{color:#8a5a00;background-color:#ffefcc}.sl.D select,.sl.DW select{color:#284f99;background-color:#e1eafb}
   .sl.O select,.sl.H select{color:#fff;background-color:#c62429}.sl.V select{color:#fff;background-color:#7a4fa0}.sl.N select{color:#b5bbad;background-color:transparent;font-weight:400}
   .sl.O,.sl.V{background:#fdecec;color:#a3262c}.sl.O b,.sl.V b{text-decoration:line-through;font-weight:500}.sl.H{background:#fff3e6}.sl.N{background:none;color:#b5bbad}.sl.N:before{background:#e3e5de}
   .sl .ro{margin-left:auto;font-size:11px;font-weight:600;color:#4a5244;padding-right:4px}.sl.O .ro,.sl.H .ro{color:#c62429}.sl.V .ro{color:#7a4fa0}.sl.N .ro{color:#c4c8bd;font-weight:400}
