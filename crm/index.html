@@ -370,7 +370,7 @@ td .sm{font-size:12px;color:var(--sub)}
     <!-- 지도 탐색 -->
     <section id="sec-map" class="sec" hidden>
       <div class="mapbar">
-        <div class="chips" id="m-kind" role="group" aria-label="업종"><button data-v="all" class="on">전체</button><button data-v="jp">일식</button><button data-v="pub">주점</button></div>
+        <div class="chips" id="m-kind" role="group" aria-label="업종"><button data-v="izk" class="on">일식+주점</button><button data-v="jp">일식</button><button data-v="pub">주점</button><button data-v="del">배달형</button><button data-v="all">전체</button></div>
         <label class="chk"><input type="checkbox" id="m-tel">전화번호 있는 곳만</label>
         <span class="mcount" id="m-count" aria-live="polite"></span>
       </div>
@@ -1063,7 +1063,7 @@ async function refreshStats(){ try { const s = await rpc('lead_stats'); applySta
 const Z_SGG = 9, Z_DETAIL = 12; // 이 확대 단계부터 시군구 블록 / 실제 지도
 const STAGE_COLOR = { collected: '#9aa097', contacted: '#e0a33c', interested: '#c62429', meeting: '#7a1015', trial: '#7a1015', proposal: '#7a1015', contract: '#1f4e8c', hold: '#c9cbc4', rejected: '#4d514a' };
 state.geo = { sido: '', sigungu: '', dong: '' }; // 예전 코드 호환용
-state.mkind = 'all'; state.mapFitKey = '';
+state.mkind = 'izk'; state.mapFitKey = '';
 const KOREA = [[33.1, 124.9], [38.6, 130.95]];
 let MAP = null, PTS = null, RENDER = null, TILES = null, MARKS = {};
 const GEO = {};
