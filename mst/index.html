@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>멘야 파트너스</title>
-<meta name="theme-color" content="#c62429">
+<meta name="theme-color" content="#ffffff">
 <meta name="color-scheme" content="light">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -390,6 +390,185 @@ a.file{color:var(--ink);text-decoration:none}
   .auth .hero{margin:0;border-radius:0 0 4px 4px}
   .row:hover{background:#f8faf5}
 }
+
+/* ==========================================================
+   디자인 2026-11-17 — 멘야 파트너스 (공식 로고 · 카드형)
+   ========================================================== */
+:root{--red:#c92c37;--red-d:#a8222c;--red-t:#fdecee;--ink:#191f28;--ink2:#4e5968;--mut:#8b95a1;--line:#edf0f3;--bg:#f6f7f9;--navy:#1f3048;--navy2:#2a405e;--r:18px;--shadow:0 2px 14px rgba(20,37,58,.05)}
+body{letter-spacing:-.02em}
+.box,.list{border:0;box-shadow:var(--shadow);border-radius:var(--r)}
+.row{border-top:1px solid #f2f4f6;padding:15px 18px}
+.row:active{background:#f9fafb}
+.dot{width:6px;height:6px}
+.note{background:#f2f4f6;color:var(--ink2);border-radius:14px}
+.pill{border-radius:7px;height:22px;font-size:11.5px;font-weight:700}
+.p-grey{background:#f2f4f6;color:#6b7684}
+.btn{border-radius:14px;height:52px;font-weight:750}
+.btn.ghost{border:0;background:#f2f4f6;color:var(--ink)}.btn.ghost:active{background:#e8ebee}
+.btn.dark{background:var(--ink)}
+.btn.blue{background:#3182f6}
+.in{border-color:#e5e8eb;border-radius:14px;background:#fff}
+.in:focus{border-color:var(--red);box-shadow:0 0 0 3px rgba(201,44,55,.1)}
+.tg:checked{background:#3182f6}
+.seg{background:#eef0f3;border-radius:14px}
+.top{background:rgba(255,255,255,.96);border-bottom:1px solid #f0f2f4;margin-bottom:12px}
+.top h1{font-size:17px}
+
+/* 위쪽 앱 머리 (휴대폰) */
+.ahead{position:sticky;top:0;z-index:20;margin:0 -16px 6px;padding:calc(var(--safe-t) + 12px) 18px 12px;background:#fff;display:flex;align-items:center;gap:10px;min-height:64px}
+body.pv-on .ahead{top:0}
+.ahead .bl{display:flex;align-items:center;gap:9px;font-size:20px;font-weight:850;letter-spacing:-.05em;text-decoration:none;color:var(--ink);margin-right:auto}
+.ahead .bl img{width:34px;height:34px;display:block}
+.ahead .st{display:flex;align-items:center;gap:3px;font-size:13.5px;font-weight:750;color:#333d4b;padding:6px 8px;border-radius:10px;max-width:42vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+button.st:active{background:#f2f4f6}
+.ahead .st svg{width:15px;height:15px;transform:rotate(90deg);flex-shrink:0}
+.ahead .bellb{position:relative;width:40px;height:40px;display:grid;place-items:center;border-radius:12px;color:#333d4b}
+.ahead .bellb svg{width:24px;height:24px}
+.ahead .bellb .c{position:absolute;right:2px;top:2px;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--red);color:#fff;font-size:10.5px;font-weight:800;display:grid;place-items:center;border:2px solid #fff}
+
+/* 화면 제목 */
+.ph{padding:22px 4px 6px}
+.ph .eb{font-size:10.5px;letter-spacing:.15em;font-weight:850;color:#8b95a1}
+.ph h1{font-size:27px;line-height:1.35;margin:8px 0 0;font-weight:850;letter-spacing:-.045em}
+.ph p{color:#6b7684;font-size:13.5px;line-height:1.6;margin:7px 0 0}
+.sh{display:flex;justify-content:space-between;align-items:center;margin:30px 2px 12px}
+.sh h3{font-size:18px;margin:0;font-weight:820;letter-spacing:-.04em}
+.sh a,.sh button{font-size:12.5px;color:#8b95a1;text-decoration:none;font-weight:600}
+
+/* 남색 배너 */
+.hero2{background:linear-gradient(125deg,var(--navy2),#18263a);color:#fff;border-radius:24px;padding:26px 22px 22px;margin:22px 0 12px;position:relative;overflow:hidden;box-shadow:0 12px 24px rgba(31,53,81,.16)}
+.hero2::after{content:'麺';position:absolute;right:-6px;bottom:-36px;font-size:128px;font-weight:900;color:rgba(255,255,255,.05);transform:rotate(-14deg);pointer-events:none;font-family:serif}
+.hero2 small{color:#b2c7df;font-size:11px;letter-spacing:.1em;font-weight:800}
+.hero2 h2{font-size:23px;line-height:1.38;margin:12px 0 18px;font-weight:800;letter-spacing:-.045em}
+.hero2 .hb{display:inline-flex;align-items:center;gap:6px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.13);border-radius:12px;padding:11px 15px;color:#fff;font-size:13px;font-weight:800;text-decoration:none;position:relative;z-index:1}
+.hero2 .hb svg{width:16px;height:16px}
+
+/* 숫자 카드 */
+.mets{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+.met{min-width:0;background:#fff;border-radius:18px;padding:17px 13px 14px;text-decoration:none;color:inherit;box-shadow:var(--shadow);display:block}
+.met label{font-size:11.5px;color:#7b8796;display:block;white-space:nowrap}
+.met strong{display:block;font-size:30px;letter-spacing:-.05em;margin:7px 0 6px;line-height:1.1;font-weight:800}
+.met strong.hot{color:var(--red)}
+.met small{color:#a0aab4;font-size:10.5px;display:flex;align-items:center;gap:2px}
+.met small svg{width:11px;height:11px}
+
+/* 자주 쓰는 메뉴 */
+.qg{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.qg a{display:flex;flex-direction:column;align-items:center;gap:9px;text-decoration:none;color:#333d4b;font-size:12.5px;font-weight:700}
+.qg a span{width:64px;height:64px;border-radius:20px;background:#fff;display:grid;place-items:center;box-shadow:var(--shadow);color:#333d4b}
+.qg a span svg{width:27px;height:27px;stroke-width:1.7}
+.qg a.main span{background:#fdecee;color:var(--red)}
+.qg a:active span{transform:scale(.96)}
+
+/* 목록 행 (공지·발주) */
+.nrow{display:flex;align-items:center;gap:12px;padding:16px 18px;border-top:1px solid #f2f4f6;text-decoration:none;color:inherit}
+.nrow:first-child{border-top:0}.nrow:active{background:#f9fafb}
+.nrow .dt{width:6px;height:6px;border-radius:50%;background:var(--red);flex-shrink:0}
+.nrow .dt.off{background:#d5dce3}
+.nrow .bd{flex:1;min-width:0}
+.nrow .tt{font-size:14.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;gap:6px;align-items:center}
+.nrow .tt span.x{overflow:hidden;text-overflow:ellipsis}
+.nrow.read .tt{font-weight:560;color:#333d4b}
+.nrow .mt{font-size:12px;color:#8b95a1;margin-top:3px;display:flex;gap:6px;flex-wrap:wrap}
+.nrow .rt{text-align:right;flex-shrink:0;font-size:12.5px;color:#4e5968;font-weight:650}
+.nrow .rt .pill{margin-bottom:4px}
+.nrow > svg.i{color:#b0b8c1;width:18px;height:18px}
+.card2{background:#fff;border-radius:20px;box-shadow:var(--shadow);overflow:hidden}
+.emp2{padding:22px 20px}.emp2 strong{font-size:14px}.emp2 p{color:#6b7684;font-size:13px;margin:5px 0 0}
+.emp3{padding:44px 20px;text-align:center;color:#8b95a1;font-size:13.5px}
+.emp3 .ico{width:64px;height:64px;border-radius:20px;background:#f2f4f6;display:grid;place-items:center;margin:0 auto 12px;color:#8b95a1}
+.emp3 .ico svg{width:28px;height:28px}
+.emp3 b{display:block;color:#333d4b;font-size:14.5px;margin-bottom:3px}
+
+/* 검색 · 칩 */
+.srch{display:flex;align-items:center;gap:8px;background:#eef0f3;border-radius:14px;padding:0 14px;height:46px;margin:18px 0 12px}
+.srch svg{width:17px;height:17px;color:#8b95a1}
+.srch input{flex:1;border:0;background:none;outline:0;font-size:15px;min-width:0}
+.chips2{display:flex;gap:7px;overflow-x:auto;padding:2px 0 4px;margin-bottom:6px;scrollbar-width:none}
+.chips2::-webkit-scrollbar{display:none}
+.chips2 button{flex-shrink:0;height:36px;padding:0 15px;border-radius:18px;background:#fff;color:#4e5968;font-size:13px;font-weight:700;box-shadow:inset 0 0 0 1px #e5e8eb}
+.chips2 button.on{background:#333d4b;color:#fff;box-shadow:none}
+.chips2 button small{opacity:.7;margin-left:3px;font-weight:600}
+
+/* 발주 화면 */
+.qo{background:#fff;border-radius:22px;padding:20px 20px 18px;box-shadow:var(--shadow);display:flex;gap:12px;align-items:center;margin-top:20px}
+.qo .tx{flex:1}.qo .lb{display:inline-block;font-size:9.5px;font-weight:850;letter-spacing:.06em;color:#3182f6;background:#e8f3ff;border-radius:6px;padding:4px 7px}
+.qo b{display:block;font-size:17px;line-height:1.4;margin:10px 0 4px;letter-spacing:-.04em}
+.qo p{margin:0;color:#8b95a1;font-size:12.5px}
+.qo .ill{width:64px;height:64px;border-radius:20px;background:#fff4e6;color:#d9822b;display:grid;place-items:center;flex-shrink:0}
+.qo .ill svg{width:32px;height:32px;stroke-width:1.6}
+.bigbtn{display:flex;align-items:center;justify-content:center;gap:7px;height:56px;border-radius:16px;background:var(--red);color:#fff;font-weight:800;font-size:15.5px;text-decoration:none;margin:12px 0;box-shadow:0 8px 16px rgba(201,44,55,.18)}
+.bigbtn:active{background:var(--red-d)}
+.bigbtn svg{width:19px;height:19px}
+.stats2{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:22px}
+.stats2 div{background:#fff;border-radius:18px;padding:17px 16px;box-shadow:var(--shadow)}
+.stats2 label{font-size:12px;color:#7b8796}.stats2 strong{display:block;font-size:30px;font-weight:800;letter-spacing:-.05em;margin:6px 0 8px;line-height:1.1}
+.stats2 small{display:inline-block;font-size:11px;font-weight:700;border-radius:6px;padding:3px 7px}
+.stats2 .a small{background:#e8f3ff;color:#3182f6}.stats2 .b small{background:#f2f4f6;color:#6b7684}
+.step{border:0;background:none;gap:6px}
+.step button{width:34px;height:34px;border-radius:10px;background:#f2f4f6;font-size:19px;color:#333d4b}
+.step input{width:40px;height:34px;font-size:16px}
+.it{padding:14px 14px 14px 18px;border-top:1px solid #f2f4f6}
+.it.on{background:#fffafa}.it.on .step button{background:#fdecee;color:var(--red)}
+.cat-h{font-size:12.5px;color:#8b95a1;margin:22px 6px 9px}
+.cartbar .in2{background:#fff;color:var(--ink);border-radius:20px;box-shadow:0 10px 30px rgba(20,37,58,.16)}
+.cartbar .sum{color:#8b95a1}.cartbar .sum b{color:var(--ink)}
+.steps div.done::before,.steps div.done::after{background:#3182f6}
+
+/* 레시피 */
+.rhero{background:linear-gradient(125deg,var(--navy2),#18263a);color:#fff;border-radius:24px;padding:24px 22px;margin:20px 0 6px;position:relative;overflow:hidden}
+.rhero::after{content:'麺';position:absolute;right:-4px;bottom:-34px;font-size:120px;font-weight:900;color:rgba(255,255,255,.05);transform:rotate(-14deg);font-family:serif}
+.rhero small{color:#b2c7df;font-size:10.5px;letter-spacing:.12em;font-weight:800}
+.rhero h2{font-size:21px;line-height:1.42;margin:11px 0 0;font-weight:800;letter-spacing:-.045em}
+.rcards{display:flex;flex-direction:column;gap:10px}
+.rcard{display:flex;align-items:center;gap:14px;background:#fff;border-radius:20px;padding:12px 16px 12px 12px;box-shadow:var(--shadow);text-decoration:none;color:inherit}
+.rcard .th{width:66px;height:66px;border-radius:16px;background:#fdf3e7;color:#d9822b;display:grid;place-items:center;flex-shrink:0}
+.rcard .th svg{width:30px;height:30px;stroke-width:1.6}
+.rcard .th.ph2{background:#eef0f3;overflow:hidden}.rcard .th img{width:100%;height:100%;object-fit:cover;display:block}
+@media (min-width:600px){.rcard .th{width:76px;height:76px}}
+.rcard .bd{flex:1;min-width:0}
+.rcard .tg2{display:inline-block;font-size:10px;font-weight:800;color:#6b7684;background:#f2f4f6;border-radius:6px;padding:3px 7px}
+.rcard b{display:block;font-size:16px;margin:6px 0 3px;letter-spacing:-.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rcard small{color:#8b95a1;font-size:12px}
+.rcard > svg.i{color:#b0b8c1}
+
+/* 내 정보 */
+.prof{display:flex;align-items:center;gap:15px;background:#fff;border-radius:22px;padding:20px;box-shadow:var(--shadow);margin-top:20px}
+.prof .av{width:58px;height:58px;border-radius:18px;background:#eef3f9;color:#4e5968;display:grid;place-items:center;flex-shrink:0}
+.prof .av svg{width:28px;height:28px}
+.prof b{font-size:18px;letter-spacing:-.04em}
+.prof .rl{display:inline-block;margin-left:6px;font-size:10.5px;font-weight:800;color:#3182f6;background:#e8f3ff;border-radius:6px;padding:3px 6px;vertical-align:3px}
+.prof .id{font-size:13px;color:#6b7684;margin-top:3px}.prof .sm{font-size:12px;color:#8b95a1;margin-top:2px}
+.kv2{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:16px 18px;border-top:1px solid #f2f4f6;font-size:14px}
+.kv2:first-child{border-top:0}.kv2 span{color:#4e5968}.kv2 b{font-weight:750}
+.kv2 em{font-style:normal;font-size:11.5px;font-weight:800;color:#3182f6;background:#e8f3ff;border-radius:6px;padding:4px 8px}
+.ntc{background:#fff;border-radius:20px;padding:20px;box-shadow:var(--shadow)}
+.ntc b{font-size:15px}.ntc p{color:#6b7684;font-size:13px;margin:5px 0 16px;line-height:1.6}
+.foot2{text-align:center;color:#b0b8c1;font-size:10px;letter-spacing:.08em;margin:30px 0 6px;font-weight:650}
+
+/* 아래 탭 */
+#tabs{background:rgba(255,255,255,.98);border-top:1px solid #f0f2f4}
+#tabs a{color:#8b95a1;font-size:11px}
+#tabs a svg{width:23px;height:23px}
+#tabs a.on{color:var(--ink)}
+#tabs a.on::after{content:'';position:absolute;bottom:6px;left:50%;width:18px;height:3px;margin-left:-9px;border-radius:2px;background:var(--red)}
+#tabs .brand img{display:none}
+
+@media (min-width:900px){
+  .ahead{display:none}
+  .ph{padding:46px 4px 6px}.ph h1{font-size:32px}
+  .mets{gap:12px}.met{padding:22px 20px 18px}.met strong{font-size:36px}
+  .qg{max-width:520px}
+  .hero2{padding:34px 34px 30px}.hero2 h2{font-size:28px}
+  #tabs{background:#fff;border-right:1px solid #eef0f3}
+  #tabs .brand{background:#fff;color:var(--ink);padding:26px 22px 22px;display:flex!important;align-items:center;gap:10px;margin-bottom:8px}
+  #tabs .brand::after{display:none}
+  #tabs .brand img{display:block;width:38px;height:38px}
+  #tabs .brand small{color:#8b95a1;font-size:11.5px}#tabs .brand b{font-size:20px}
+  #tabs a{color:#4e5968;font-size:15px;font-weight:650}#tabs a svg{width:21px;height:21px}#tabs a:hover{background:#f6f7f9}
+  #tabs a.on{background:#fdecee;color:var(--red)}#tabs a.on::after{display:none}
+  .rcards{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+}
 </style>
 </head>
 <body>
@@ -424,6 +603,11 @@ const IC = {
   home: '<path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',
   bell: '<path d="M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8"/><path d="M10 20a2 2 0 0 0 4 0"/>',
   box: '<path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/>',
+  cart: '<path d="M3 4h2l2.2 10.2a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.1L20.5 8H6"/><circle cx="9.5" cy="19.5" r="1.3"/><circle cx="17" cy="19.5" r="1.3"/>',
+  list: '<rect x="5" y="3.5" width="14" height="17" rx="2.5"/><path d="M9 3.5h6v3H9zM9 11h6M9 15h4"/>',
+  bowl: '<path d="M3.5 11h17a8.5 8.5 0 0 1-17 0z"/><path d="M8 20.5h8M9 7c0-1.5 1-1.5 1-3M13 7c0-1.5 1-1.5 1-3M17 7c0-1.5 1-1.5 1-3"/>',
+  search: '<circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/>',
+  arrow: '<path d="M7 17 17 7M9 7h8v8"/>',
   book: '<path d="M4 4h6a3 3 0 0 1 3 3v13a2 2 0 0 0-2-2H4z"/><path d="M20 4h-4a3 3 0 0 0-3 3v13a2 2 0 0 1 2-2h5z"/>',
   user: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
   back: '<path d="M15 5l-7 7 7 7"/>',
@@ -670,7 +854,7 @@ function renderTabs(){
   const base = { '#notice': '#notices', '#order': '#orders', '#order-new': '#orders', '#recipe': '#recipes', '#a-notice': '#a-notices', '#a-recipe': '#a-recipes' };
   const on = base[cur] || cur;
   const unread = S.home ? (S.home.unread || 0) + (S.home.replies || 0) : 0;
-  t.innerHTML = `<div class="brand"><small>멘야마쯔리</small><b>파트너스</b></div><div class="in">${def.map(([href, icon, label]) => `<a href="${href}" class="${on === href ? 'on' : ''}">${ic(icon)}<span>${label}</span>${href === '#notices' && unread ? `<span class="bd">${unread > 99 ? '99+' : unread}</span>` : ''}</a>`).join('')}</div><div class="who"><b>${h(S.me.name)}</b>${S.preview ? '본사 미리보기' : isMst() ? (S.home && S.home.store ? h(S.home.store) + ' 점주' : '가맹점주') : (isAdm() ? '관리자' : '본사')}</div>`;
+  t.innerHTML = `<div class="brand"><img src="logo-mark.png" alt=""><div><small>MENYA MATSURI</small><b>멘야 파트너스</b></div></div><div class="in">${def.map(([href, icon, label]) => `<a href="${href}" class="${on === href ? 'on' : ''}">${ic(icon)}<span>${label}</span>${href === '#notices' && unread ? `<span class="bd">${unread > 99 ? '99+' : unread}</span>` : ''}</a>`).join('')}</div><div class="who"><b>${h(S.me.name)}</b>${S.preview ? '본사 미리보기' : isMst() ? (S.home && S.home.store ? h(S.home.store) + ' 점주' : '가맹점주') : (isAdm() ? '관리자' : '본사')}</div>`;
 }
 const ROUTES = {};
 function route(){
@@ -698,29 +882,48 @@ const live = tok => tok === S.tok;
    ========================================================== */
 const OST = { received: ['접수 대기', 'p-amb'], confirmed: ['접수 완료', 'p-blue'], shipped: ['발송', 'p-ok'], done: ['완료', 'p-grey'], rejected: ['반려', 'p-red'], canceled: ['취소', 'p-grey'] };
 const opill = s => { const x = OST[s] || [s, 'p-grey']; return `<span class="pill ${x[1]}">${x[0]}</span>`; };
-const orderRow = o => `<a class="row" href="#order/${o.id}"><div class="main"><div class="t"><span class="tx">${h(o.first || '발주')}${o.cnt > 1 ? ` 외 ${o.cnt - 1}건` : ''}</span></div>
-  <div class="s"><span>${h(o.at || '')}</span>${o.src === 'fcdaum' ? '<span>FC다움</span>' : ''}${o.invoice ? `<span>송장 ${h(o.invoice)}</span>` : ''}</div></div>
-  <div class="r">${opill(o.status)}<div style="margin-top:4px">${o.total ? won(o.total) + '원' : ''}</div></div></a>`;
-const noticeRow = n => `<a class="row ${n.read ? '' : 'unread'}" href="#notice/${n.id}">${n.read ? '' : '<span class="dot" aria-label="안 읽음"></span>'}
-  <div class="main"><div class="t">${n.pin ? '<span class="pill p-red">필독</span>' : ''}<span class="tx">${h(n.title)}</span></div>
-  <div class="s"><span>${h(n.at)}</span>${n.files ? `<span>${ic('clip')} ${n.files}</span>` : ''}${n.closed ? '<span>마감</span>' : ''}</div></div>
-  ${n.reply ? '<span class="pill p-blue">본사 답변</span>' : ''}</a>`;
+const orderRow = o => `<a class="nrow" href="#order/${o.id}"><div class="bd"><div class="tt"><span class="x">${h(o.first || '발주')}${o.cnt > 1 ? ` 외 ${o.cnt - 1}건` : ''}</span></div>
+  <div class="mt"><span>${h(o.at || '')}</span>${o.src === 'fcdaum' ? '<span>FC다움</span>' : ''}${o.invoice ? `<span>송장 ${h(o.invoice)}</span>` : ''}</div></div>
+  <div class="rt">${opill(o.status)}<div>${o.total ? won(o.total) + '원' : ''}</div></div></a>`;
+const noticeRow = n => `<a class="nrow ${n.read ? 'read' : ''}" href="#notice/${n.id}"><i class="dt ${n.read ? 'off' : ''}" aria-label="${n.read ? '읽음' : '안 읽음'}"></i>
+  <div class="bd"><div class="tt">${n.pin ? '<span class="pill p-red">필독</span>' : ''}<span class="x">${h(n.title)}</span></div>
+  <div class="mt"><span>${h(n.at)}</span>${n.files ? `<span>· 첨부 ${n.files}개</span>` : ''}${n.closed ? '<span>· 마감</span>' : ''}${n.reply ? '<span style="color:#3182f6;font-weight:700">· 본사 답변</span>' : ''}</div></div>${ic('chev')}</a>`;
+
+/* 위쪽 앱 머리 (휴대폰): 로고 · 매장 · 알림 */
+function appHead(){
+  const st = S.preview ? (S.pvStore || '') : (S.home && S.home.store) || S.hstore || '';
+  const n = S.home ? (S.home.unread || 0) + (S.home.replies || 0) : 0;
+  return `<header class="ahead"><a class="bl" href="#home"><img src="logo-mark.png" alt="멘야마쯔리">파트너스</a>
+    ${S.preview ? `<button class="st" onclick="pvPick()">${h(st)}${ic('chev')}</button>` : st ? `<span class="st">${h(st)}</span>` : ''}
+    <a class="bellb" href="#notices" aria-label="공지${n ? ' ' + n + '개' : ''}">${ic('bell')}${n ? `<span class="c">${n > 99 ? '99+' : n}</span>` : ''}</a></header>`;
+}
+async function headSync(tok){
+  if (S.home) return;
+  try { const d = await rpc('mst_home'); if (tok && !live(tok)) return; S.home = d; S.hstore = d.store; const hd = document.querySelector('.ahead'); if (hd) hd.outerHTML = appHead(); renderTabs(); } catch (e) {}
+}
+const ph = (eb, t, p) => `<div class="ph"><div class="eb">${eb}</div><h1>${t}</h1>${p ? `<p>${p}</p>` : ''}</div>`;
+const sh = (t, link, href) => `<div class="sh"><h3>${t}</h3>${link ? `<a href="${href}">${link} ›</a>` : ''}</div>`;
 
 ROUTES.home = async (a, tok) => {
-  setView(loading());
+  setView(appHead() + loading());
   const d = await rpc('mst_home'); if (!live(tok)) return;
-  S.home = d; renderTabs();
-  setView(`<div class="noren"><small>멘야마쯔리</small><b>${h(d.store || '우리 매장')}</b><div class="who">${h(d.me || '')} 점주님</div></div>
-    <div class="quick">
-      <a class="main" href="#order-new"><span class="l">필요한 물품</span><span class="n">발주하기</span></a>
-      <a href="#notices"><span class="n ${d.unread ? 'hot' : ''}">${d.unread || 0}</span><span class="l">안 읽은 공지</span></a>
-      <a href="#notices"><span class="n ${d.replies ? 'hot' : ''}">${d.replies || 0}</span><span class="l">본사 답변</span></a>
+  S.home = d; S.hstore = d.store; renderTabs();
+  const orders = d.orders || [], notices = d.notices || [];
+  setView(appHead() + ph("TODAY'S WORKSPACE", `${h(d.me || '')} 점주님,<br>오늘도 좋은 하루 되세요.`, `${h(d.store || '우리 매장')}의 매장 업무를 한눈에 확인하세요.`) + `
+    <div class="hero2"><small>MENYA MATSURI · PARTNERS</small><h2>발주가 필요하신가요?<br>지금 바로 시작해 보세요.</h2><a class="hb" href="#order-new">새 발주 시작하기 ${ic('arrow')}</a></div>
+    <div class="mets">
+      <a class="met" href="#notices" onclick="S.nf='unread'"><label>안 읽은 공지</label><strong class="${d.unread ? 'hot' : ''}">${d.unread || 0}</strong><small>확인 필요 ${ic('arrow')}</small></a>
+      <a class="met" href="#orders" onclick="S.of='open'"><label>진행 중 발주</label><strong>${orders.length}</strong><small>진행 현황 ${ic('arrow')}</small></a>
+      <a class="met" href="#notices" onclick="S.nf='reply'"><label>본사 답변</label><strong class="${d.replies ? 'hot' : ''}">${d.replies || 0}</strong><small>받은 답변 ${ic('arrow')}</small></a>
     </div>
-    <div id="push-hint"></div>
-    <div class="cols"><div><div class="sec"><h2>진행 중인 발주</h2><a href="#orders">전체 보기</a></div>
-    <div class="list">${(d.orders || []).length ? d.orders.map(o => orderRow({ ...o, src: 'own' })).join('') : '<div class="empty">진행 중인 발주가 없어요.</div>'}</div></div>
-    <div><div class="sec"><h2>공지</h2><a href="#notices">전체 보기</a></div>
-    <div class="list">${(d.notices || []).length ? d.notices.map(noticeRow).join('') : '<div class="empty">받은 공지가 없어요.</div>'}</div></div></div>`);
+    <div id="push-hint" style="margin-top:12px"></div>
+    ${sh('자주 쓰는 메뉴')}
+    <div class="qg"><a class="main" href="#order-new"><span>${ic('cart')}</span>물품 발주</a><a href="#notices"><span>${ic('bell')}</span>공지 확인</a><a href="#orders" onclick="S.of='all'"><span>${ic('list')}</span>발주 내역</a><a href="#recipes"><span>${ic('book')}</span>레시피</a></div>
+    <div class="cols"><div>${sh('놓치면 안 되는 소식', '전체 보기', '#notices')}
+      <div class="card2">${notices.length ? notices.map(noticeRow).join('') : '<div class="emp2"><strong>받은 공지가 없어요</strong><p>본사 공지가 올라오면 여기에 보여요.</p></div>'}</div></div>
+    <div>${sh('발주 진행 현황', '전체 보기', '#orders')}
+      <div class="card2">${orders.length ? orders.map(o => orderRow({ ...o, src: 'own' })).join('') : '<div class="emp2"><strong>진행 중인 발주가 없어요</strong><p>새로운 발주가 필요하다면 언제든 시작하세요.</p></div>'}</div></div></div>
+    <div class="foot2">MENYA MATSURI PARTNERS</div>`);
   pushHint();
 };
 
@@ -728,14 +931,23 @@ ROUTES.home = async (a, tok) => {
    점주: 공지
    ========================================================== */
 ROUTES.notices = async (a, tok) => {
-  setView(`<div class="page-h"><h1>공지</h1></div>` + loading());
+  const head = ph('NOTICE', '공지사항', '본사에서 전달한 중요한 소식을 확인하세요.');
+  setView(appHead() + head + loading()); headSync(tok);
   const list = await rpc('mst_notices'); if (!live(tok)) return;
-  const f = S.nf || 'all';
-  const shown = f === 'unread' ? list.filter(n => !n.read || n.reply) : list;
-  setView(`<div class="page-h"><h1>공지</h1><p>본사와 우리 매장만 보는 1:1 공간이에요.</p></div>
-    <div class="seg"><button class="${f === 'all' ? 'on' : ''}" onclick="S.nf='all';route()">전체 ${list.length}</button>
-    <button class="${f === 'unread' ? 'on' : ''}" onclick="S.nf='unread';route()">안 읽음·답변 ${list.filter(n => !n.read || n.reply).length}</button></div>
-    <div class="list">${shown.length ? shown.map(noticeRow).join('') : `<div class="empty">${f === 'unread' ? '모두 확인했어요.' : '받은 공지가 없어요.'}</div>`}</div>`);
+  const F = { all: ['전체', () => true], unread: ['미확인', n => !n.read], pin: ['필독', n => n.pin], reply: ['본사 답변', n => n.reply] };
+  const draw = () => {
+    const f = F[S.nf] ? S.nf : 'all', q = (S.nq || '').trim();
+    const shown = list.filter(F[f][1]).filter(n => !q || (n.title || '').includes(q));
+    const box = $('#nlist'); if (box) box.innerHTML = shown.length ? shown.map(noticeRow).join('')
+      : `<div class="emp3"><div class="ico">${ic('bell')}</div><b>${q ? '찾는 공지가 없어요' : f === 'unread' ? '모두 확인했어요' : '공지가 없어요'}</b>${q ? '다른 단어로 찾아보세요.' : ''}</div>`;
+    document.querySelectorAll('.chips2 button').forEach(b => b.classList.toggle('on', b.dataset.f === f));
+  };
+  setView(appHead() + head + `<label class="srch">${ic('search')}<input id="nq" placeholder="공지사항 검색" value="${h(S.nq || '')}" aria-label="공지사항 검색"></label>
+    <div class="chips2">${Object.entries(F).map(([k, [t, fn]]) => `<button data-f="${k}">${t}<small>${list.filter(fn).length}</small></button>`).join('')}</div>
+    ${sh('공지 목록')}<div class="card2" id="nlist"></div>`);
+  $('#nq').oninput = e => { S.nq = e.target.value; draw(); };
+  document.querySelector('.chips2').onclick = e => { const b = e.target.closest('[data-f]'); if (b) { S.nf = b.dataset.f; draw(); } };
+  draw();
 };
 
 ROUTES.notice = async (id, tok) => {
@@ -780,15 +992,18 @@ const msgsHtml = m => (m || []).length ? m.map(x => `<div class="msg ${x.side ==
    점주: 발주
    ========================================================== */
 ROUTES.orders = async (a, tok) => {
-  setView(`<div class="page-h"><h1>발주</h1></div>` + loading());
+  const head = ph('ORDER', '물품 발주', '발주 요청부터 진행 현황까지 간편하게 관리하세요.');
+  setView(appHead() + head + loading()); headSync(tok);
   const list = await rpc('mst_orders'); if (!live(tok)) return;
-  const f = S.of || 'open', act = ['received', 'confirmed', 'shipped'];
-  const shown = f === 'open' ? list.filter(o => act.includes(o.status)) : list;
-  setView(`<div class="page-h"><h1>발주</h1><p>FC다움에서 넣은 발주도 함께 보여요.</p></div>
-    <a class="btn" href="#order-new" style="text-decoration:none;margin-bottom:12px">${ic('plus')}새 발주</a>
-    <div class="seg"><button class="${f === 'open' ? 'on' : ''}" onclick="S.of='open';route()">진행 중 ${list.filter(o => act.includes(o.status)).length}</button>
-    <button class="${f === 'all' ? 'on' : ''}" onclick="S.of='all';route()">전체 ${list.length}</button></div>
-    <div class="list">${shown.length ? shown.map(orderRow).join('') : `<div class="empty">${f === 'open' ? '진행 중인 발주가 없어요.' : '발주 내역이 없어요.'}</div>`}</div>`);
+  const act = ['received', 'confirmed', 'shipped'], open = list.filter(o => act.includes(o.status));
+  const f = S.of === 'all' ? 'all' : 'open', shown = f === 'open' ? open : list;
+  setView(appHead() + head + `
+    <div class="qo"><div class="tx"><span class="lb">QUICK ORDER</span><b>필요한 물품을<br>간편하게 발주하세요.</b><p>원하는 품목과 수량을 선택하세요.</p></div><div class="ill">${ic('box')}</div></div>
+    <a class="bigbtn" href="#order-new">${ic('plus')}새 발주하기</a>
+    <div class="stats2"><div class="a"><label>진행 중인 발주</label><strong>${open.length}</strong><small>진행 현황</small></div><div class="b"><label>전체 발주 내역</label><strong>${list.length}</strong><small>누적 주문</small></div></div>
+    <div class="chips2"><button class="${f === 'open' ? 'on' : ''}" onclick="S.of='open';route()">진행 중</button><button class="${f === 'all' ? 'on' : ''}" onclick="S.of='all';route()">전체 내역</button></div>
+    <div class="card2" style="margin-top:8px">${shown.length ? shown.map(orderRow).join('') : `<div class="emp3"><div class="ico">${ic('box')}</div><b>${f === 'open' ? '진행 중인 발주가 없어요' : '발주 내역이 없어요'}</b>새 발주하기로 필요한 물품을 요청해 보세요.</div>`}</div>
+    <p class="hint" style="text-align:center;margin-top:14px">FC다움에서 넣은 지난 발주도 함께 보여요.</p>`);
 };
 
 ROUTES['order-new'] = async (a, tok) => {
@@ -933,12 +1148,20 @@ ROUTES.stmt = async (id, tok) => {
    레시피 (점주 · 본사 미리보기)
    ========================================================== */
 ROUTES.recipes = async (a, tok) => {
-  setView(`<div class="page-h"><h1>레시피</h1></div>` + loading());
+  const head = ph('RECIPE', '조리 레시피', '본사 표준 조리법을 간편하게 확인하세요.');
+  setView((isMst() ? appHead() : '') + head + loading()); if (isMst()) headSync(tok);
   const list = await rpc('mst_recipes'); if (!live(tok)) return;
   const cats = [...new Set(list.map(r => r.cat || '기타'))];
-  setView(`<div class="page-h"><h1>레시피</h1><p>본사가 올린 조리법이에요.</p></div>` + (list.length ? '<div class="catgrid">' + cats.map(c => `<div><div class="cat-h">${h(c)}</div><div class="list">${list.filter(r => (r.cat || '기타') === c).map(r =>
-    `<a class="row" href="#recipe/${r.id}"><div class="main"><div class="t"><span class="tx">${h(r.title)}</span></div><div class="s"><span>${h(r.at)}</span>${r.files ? `<span>${ic('clip')} ${r.files}</span>` : ''}</div></div>${ic('chev')}</a>`).join('')}</div></div>`).join('') + '</div>'
-    : '<div class="list"><div class="empty"><b>아직 올라온 레시피가 없어요</b>본사가 레시피를 올리면 여기에 보여요.</div></div>'));
+  setView((isMst() ? appHead() : '') + head + `<div class="rhero"><small>OFFICIAL RECIPE</small><h2>언제나 변함없는 맛,<br>표준 레시피로 완성해요.</h2></div>` + (list.length ? cats.map(c => `${sh(h(c))}<div class="rcards">${list.filter(r => (r.cat || '기타') === c).map(r =>
+    `<a class="rcard" href="#recipe/${r.id}"><div class="th" ${r.thumb ? `data-th="${h(r.thumb)}"` : ''}>${ic('bowl')}</div><div class="bd"><span class="tg2">${h(r.cat || '레시피')}</span><b>${h(r.title)}</b><small>${h(r.at)} · 본사 레시피${r.files ? ` · 첨부 ${r.files}개` : ''}</small></div>${ic('chev')}</a>`).join('')}</div>`).join('')
+    : `<div class="card2" style="margin-top:18px"><div class="emp3"><div class="ico">${ic('book')}</div><b>아직 올라온 레시피가 없어요</b>본사가 레시피를 올리면 여기에 보여요.</div></div>`));
+  // 대표 사진: 첨부 중 첫 번째 사진
+  const ths = [...document.querySelectorAll('.rcard .th[data-th]')]; if (!ths.length) return;
+  try {
+    const { data } = await SB.storage.from('mst-recipes').createSignedUrls([...new Set(ths.map(x => x.dataset.th))], 3600); if (!live(tok)) return;
+    const map = {}; (data || []).forEach(d => { if (d.signedUrl) map[d.path] = d.signedUrl; });
+    ths.forEach(x => { const u = map[x.dataset.th]; if (u) { x.classList.add('ph2'); x.innerHTML = `<img src="${h(u)}" alt="" loading="lazy">`; } });
+  } catch (e) {}
 };
 ROUTES.recipe = async (id, tok) => {
   setView(topbar('레시피', '#recipes') + loading());
@@ -1002,25 +1225,28 @@ async function pushHint(){
 
 ROUTES.me = async (a, tok) => {
   const st = isMst() ? await pushState() : null; if (!live(tok)) return;
+  if (isMst()) headSync(tok);
   const roleName = { mst: '가맹점주', admin: '관리자', hq: '본사' }[S.me.role] || S.me.role;
   const store = isMst() && S.home ? S.home.store : '';
   const pushTxt = { on: '이 기기에서 알림을 받고 있어요.', off: '이 기기는 알림이 꺼져 있어요.', install: '아이폰은 홈 화면에 추가한 앱에서만 알림을 받을 수 있어요.',
     inapp: '카카오톡·네이버 앱 안에서는 알림을 받을 수 없어요. 사파리나 크롬으로 열어 주세요.', denied: '휴대폰 설정에서 이 앱의 알림이 막혀 있어요. 설정에서 허용해 주세요.', unsupported: '이 브라우저는 알림을 지원하지 않아요.' }[st];
-  setView(`<div class="page-h"><h1>내 정보</h1></div>
-    <div class="list"><div class="kv"><span>이름</span><b>${h(S.me.name)}</b></div><div class="kv"><span>아이디</span><b>${h(S.me.id)}</b></div>
-    <div class="kv"><span>구분</span><b>${h(roleName)}${store ? ' · ' + h(store) : ''}</b></div></div>
-    ${isMst() ? `<div class="sec"><h2>알림</h2></div><div class="box" style="padding:14px 16px"><p style="margin:0 0 10px;font-size:14px">${pushTxt}</p>
-      ${st === 'off' ? '<button class="btn dark" id="pon">알림 켜기</button>' : st === 'on' ? '<button class="btn ghost" id="poff">이 기기 알림 끄기</button>' : ''}</div>` : `<div class="note">관리자·본사 알림은 워크스페이스에서 받아요.</div>`}
-    ${standalone() ? '' : `<div class="sec"><h2>홈 화면에 추가</h2></div><div class="box" style="padding:14px 16px;font-size:14px;line-height:1.7">
-      ${S.installEvt ? '<button class="btn dark" id="inst">앱으로 설치하기</button>' : isIOS ? '사파리 아래쪽 <b>공유 버튼</b>을 누르고 <b>홈 화면에 추가</b>를 고르면 앱처럼 쓸 수 있어요.' : '브라우저 메뉴(⋮)에서 <b>홈 화면에 추가</b> 또는 <b>앱 설치</b>를 눌러 주세요.'}</div>`}
-    <div class="sec"><h2>계정</h2></div>
-    <div class="list"><button class="row" id="chpw"><div class="main"><div class="t">비밀번호 바꾸기</div></div>${ic('chev')}</button>
-    <button class="row" onclick="logout()"><div class="main"><div class="t" style="color:var(--red)">로그아웃</div></div></button></div>
-    <p class="hint" style="text-align:center;margin-top:20px">멘야 파트너스</p>`);
+  const head = ph('MY PAGE', '내 정보', '계정 및 매장 설정을 관리하세요.');
+  const store2 = S.preview ? S.pvStore : store;
+  setView((isMst() ? appHead() : '') + head + `
+    <div class="prof"><div class="av">${ic('user')}</div><div><b>${h(S.me.name)}</b><span class="rl">${S.preview ? '본사 미리보기' : h(roleName)}</span><div class="id">${h(S.me.id)}</div><div class="sm">멘야마쯔리${store2 ? ' · ' + h(store2) : ''}</div></div></div>
+    ${store2 ? `${sh('매장 정보')}<div class="card2"><div class="kv2"><span>소속 매장</span><b>${h(store2)}</b></div><div class="kv2"><span>권한</span><em>${S.preview ? '본사 미리보기' : '매장 점주'}</em></div></div>` : ''}
+    ${isMst() && !S.preview ? `${sh('알림 설정')}<div class="ntc"><b>${st === 'on' ? '이 기기는 알림을 받고 있어요' : '이 기기는 알림이 꺼져 있어요'}</b><p>${pushTxt} 발주와 본사 공지를 놓치지 않도록 관리하세요.</p>
+      ${st === 'off' ? '<button class="btn blue" id="pon">알림 켜기</button>' : st === 'on' ? '<button class="btn ghost" id="poff">이 기기 알림 끄기</button>' : ''}</div>` : ''}
+    ${standalone() ? '' : `${sh('홈 화면에 추가')}<div class="ntc"><p style="margin:0 0 ${S.installEvt ? '14px' : '0'}">${S.installEvt ? '앱으로 설치하면 아이콘을 눌러 바로 열 수 있어요.' : isIOS ? '사파리 아래쪽 <b>공유 버튼</b>을 누르고 <b>홈 화면에 추가</b>를 고르면 앱처럼 쓸 수 있어요.' : '브라우저 메뉴(⋮)에서 <b>홈 화면에 추가</b> 또는 <b>앱 설치</b>를 눌러 주세요.'}</p>
+      ${S.installEvt ? '<button class="btn dark" id="inst">앱으로 설치하기</button>' : ''}</div>`}
+    ${sh('계정 관리')}
+    <div class="card2">${S.preview ? '' : `<button class="nrow" id="chpw" style="width:100%"><div class="bd"><div class="tt">비밀번호 바꾸기</div></div>${ic('chev')}</button>`}
+    <button class="nrow" style="width:100%" onclick="logout()"><div class="bd"><div class="tt" style="color:var(--red)">로그아웃</div></div></button></div>
+    <div class="foot2">MENYA MATSURI PARTNERS</div>`);
   const pon = $('#pon'); if (pon) pon.onclick = async () => { pon.disabled = true; try { await pushOn(); toast('알림을 켰어요'); route(); } catch (e) { pon.disabled = false; toast(cleanErr(e)); } };
   const poff = $('#poff'); if (poff) poff.onclick = async () => { await pushOff(); route(); };
   const inst = $('#inst'); if (inst) inst.onclick = async () => { S.installEvt.prompt(); await S.installEvt.userChoice; S.installEvt = null; route(); };
-  $('#chpw').onclick = () => { sheet(`<h3>비밀번호 바꾸기</h3>${pwForm(false)}`); $('#pbtn').onclick = () => savePw(false); };
+  const cp = $('#chpw'); if (cp) cp.onclick = () => { sheet(`<h3>비밀번호 바꾸기</h3>${pwForm(false)}`); $('#pbtn').onclick = () => savePw(false); };
 };
 </script>
 <script>
