@@ -6,6 +6,7 @@
    - 매출은 다음 날 들어오므로 비교 기간은 '이번 달 마지막으로 들어온 날'까지
    - '매출 조회' → 매장별 매출 조회에 쌍용점이 선택된 채로 이동
    - 데이터: 매출 관리와 같은 sales_data를 직접 받음 (LOADERS는 로그인 스크립트 안에만 있어 여기서 못 씀)
+   - 2026-11-18 배달 추가: delivery_data(54-delivery-sales)의 순 배달매출을 더해 홀·포장 + 배달로 보여 줌. 두 자료는 각자 들어온 날까지
    ========================================================== */
 (function(){
   const st = document.createElement('style');
@@ -25,10 +26,16 @@
   .sv-today b{color:var(--ink);font-size:14px;font-variant-numeric:tabular-nums;margin-left:6px}
   .sv-chart{flex:1;min-width:0}
   .sv-bars{display:flex;align-items:flex-end;gap:3px;height:92px}
-  .sv-bars i{flex:1;min-width:2px;border-radius:2px 2px 0 0;background:var(--sub);opacity:.32}
-  .sv-bars i.we{opacity:.5}
-  .sv-bars i.td{background:var(--brand);opacity:1}
-  .sv-bars i.fu{height:2px!important;opacity:.15}
+  .sv-bars .sv-col{flex:1;min-width:2px;height:100%;display:flex;flex-direction:column;justify-content:flex-end}
+  .sv-col b{display:block;width:100%}
+  .sv-col .h{background:var(--sub);opacity:.32}
+  .sv-col.we .h{opacity:.5}.sv-col.td .h{opacity:.75}
+  .sv-col .d{background:var(--brand);border-radius:2px 2px 0 0}
+  .sv-col.fu .h{height:2px;opacity:.15}
+  .sv-split{margin-top:10px;padding-top:10px;border-top:1px solid var(--line);font-size:12px;color:var(--sub);display:flex;flex-direction:column;gap:4px}
+  .sv-split span{color:var(--ink);font-variant-numeric:tabular-nums}.sv-split em{font-style:normal;color:var(--sub);font-size:11px;margin-left:4px}
+  .sv-split i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px;vertical-align:-1px}
+  .sv-split i.h{background:var(--sub);opacity:.5}.sv-split i.d{background:var(--brand)}
   .sv-ax{display:flex;justify-content:space-between;font-size:10px;color:var(--sub);margin-top:5px}
   .sv-empty{color:var(--sub);font-size:12px;text-align:center;padding:22px 0}
   @media(max-width:580px){.sv-box{padding:15px}.sv-body{flex-direction:column;align-items:stretch;gap:14px}.sv-bars{height:70px}.sv-note a{margin-left:0}}
@@ -47,49 +54,70 @@
     const stores = (typeof SALES !== 'undefined' && SALES.stores) || [];
     SV_IDX = stores.findIndex(s => /쌍용/.test(s));
     if (SV_IDX < 0) return '<div class="sv-empty">매출 데이터에서 쌍용점을 찾지 못했어요.</div>';
-    // 매출은 보통 전날까지 들어와요 → '오늘' 대신 마지막으로 들어온 날 기준
-    const today = kst(), ym = today.slice(0, 7);
+    // 홀·포장(포스): 보통 전날까지 들어와요 → 이번 달 마지막으로 들어온 날 기준
+    const today = kst(), ym = today.slice(0, 7), pym = prevYm(ym), n = dim(ym);
     let last = '';
     SALES.rows.forEach(r => { if (r[1] === SV_IDX && r[0] <= today && r[0] > last) last = r[0]; });
-    const end = last.slice(0, 7) === ym ? last : '';          // 이번 달에 들어온 마지막 날
+    const end = last.slice(0, 7) === ym ? last : '';
     const d = end ? +end.slice(8, 10) : 0;
-    const pym = prevYm(ym), pEnd = pym + '-' + String(Math.min(d, dim(pym))).padStart(2, '0');
+    const pEnd = pym + '-' + String(Math.min(d, dim(pym))).padStart(2, '0');
     const day = {}; let cur = 0, prev = 0;
     SALES.rows.forEach(r => {
       if (r[1] !== SV_IDX) return;
       if (end && r[0].slice(0, 7) === ym && r[0] <= end) { cur += r[5]; day[r[0]] = (day[r[0]] || 0) + r[5]; }
       else if (d && r[0] >= pym + '-01' && r[0] <= pEnd) prev += r[5];
     });
-    const pct = prev ? Math.round((cur - prev) / prev * 100) : null;
+    // 배달(순): 주문·적립금 두 파일이 다 있는 날까지. 순 = 결제금액 − 적립금 차감 전부
+    const dd = {}; let dEnd = '', dCur = 0, dPrev = 0, hasPrevD = false;
+    const dDays = (SV_DV && SV_DV.days) || [];
+    dDays.forEach(x => {
+      if (!(x.hasOrders && x.hasLedger)) return;
+      const v = x.sales - x.usedCall - x.usedOther;
+      if (x.d.slice(0, 7) === ym && x.d <= today) { dd[x.d] = v; dCur += v; if (x.d > dEnd) dEnd = x.d; }
+      else if (x.d.slice(0, 7) === pym) hasPrevD = true;
+    });
+    const de = dEnd ? +dEnd.slice(8, 10) : 0;
+    if (de) dDays.forEach(x => { if (x.hasOrders && x.hasLedger && x.d.slice(0, 7) === pym && +x.d.slice(8, 10) <= de) dPrev += x.sales - x.usedCall - x.usedOther; });
+    const withD = !!dEnd && hasPrevD;
+    const base = prev + (withD ? dPrev : 0), now = cur + (withD ? dCur : 0);
+    const pct = base ? Math.round((now - base) / base * 100) : null;
+    const lab = withD ? '전월 같은 기간 대비' : `홀·포장 전월 1~${d}일 대비`;
     const cmp = pct === null ? '<span class="sv-eq">전월 비교 데이터 없음</span>'
-      : pct > 0 ? `<span class="sv-up">▲ ${pct}% 전월 1~${d}일 대비</span>`
-      : pct < 0 ? `<span class="sv-dn">▼ ${-pct}% 전월 1~${d}일 대비</span>`
-      : `<span class="sv-eq">전월 1~${d}일과 같음</span>`;
-    const n = dim(ym), max = Math.max(1, ...Object.values(day));
+      : pct > 0 ? `<span class="sv-up">▲ ${pct}% ${lab}</span>` : pct < 0 ? `<span class="sv-dn">▼ ${-pct}% ${lab}</span>` : `<span class="sv-eq">${lab} 같음</span>`;
+    const tot = cur + dCur, share = tot && dEnd ? Math.round(dCur / tot * 1000) / 10 : 0;
+    const key = i => ym + '-' + String(i).padStart(2, '0');
+    let max = 1; for (let i = 1; i <= n; i++) max = Math.max(max, (day[key(i)] || 0) + Math.max(0, dd[key(i)] || 0));
     let bars = '';
     for (let i = 1; i <= n; i++) {
-      const k = ym + '-' + String(i).padStart(2, '0'), v = day[k] || 0, w = dow(k);
-      const fut = !end || k > end;
-      const cls = fut ? 'fu' : (k === end ? 'td' : (/[토일]/.test(w) ? 'we' : ''));
-      bars += `<i class="${cls}" style="height:${Math.max(2, Math.round(v / max * 100))}%" title="${+ym.slice(5)}/${i}(${w}) ${fut ? (k <= today ? '집계 전' : '') : (v ? won(v) + '원' : '매출 없음')}"></i>`;
+      const k = key(i), hv = day[k] || 0, dv = Math.max(0, dd[k] || 0), w = dow(k);
+      if ((!end || k > end) && !(k in dd)) { bars += `<i class="sv-col fu" title="${+ym.slice(5)}/${i}(${w}) ${k <= today ? '집계 전' : ''}"><b class="h"></b></i>`; continue; }
+      const t = `${+ym.slice(5)}/${i}(${w})` + (end && k <= end ? ` 홀·포장 ${won(hv)}원` : ' 홀·포장 집계 전') + (k in dd ? ` · 배달 ${won(dd[k])}원` : '');
+      bars += `<i class="sv-col${k === end ? ' td' : ''}${/[토일]/.test(w) ? ' we' : ''}" title="${t}"><b class="d" style="height:${Math.round(dv / max * 100)}%"></b><b class="h" style="height:${hv ? Math.max(2, Math.round(hv / max * 100)) : 0}%"></b></i>`;
     }
-    const lastTxt = end ? `${+end.slice(5, 7)}/${+end.slice(8)}(${dow(end)})<b>${won(day[end])}원</b>` : '이번 달 집계 전';
     const upd = META.salesUpdated ? META.salesUpdated + ' 업데이트' : '';
-    return `<div class="sv-note"><b>${stores[SV_IDX]}</b><span>${+ym.slice(5)}월 · 순매출 기준 · 배달 매출 제외(집계 전) · 매출은 다음 날 들어와요</span>${upd ? `<span>${upd}</span>` : ''}<a role="button" tabindex="0" onclick="svGo()">매출 조회 ${typeof ic === 'function' ? ic('arrow') : '→'}</a></div>
-      <div class="sv-body"><div class="sv-nums"><div class="sv-l">이번 달 누적</div><div class="sv-v">${won(cur)}<small>원</small></div>${cmp}
-        <div class="sv-today">최근 ${lastTxt}</div></div>
+    const dNote = dEnd ? '배달은 순 배달매출(마일리지 차감 후)' : '배달 매출 제외(아직 안 올림)';
+    return `<div class="sv-note"><b>${stores[SV_IDX]}</b><span>${+ym.slice(5)}월 · 순매출 기준 · ${dNote}</span>${upd ? `<span>${upd}</span>` : ''}<a role="button" tabindex="0" onclick="svGo()">매출 조회 ${typeof ic === 'function' ? ic('arrow') : '→'}</a></div>
+      <div class="sv-body"><div class="sv-nums"><div class="sv-l">이번 달 누적</div><div class="sv-v">${won(tot)}<small>원</small></div>${cmp}
+        <div class="sv-split"><span><i class="h"></i>홀·포장 ${won(cur)}${end ? `<em>${+end.slice(5, 7)}/${d}까지</em>` : ''}</span>${dEnd ? `<span><i class="d"></i>배달 ${won(dCur)} · ${share}%<em>${+dEnd.slice(5, 7)}/${de}까지</em></span>` : ''}</div></div>
         <div class="sv-chart"><div class="sv-bars">${bars}</div><div class="sv-ax"><span>1일</span><span>10일</span><span>20일</span><span>${n}일</span></div></div></div>`;
   }
 
   // 매출 데이터: 매출 조회 화면과 같은 sales_data를 받아 같은 변수(SALES)에 넣음. 30분 지나면 다시 받음
-  let SV_AT = 0;
+  // 배달: delivery_data (지난달 1일 ~ 오늘). 배달 매출 화면에서 저장하면 DV_DASH_AT=0 이 되어 다시 받음
+  let SV_AT = 0, SV_DV = null; window.DV_DASH_AT = 0;
   async function svLoad(){
-    if (SV_AT && Date.now() - SV_AT < 30 * 60e3 && SALES.rows.length) return;
-    const { data, error } = await window.SB.rpc('sales_data'); if (error) throw error;
-    Object.assign(META, data.meta || {});
-    SALES = data.sales || { stores: [], rows: [] };
-    S_MIN = SALES.rows.length ? SALES.rows[0][0] : ''; S_MAX = SALES.rows.length ? SALES.rows[SALES.rows.length - 1][0] : '';
-    SV_AT = Date.now();
+    const today = kst();
+    const dvP = (window.DV_DASH_AT && Date.now() - window.DV_DASH_AT < 30 * 60e3) ? null
+      : window.SB.rpc('delivery_data', { p_store: 1, p_from: prevYm(today.slice(0, 7)) + '-01', p_to: today })
+          .then(({ data, error }) => { if (!error && data) { SV_DV = data; window.DV_DASH_AT = Date.now(); } }).catch(() => {});
+    if (!(SV_AT && Date.now() - SV_AT < 30 * 60e3 && SALES.rows.length)) {
+      const { data, error } = await window.SB.rpc('sales_data'); if (error) throw error;
+      Object.assign(META, data.meta || {});
+      SALES = data.sales || { stores: [], rows: [] };
+      S_MIN = SALES.rows.length ? SALES.rows[0][0] : ''; S_MAX = SALES.rows.length ? SALES.rows[SALES.rows.length - 1][0] : '';
+      SV_AT = Date.now();
+    }
+    if (dvP) await dvP;
   }
 
   window.svGo = function(){ window.SV_PRE = SV_IDX; go('sales-report'); };
