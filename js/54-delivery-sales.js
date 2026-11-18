@@ -3,6 +3,7 @@
    배달 매출 (2026-11-18) — 매출 관리 > 배달 매출 (관리자·본사)
    - 인프라D(배달대행) 가맹점 PC 프로그램의 엑셀 2개를 올림: 매출통계 > 배달접수통계, 적립금내역
    - 배달접수통계 xls는 프로그램이 열기 암호(RC4)를 걸어 내보냄 → 브라우저 안에서 풀어서 읽음 (암호·개인정보는 서버로 안 보냄)
+   - 암호는 출력할 때마다 바뀜 → 화면 위 암호 칸에 적음 (저장 안 함, 적으면 바로 다시 읽음)
    - 순 배달매출 = 결제금액 합계 − 적립금 차감 전부 (배달료·부가세·월 관리비·입금 수수료 등, 출금 요청은 제외)
    - 영업일: 새벽 5시 기준 (프로그램 주문조회 기준시간과 같음). 적립금 줄은 메모 속 (날짜/콜번호)로 주문 날짜에 붙임
    - 서버: delivery_upload(관리자·본사) / delivery_data(로그인 직원), 테이블 delivery_orders · delivery_ledger
@@ -169,8 +170,11 @@ const DV_PARSE = (function(){
   .dv-files{display:grid;gap:8px;margin-top:12px}
   .dv-file{display:flex;gap:10px;align-items:center;flex-wrap:wrap;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:12px;background:var(--card,#fff)}
   .dv-file b{font-size:13px}.dv-file .ok{color:#2f7d32}.dv-file .bad{color:#c62429}.dv-file .sub{color:var(--sub)}
-  .dv-pw{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:12px;font-size:12px;color:var(--sub)}
-  .dv-pw input[type=password]{min-height:36px;border:1px solid var(--line);border-radius:7px;padding:6px 10px;width:180px}
+  .dv-pw{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 12px;font-size:12px;color:var(--sub)}
+  .dv-pw > span:first-child{font-weight:600;color:var(--ink)}
+  .dv-pw input[type=password]{min-height:38px;border:1px solid var(--line);border-radius:7px;padding:6px 10px;width:220px;font-size:14px}
+  .dv-pw input.need{border-color:var(--brand);box-shadow:0 0 0 3px rgba(198,36,41,.12)}
+  .dv-pwhelp{font-size:11px;color:var(--sub)}
   .dv-act{display:flex;gap:8px;align-items:center;justify-content:flex-end;margin-top:14px}
   .dv-sum{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:0 0 14px}
   .dv-sum div{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--card,#fff)}
@@ -214,11 +218,9 @@ const DV_PARSE = (function(){
         f.res = r.kind === 'unknown' ? { kind: 'error', msg: '배달접수통계나 적립금내역 파일이 아니에요' } : r;
       } catch (e) {
         f.res = { kind: 'error', need: e.message === 'NEED_PW' || e.message === 'PASSWORD',
-          msg: e.message === 'NEED_PW' ? '암호가 걸린 파일이에요. 아래에 파일 암호를 넣어 주세요' : e.message === 'PASSWORD' ? '파일 암호가 맞지 않아요' : (e.message || '파일을 읽지 못했어요') };
+          msg: e.message === 'NEED_PW' ? '암호가 걸린 파일이에요. 위 암호 칸에 이번 출력 암호를 적어 주세요' : e.message === 'PASSWORD' ? '파일 암호가 맞지 않아요' : (e.message || '파일을 읽지 못했어요') };
       }
     }
-    const rem = document.getElementById('dv-rem');
-    try { if (rem && rem.checked && pwNow()) localStorage.setItem(PW_KEY, pwNow()); if (rem && !rem.checked) localStorage.removeItem(PW_KEY); } catch (e) {}
     drawFiles();
   }
   function addFiles(list){
@@ -246,10 +248,11 @@ const DV_PARSE = (function(){
     const bad = DV.files.some(f => f.res && f.res.kind === 'error'), wait = DV.files.some(f => !f.res);
     const wrongStore = ready.some(f => f.res.stores && f.res.stores.length && !f.res.stores.some(s => s.includes('쌍용')));
     const btn = document.getElementById('dv-save');
-    if (btn) { btn.disabled = !ready.length || wait || wrongStore || DV.busy; btn.textContent = ready.length ? `${ready.length}개 파일 저장` : '저장'; }
-    const pwRow = document.getElementById('dv-pwrow'); if (pwRow) pwRow.style.display = DV.files.some(f => f.res && f.res.need) || pwNow() ? '' : 'none';
+    const needPw = DV.files.some(f => f.res && f.res.need);
+    if (btn) { btn.disabled = !ready.length || wait || wrongStore || needPw || DV.busy; btn.textContent = ready.length ? `${ready.length}개 파일 저장` : '저장'; }
+    const pwi = document.getElementById('dv-pw'); if (pwi) pwi.classList.toggle('need', DV.files.some(f => f.res && f.res.need));
     const hint = document.getElementById('dv-hint');
-    if (hint) hint.textContent = bad ? '오류가 있는 파일은 빼고 저장돼요. 다시 하려면 비우기 후 올려 주세요.' : (ready.length === 1 ? '두 파일을 같은 기간으로 같이 올리면 검산까지 맞춰 볼 수 있어요.' : '');
+    if (hint) hint.textContent = needPw ? '암호를 적으면 저장할 수 있어요.' : bad ? '오류가 있는 파일은 빼고 저장돼요. 다시 하려면 비우기 후 올려 주세요.' : (ready.length === 1 ? '두 파일을 같은 기간으로 같이 올리면 검산까지 맞춰 볼 수 있어요.' : '');
   }
   async function save(){
     const ready = DV.files.filter(f => f.res && (f.res.kind === 'orders' || f.res.kind === 'ledger'));
@@ -262,7 +265,8 @@ const DV_PARSE = (function(){
       if (error) throw error;
       toast(`저장했어요 · 주문 ${data.orders}건 · 적립금 ${data.ledger}줄`);
       const ds = orders.concat(ledger).map(x => x.date).sort(); if (ds.length) DV.ym = ds[ds.length - 1].slice(0, 7);
-      DV.files = []; drawFiles(); window.DV_DASH_AT = 0; await loadMonth();
+      DV.files = []; const pwi = document.getElementById('dv-pw'); if (pwi) pwi.value = '';
+      drawFiles(); window.DV_DASH_AT = 0; await loadMonth();
     } catch (e) { toast('저장하지 못했어요: ' + (e.message || e)); }
     DV.busy = false; drawFiles();
   }
@@ -304,17 +308,17 @@ const DV_PARSE = (function(){
   window.dvPick = () => document.getElementById('dv-input').click();
 
   function pageDv(){
-    let saved = ''; try { saved = localStorage.getItem(PW_KEY) || ''; } catch (e) {}
+    try { localStorage.removeItem(PW_KEY); } catch (e) {}   // 예전에 기억해 둔 암호가 있으면 지움 (암호가 매번 바뀜)
     document.getElementById('main').innerHTML = simpleHero(['매출 관리', '배달 매출'], 'DELIVERY · INFRA D', '배달 매출',
       '인프라D 엑셀(배달접수통계·적립금내역)을 끌어다 놓으면 날짜별 배달 매출과 마일리지 차감이 쌓여요.') +
       `<section class="card"><div class="section-title"><strong>${ic('download')}엑셀 올리기 · ${STORE_NAME}</strong><small>기간이 겹쳐도 콜번호로 걸러서 두 번 들어가지 않아요</small></div>
+        <div class="dv-pw"><span>배달접수통계 암호</span><input type="password" id="dv-pw" autocomplete="off" placeholder="엑셀 출력할 때 나온 암호" aria-label="배달접수통계 엑셀 암호">
+          <span class="dv-pwhelp">암호는 출력할 때마다 바뀌어요. 먼저 적고 파일을 놓아도 되고, 파일을 놓은 뒤 적어도 바로 다시 읽어요.</span></div>
         <div class="dv-drop" id="dv-drop" role="button" tabindex="0" onclick="dvPick()"><b>파일을 여기에 끌어다 놓거나 눌러서 고르세요</b><br>매출통계 &gt; 배달접수통계, 적립금내역에서 엑셀 출력한 파일 그대로 (.xls · .xlsx)</div>
         <input type="file" id="dv-input" accept=".xls,.xlsx" multiple style="display:none">
         <div class="dv-files" id="dv-files"></div>
-        <div class="dv-pw" id="dv-pwrow" style="display:none"><span>파일 암호</span><input type="password" id="dv-pw" value="${h(saved)}" autocomplete="off" aria-label="엑셀 파일 암호">
-          <label><input type="checkbox" id="dv-rem" ${saved ? 'checked' : ''}> 이 PC에서 기억</label><button class="btn ghost" onclick="dvRetry()">다시 읽기</button></div>
         <div class="dv-act"><span class="filter-hint" id="dv-hint" style="margin-right:auto"></span><button class="btn ghost" onclick="dvClear()">비우기</button><button class="btn primary" id="dv-save" onclick="dvSave()" disabled>저장</button></div>
-        <div class="dv-note">암호는 이 브라우저 안에서만 파일을 여는 데 쓰고 서버로 보내지 않아요. 고객 주소·전화·메모와 기사 정보도 서버로 보내지 않아요.</div>
+        <div class="dv-note">암호는 이 브라우저 안에서만 파일을 여는 데 쓰고 저장하거나 서버로 보내지 않아요. 고객 주소·전화·메모와 기사 정보도 서버로 보내지 않아요.</div>
       </section><div id="dv-month"></div>` + pageFoot();
     const drop = document.getElementById('dv-drop'), inp = document.getElementById('dv-input');
     inp.onchange = () => { addFiles(inp.files); inp.value = ''; drawFiles(); };
@@ -322,8 +326,9 @@ const DV_PARSE = (function(){
     ['dragleave', 'drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('on'); }));
     drop.addEventListener('drop', e => { addFiles(e.dataTransfer.files); drawFiles(); });
     drop.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); dvPick(); } });
-    document.getElementById('dv-pw').addEventListener('keydown', e => { if (e.key === 'Enter') dvRetry(); });
-    if (saved) document.getElementById('dv-pwrow').style.display = '';
+    let pwT = 0; const pwi = document.getElementById('dv-pw');
+    pwi.addEventListener('input', () => { clearTimeout(pwT); pwT = setTimeout(() => { if (DV.files.some(f => f.res && f.res.need)) dvRetry(); }, 400); });
+    pwi.addEventListener('keydown', e => { if (e.key === 'Enter') dvRetry(); });
     drawFiles(); loadMonth(); loadXlsx().catch(() => {});
   }
   window.dvSave = save;
@@ -352,3 +357,4 @@ const DV_PARSE = (function(){
   };
   try { renderSide(window.__curPage || 'dash'); } catch (e) {}
 })();
+
