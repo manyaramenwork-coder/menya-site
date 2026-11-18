@@ -5,7 +5,7 @@
    - 이번 달 누적 · 전월 같은 기간 대비 · 최근 매출일 · 일별 막대(최근 매출일 강조)
    - 매출은 다음 날 들어오므로 비교 기간은 '이번 달 마지막으로 들어온 날'까지
    - '매출 조회' → 매장별 매출 조회에 쌍용점이 선택된 채로 이동
-   - 데이터: 매출 관리와 같은 sales_data (30분 캐시 공유)
+   - 데이터: 매출 관리와 같은 sales_data를 직접 받음 (LOADERS는 로그인 스크립트 안에만 있어 여기서 못 씀)
    ========================================================== */
 (function(){
   const st = document.createElement('style');
@@ -81,6 +81,17 @@
         <div class="sv-chart"><div class="sv-bars">${bars}</div><div class="sv-ax"><span>1일</span><span>10일</span><span>20일</span><span>${n}일</span></div></div></div>`;
   }
 
+  // 매출 데이터: 매출 조회 화면과 같은 sales_data를 받아 같은 변수(SALES)에 넣음. 30분 지나면 다시 받음
+  let SV_AT = 0;
+  async function svLoad(){
+    if (SV_AT && Date.now() - SV_AT < 30 * 60e3 && SALES.rows.length) return;
+    const { data, error } = await window.SB.rpc('sales_data'); if (error) throw error;
+    Object.assign(META, data.meta || {});
+    SALES = data.sales || { stores: [], rows: [] };
+    S_MIN = SALES.rows.length ? SALES.rows[0][0] : ''; S_MAX = SALES.rows.length ? SALES.rows[SALES.rows.length - 1][0] : '';
+    SV_AT = Date.now();
+  }
+
   window.svGo = function(){ window.SV_PRE = SV_IDX; go('sales-report'); };
   const pageSalesSv = pageSales;
   pageSales = function(){
@@ -116,8 +127,7 @@
       svPlace();
       const ob = new MutationObserver(() => { if (!document.getElementById('sv-dash-sec')) return ob.disconnect(); svPlace(); });
       ob.observe(main, { childList: true, subtree: true }); setTimeout(() => ob.disconnect(), 20000);
-      const L = LOADERS['sales-report'];
-      Promise.resolve(L && !(L.ready && L.ready()) ? L() : null).then(() => {
+      svLoad().then(() => {
         const b = document.querySelector('#sv-dash-sec .sv-box'); if (b) b.innerHTML = svHtml();
       }).catch(e => {
         const b = document.querySelector('#sv-dash-sec .sv-box');
