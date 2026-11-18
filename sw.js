@@ -1,6 +1,7 @@
 /* 멘야마쯔리 앱 서비스워커 — 항상 최신 우선, 데이터는 저장하지 않음
    2026-11-04 추가: 휴대폰 알림(푸시) 받기 · 알림 누르면 해당 화면으로 이동
-   2026-11-06 추가: 알림 올 때 앱 아이콘 숫자 +1 (아이폰) */
+   2026-11-06 추가: 알림 올 때 앱 아이콘 숫자 +1 (아이폰)
+   2026-11-18 추가: js·css는 매번 최신인지 확인 (파일 분리 후 예전 파일이 남던 문제) */
 const CACHE = 'menya-shell-v1';
 
 self.addEventListener('install', () => self.skipWaiting());
@@ -33,9 +34,11 @@ self.addEventListener('fetch', e => {
     return;
   }
   // 이미지·아이콘 등: 서버 먼저, 실패 시에만 저장본
+  // 2026-11-18: js·css 파일은 브라우저 저장본(최대 4시간)을 쓰지 않고 매번 서버에 바뀌었는지 확인 (안 바뀌었으면 304로 가볍게)
+  const fresh = /\.(js|css)$/.test(url.pathname);
   e.respondWith((async () => {
     try {
-      const res = await fetch(req);
+      const res = await fetch(req, fresh ? { cache: 'no-cache' } : undefined);
       if (res.ok) { const c = await caches.open(CACHE); c.put(req, res.clone()); }
       return res;
     } catch (err) {
