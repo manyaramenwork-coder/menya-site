@@ -510,21 +510,22 @@ td .sm{font-size:12px;color:var(--sub)}
       </div>
     </section>
 
-    <!-- 영업기획: 네이버 플레이스 분석 -->
+    <!-- 영업기획: 급성장 브랜드 (인허가 개업·폐업 추이) -->
     <section id="sec-naver" class="sec" hidden>
-      <div class="sec-hd"><h1>네이버 플레이스 분석 <small id="nv-count"></small></h1></div>
-      <p class="muted">CRM에 쌓인 매장(상가정보·네이버 플레이스 확인)을 브랜드별로 세서 <b>매달 1일 자동으로 기록</b>해요. 지난 기록과 비교해서 늘어난 브랜드를 찾는 화면이에요. 정보공개서보다 빨리 흐름이 보여요.</p>
+      <div class="sec-hd"><h1>급성장 브랜드 <small id="nv-count"></small></h1></div>
+      <p class="muted">행안부 인허가 기준으로 <b>외식 프랜차이즈의 최근 개업·폐업</b>을 세서, 요즘 매장이 빠르게 늘고 있는 브랜드를 찾는 화면이에요. 정보공개서(작년 말 기준)보다 1년 가까이 빠른 흐름이 보여요. 브랜드를 누르면 정보공개서와 조사 메모를 볼 수 있어요.</p>
       <div class="box" id="nv-note" style="margin-bottom:10px" hidden></div>
       <div class="bar">
         <input type="search" id="nv-q" placeholder="브랜드 검색" aria-label="브랜드 검색">
-        <select id="nv-min" aria-label="최소 매장 수"><option value="10">현재 10곳 이상</option><option value="5">5곳 이상</option><option value="30">30곳 이상</option></select>
-        <select id="nv-sort" aria-label="정렬"><option value="inc">늘어난 매장 수 순</option><option value="pct">증가율 순</option><option value="n">매장 많은 순</option></select>
-        <label class="chk"><input type="checkbox" id="nv-new">정보공개서에 없는 브랜드만</label>
+        <select id="nv-ind" aria-label="업종"><option value="">전체 업종</option></select>
+        <select id="nv-min" aria-label="최소 개업 수"><option value="10">3년 개업 10곳 이상</option><option value="5">5곳 이상</option><option value="30">30곳 이상</option><option value="100">100곳 이상</option></select>
+        <select id="nv-sort" aria-label="정렬"><option value="net1">최근 1년 순증 순</option><option value="open1">최근 1년 개업 순</option><option value="net3">3년 순증 순</option><option value="fpct">정보공개서 2년 증가율 순</option><option value="crate">폐점 비율 낮은 순</option></select>
+        <label class="chk"><input type="checkbox" id="nv-surge">최근 급증만</label>
       </div>
-      <p class="muted" style="margin-top:-4px">"정보공개서에 없음"에는 막 크는 신생 브랜드도 있지만, '만리장성'·'베트남쌀국수'처럼 같은 이름을 쓰는 개인 매장 묶음도 섞여 있어요.</p>
+      <p class="muted" style="margin-top:-4px">순증 = 개업 − 폐업. <b>최근 급증</b>은 최근 1년 순증이 그 전 2년 연평균보다 1.5배 이상 많은 브랜드예요. 폐업 신고를 늦게 하는 매장이 있어서 폐업은 실제보다 적게 잡힐 수 있어요.</p>
       <div class="tbl-wrap">
         <table>
-          <thead><tr><th>브랜드</th><th class="num">현재</th><th class="num">청주</th><th class="num">1개월 전</th><th class="num">3개월 전</th><th class="num">6개월 전</th><th class="num" id="nv-h0">첫 기록 대비</th><th>정보공개서</th><th>조사</th></tr></thead>
+          <thead><tr><th>브랜드</th><th>업종</th><th class="num">1년 개업</th><th class="num">1년 폐업</th><th class="num">1년 순증</th><th class="num">3년 순증</th><th class="num">폐점 비율<br><small>(3년)</small></th><th class="num">정보공개서<br><small id="nv-fy">가맹점</small></th><th class="num">2년 증가율</th><th>조사</th></tr></thead>
           <tbody id="nv-rows"></tbody>
         </table>
       </div>
@@ -780,13 +781,13 @@ const IC = {
   script: '<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/>',
   ingest: '<path d="M21 12a9 9 0 1 1-2.6-6.4L21 8"/><path d="M21 3v5h-5"/>',
   ftc: '<path d="M3 3v18h18"/><path d="m7 15 4-4 3 3 5-6"/>',
-  naver: '<path d="M4 4h4l8 10V4h4v16h-4L8 10v10H4z"/>',
+  naver: '<path d="m3 17 6-6 4 4 8-8"/><path d="M15 7h6v6"/>',
   more: '<circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/>'
 };
 const svg = k => `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[k]}</svg>`;
 // 메뉴 묶음: 영업기획(분석·계획) → 매장 찾기(수집) → 리드 관리(연락·기록)
 const NAV_GROUPS = [
-  ['영업기획', [['ftc', '정보공개서 분석', '공정위 가맹점 수 변화'], ['naver', '네이버 플레이스 분석', '브랜드별 매장 수 월별 추이'], ['script', '영업 스크립트', '통화하면서 보는 문구']]],
+  ['영업기획', [['ftc', '정보공개서 분석', '공정위 가맹점 수 변화'], ['naver', '급성장 브랜드', '인허가 최근 개업·폐업 추이'], ['script', '영업 스크립트', '통화하면서 보는 문구']]],
   ['매장 찾기', [['map', '지도 탐색', '지도에서 매장 찾기'], ['db', '전체 매장 DB', '목록·보드로 전체 검색'], ['target', '샵인샵 타겟', '우리 메뉴·상권 기준 우편 대상'], ['listing', '양도 매물', '어사이드로 들어온 매물']]],
   ['리드 관리', [['inbox', '신청함', '랜딩 신청'], ['comm', '커뮤니티 리드', '카페 글·댓글·쪽지 준 분'], ['fav', '관심 매장', '담아 둔 매장'], ['log', '연락 기록', '통화·방문 기록']]]
 ];
@@ -852,7 +853,7 @@ $('v-board').addEventListener('click', () => setDbMode('board'));
 state.dbMode = 'list';
 
 
-/* ---------- 영업기획: 정보공개서 분석 · 네이버 플레이스 분석 ---------- */
+/* ---------- 영업기획: 정보공개서 분석 · 급성장 브랜드 ---------- */
 const RST = { '미조사': 't-r0', '조사중': 't-r1', '완료': 't-r2' };
 const rTag = s => `<span class="tag ${RST[s] || 't-r0'}">${esc(s || '미조사')}</span>`;
 const fmt = v => v === null || v === undefined ? '<span class="muted">-</span>' : Number(v).toLocaleString();
@@ -893,30 +894,35 @@ function renderFtc(){
 $('ft-q').addEventListener('input', () => { clearTimeout(state.ft.t); state.ft.t = setTimeout(loadFtc, 350); });
 $('ft-rows').addEventListener('click', e => { const tr = e.target.closest('tr[data-k]'); if (tr) openBrand(tr.dataset.k); });
 
+/* 급성장 브랜드: 인허가 최근 3년 개업·폐업 (license_events, 수집기 license-event-fetch) */
 state.nv = { d: null, t: null };
 async function loadNaver(){
   try {
-    const d = await rpc('sp_naver_list', { p: { q: $('nv-q').value.trim(), min_n: $('nv-min').value, sort: $('nv-sort').value, only_new: $('nv-new').checked } });
+    const d = await rpc('sp_growth_list', { p: { q: $('nv-q').value.trim(), induty: $('nv-ind').value, min_n: $('nv-min').value, sort: $('nv-sort').value, surge: $('nv-surge').checked } });
     state.nv.d = d; renderNaver();
   } catch (e) { toast(errMsg(e), true); }
 }
 function renderNaver(){
-  const d = state.nv.d || {}, rows = d.rows || [];
+  const d = state.nv.d || {}, rows = d.rows || [], pg = d.progress || {};
+  const sel = $('nv-ind'), cur = sel.value;
+  sel.innerHTML = '<option value="">전체 업종</option>' + (d.industries || []).map(x => `<option>${esc(x)}</option>`).join(''); sel.value = cur;
   $('nv-count').textContent = (d.total || 0).toLocaleString() + '개 브랜드' + (d.total > rows.length ? ` · 상위 ${rows.length}개 표시` : '');
-  $('nv-h0').innerHTML = '첫 기록 대비' + (d.d_first ? `<br><small>(${esc(shortDate(d.d_first))})</small>` : '');
-  const nb = $('nv-note');
-  if ((d.snaps || 0) < 2) { nb.hidden = false; nb.innerHTML = `<b>아직 기록이 ${d.snaps || 0}번뿐이에요.</b> <span class="muted">${d.d_first ? esc(shortDate(d.d_first)) + '에 첫 기록을 남겼고, ' : ''}매달 1일 기록이 쌓이면 1·3·6개월 비교 칸이 채워져요. 지금은 현재 매장 수 순으로 보세요.</span>`; }
-  else nb.hidden = true;
+  const nb = $('nv-note'), busy = pg.jobs && pg.finished < pg.jobs;
+  nb.hidden = !busy;
+  if (busy) nb.innerHTML = `<b>아직 수집 중이에요${pg.total ? ` (약 ${Math.round(100 * pg.done / pg.total)}%)` : ''}.</b> <span class="muted">최근 개업·폐업부터 들어와서 지금은 1년 숫자가 먼저 차고, 3년 숫자와 ‘최근 급증’ 표시는 수집이 끝나야 정확해요.</span>`;
+  const fy = rows.find(r => r.fy); $('nv-fy').textContent = fy ? fy.fy + '년 가맹점' : '가맹점';
+  const net = v => v > 0 ? `<span class="up">+${v.toLocaleString()}</span>` : v < 0 ? `<span class="dn">${v.toLocaleString()}</span>` : '0';
   $('nv-rows').innerHTML = rows.length ? rows.map(r => `<tr data-k="${esc(r.key)}">
-    <td><div class="nm">${esc(r.key)}</div></td>
-    <td class="num"><b>${fmt(r.n)}</b></td><td class="num">${r.cj ? r.cj.toLocaleString() : '<span class="muted">-</span>'}</td>
-    <td class="num">${diff(r.n, r.s1)}</td><td class="num">${diff(r.n, r.s3)}</td><td class="num">${diff(r.n, r.s6)}</td>
-    <td class="num">${(d.snaps || 0) < 2 ? '<span class="muted">-</span>' : diff(r.n, r.s0)}</td>
-    <td>${r.in_ftc ? '<span class="tag t-C">있음</span>' : '<span class="tag t-new">없음</span>'}</td>
+    <td><div class="nm">${esc(r.brand)}${r.surge ? ' <span class="tag t-new">최근 급증</span>' : ''}</div></td>
+    <td>${esc(r.ind || '')}</td>
+    <td class="num">${Number(r.o1).toLocaleString()}</td><td class="num">${Number(r.c1).toLocaleString()}</td>
+    <td class="num"><b>${net(r.n1)}</b></td><td class="num">${net(r.n3)}</td>
+    <td class="num">${r.crate == null ? '<span class="muted">-</span>' : r.crate + '%'}</td>
+    <td class="num">${fmt(r.fn)}</td><td class="num">${r.fpct == null ? '<span class="muted">-</span>' : r.fpct + '%'}</td>
     <td>${rTag(r.st)}</td></tr>`).join('')
-    : '<tr><td colspan="9" class="muted" style="text-align:center;padding:40px">조건에 맞는 브랜드가 없어요.</td></tr>';
+    : '<tr><td colspan="10" class="muted" style="text-align:center;padding:40px">조건에 맞는 브랜드가 없어요.</td></tr>';
 }
-['nv-min', 'nv-sort', 'nv-new'].forEach(id => $(id).addEventListener('change', loadNaver));
+['nv-ind', 'nv-min', 'nv-sort', 'nv-surge'].forEach(id => $(id).addEventListener('change', loadNaver));
 $('nv-q').addEventListener('input', () => { clearTimeout(state.nv.t); state.nv.t = setTimeout(loadNaver, 350); });
 $('nv-rows').addEventListener('click', e => { const tr = e.target.closest('tr[data-k]'); if (tr) openBrand(tr.dataset.k); });
 
