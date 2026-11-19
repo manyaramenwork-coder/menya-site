@@ -8,6 +8,7 @@
    - 순 배달매출 = 결제금액 합계 − 적립금 차감 전부 (배달료·부가세·월 관리비·입금 수수료 등, 출금 요청은 제외)
    - 영업일: 새벽 5시 기준 (프로그램 주문조회 기준시간과 같음). 적립금 줄은 메모 속 (날짜/콜번호)로 주문 날짜에 붙임
    - 서버: delivery_upload(관리자·본사) / delivery_data(로그인 직원), 테이블 delivery_orders · delivery_ledger
+   - 2026-11-19 정산방 메모: 매장 메모장 정산과 같은 틀로 날짜별 자동 기입 + 복사 (탭 맨 위). 서버 delivery_data에 cashFee·others 추가
    - 2026-11-19 배민 포장(픽업): 앱 카드결제라 포스·인프라D 어디에도 안 잡힘 → 날짜별 건수·금액(delivery_pickup).
      어사이드(브라우저 AI)가 매일 주소를 열어 넣음: functions/v1/baemin-pickup?key=...&d=11-13:1:11000,...
      이 화면에서 직접 고칠 수도 있고, 어사이드 키를 새로 만들 수 있음(키는 해시만 저장, 만들 때 한 번만 보여 줌)
@@ -196,6 +197,20 @@ const DV_PARSE = (function(){
   .dv-mon{display:flex;align-items:center;gap:8px}.dv-mon b{font-size:14px;min-width:88px;text-align:center}
   .dv-t td.ck-ok{color:#2f7d32}.dv-t td.ck-bad{color:#c62429;font-weight:600}.dv-t td.ck-no{color:var(--sub)}
   .dv-note{font-size:11px;color:var(--sub);line-height:1.8;margin-top:10px}
+  .dm-nav{display:flex;gap:6px}.dm-nav .btn{padding:4px 12px;min-height:32px}
+  .dm-card{border:1px solid var(--line);border-radius:12px;padding:14px 18px;font-size:14px;line-height:1.8;max-width:420px;background:var(--card,#fff)}
+  .dm-head{display:flex;justify-content:space-between;align-items:center;gap:8px}.dm-head b{font-size:15px}.dm-head .btn{font-size:12px;padding:5px 10px;min-height:30px}
+  .dm-head .btn .icon{width:13px;height:13px}
+  .dm-line{border-top:1px dashed var(--line);margin:6px 0}
+  .dm-r{display:grid;grid-template-columns:136px 130px;column-gap:10px}
+  .dm-r span:first-child{color:var(--sub)}.dm-r span:last-child{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .dm-r.k span:last-child{font-weight:700}
+  .dm-gap{height:7px}
+  .dm-src{font-size:11px;color:var(--sub);margin-bottom:4px}
+  .dm-why{display:inline-block;font-size:11px;color:#8a5a00;background:#fdf1d8;border-radius:6px;padding:1px 7px;margin:1px 0 3px}
+  .dv-dl{cursor:pointer;color:inherit;text-decoration:underline dotted;text-underline-offset:3px}
+  .dv-t tr.dv-on td{background:#faf0ee}
+  @media(max-width:420px){.dm-r{grid-template-columns:minmax(0,1fr) auto}}
   @media(max-width:900px){.dv-sum{grid-template-columns:repeat(3,minmax(0,1fr))}}
   @media(max-width:600px){.dv-sum{grid-template-columns:repeat(2,minmax(0,1fr))}}
   `;
@@ -291,11 +306,14 @@ const DV_PARSE = (function(){
     try {
       const { data, error } = await window.SB.rpc('delivery_data', { p_store: STORE, p_from: DV.ym + '-01', p_to: lastDay(DV.ym) });
       if (error) throw error;
-      DV.data = data; drawMonth();
+      DV.data = data;
+      if (DV.memoKeep) { DV.memoDay = DV.memoKeep; DV.memoKeep = ''; }
+      drawMonth();
     } catch (e) { if (box) box.innerHTML = `<div class="empty">불러오지 못했어요. ${h(e.message || '')}</div>`; }
   }
   function drawMonth(){
     const box = document.getElementById('dv-month'), D = DV.data; if (!box || !D) return;
+    drawMemo();
     const days = D.days || [];
     const sales = days.reduce((s, d) => s + d.sales, 0), used = days.reduce((s, d) => s + d.usedCall + d.usedOther, 0);
     const pick = days.reduce((s, d) => s + (d.pick || 0), 0), pickN = days.reduce((s, d) => s + (d.pickN || 0), 0);
@@ -305,7 +323,7 @@ const DV_PARSE = (function(){
     const rows = days.slice().reverse().map(d => {
       const fv = d.fee + d.vat, net = d.sales + (d.pick || 0) - d.usedCall;
       const ck = !d.hasOrders && !d.hasLedger ? ['ck-no', '-'] : !d.hasOrders ? ['ck-no', '주문 파일 없음'] : !d.hasLedger ? ['ck-no', '적립금 파일 없음'] : fv === d.usedCall ? ['ck-ok', '✓'] : ['ck-bad', `${won(fv - d.usedCall)} 차이`];
-      return `<tr><td>${md(d.d)}</td><td class="n">${d.n || '-'}</td><td class="n">${d.hasOrders ? won(d.sales) : '-'}</td>
+      return `<tr class="${d.d === DV.memoDay ? 'dv-on' : ''}"><td><a role="button" tabindex="0" class="dv-dl" onclick="dvMemoGo('${d.d}')" title="정산방 메모 보기">${md(d.d)}</a></td><td class="n">${d.n || '-'}</td><td class="n">${d.hasOrders ? won(d.sales) : '-'}</td>
         <td class="n">${d.hasPickup ? (d.pickN ? `${d.pickN}건 ${won(d.pick)}` : '0') : '-'}</td>
         <td class="n">${d.cardN ? `${d.cardN}건 ${won(d.card)}` : '-'}</td><td class="n">${d.cashN ? `${d.cashN}건 ${won(d.cash)}` : '-'}</td>
         <td class="n">${d.hasOrders ? won(fv) : '-'}</td><td class="n">${d.hasLedger ? won(d.usedCall) : '-'}</td>
@@ -391,10 +409,93 @@ const DV_PARSE = (function(){
   window.dvDrop = i => { DV.files.splice(i, 1); drawFiles(); };
   window.dvPick = () => document.getElementById('dv-input').click();
 
+
+  /* ---------- 정산방 메모 (2026-11-19): 매장 메모장 정산과 같은 틀로 자동 기입 ----------
+     - 카드/현금은 손님 결제 방법 기준: 선결제(카→선 포함)·만나서 카드 = 카드, 만나서 현금 = 현금
+     - 매출 = 인프라D 결제금액 + 배민오더(배민 포장), 배달요금 = 배달요금 + 부가세
+     - 마일리지 차감 = 그날 적립금에서 빠진 전부 (배달요금 + 월 관리비·입금 수수료 등). 배달요금 말고 빠진 게 있으면 노란 표시
+     - 총 매출액 · 총 마일리지 사용 = 그 달 1일부터 그날까지 */
+  const kd = d => `${+d.slice(5, 7)}월${+d.slice(8)}일(${dow(d)})`;
+  const otherName = k => /가상/.test(k) ? '입금 수수료' : k;
+  function memoCalc(day){
+    const days = (DV.data && DV.data.days) || [], x = days.find(v => v.d === day);
+    if (!x) return null;
+    const pick = x.pick || 0, sales = (x.hasOrders ? x.sales : 0) + pick, cash = x.cash || 0;
+    const fv = x.fee + x.vat, cashFee = x.cashFee || 0, used = x.usedCall + x.usedOther;
+    let cumS = 0, cumU = 0;
+    days.forEach(v => { if (v.d <= day) { cumS += (v.hasOrders ? v.sales : 0) + (v.pick || 0); cumU += v.usedCall + v.usedOther; } });
+    const g = {}; (x.others || []).forEach(o => { const k = otherName(o.k); (g[k] = g[k] || []).push(o.a); });
+    const extra = Object.entries(g).map(([k, a]) => a.every(v => v === a[0]) && a.length > 1 ? `${k} ${won(a[0])}×${a.length}` : `${k} ${won(a.reduce((s, v) => s + v, 0))}`);
+    return { x, sales, cash, card: sales - cash, fv, cashFee, used, cumS, cumU, extra, pick };
+  }
+  function memoText(day, m){
+    const x = m.x, L = [];
+    L.push(kd(day), '-----------------------------------');
+    L.push(`매출: ${won(m.sales)}원(배민오더 포함)`, `(카드: ${won(m.card)}원 현금: ${won(m.cash)}원)`, '');
+    L.push(`만나서 현금 ${x.cashN || 0}건 ${won(x.cash)}원`, `만나서 카드 ${x.cardN || 0}건 ${won(x.card)}원`, '');
+    L.push(`배민오더 ${x.pickN || 0}건 ${won(m.pick)}원`, '');
+    L.push(`배달요금: ${won(m.fv)}원`, `(카드: ${won(m.fv - m.cashFee)}원) 현금: ${won(m.cashFee)}원`, '');
+    L.push(`마일리지 차감: ${won(m.used)}원`, `마일리지 충전: ${won(x.charge)}원`, `마일리지 잔액: ${x.balance != null ? won(x.balance) + '원' : '-'}`, '');
+    L.push(`총 매출액: ${won(m.cumS)}원`, `총 마일리지 사용: ${won(m.cumU)}원`);
+    return L.join('\n');
+  }
+  function drawMemo(){
+    const box = document.getElementById('dv-memo'); if (!box || !DV.data) return;
+    const days = (DV.data.days || []).filter(v => v.hasOrders || v.hasLedger || v.hasPickup).map(v => v.d);
+    if (!DV.memoDay || DV.memoDay.slice(0, 7) !== DV.ym || !days.includes(DV.memoDay)) DV.memoDay = days[days.length - 1] || '';
+    const day = DV.memoDay, m = day && memoCalc(day);
+    const r = (a, b, k) => `<div class="dm-r${k ? ' k' : ''}"><span>${a}</span><span>${b}</span></div>`;
+    const gap = '<div class="dm-gap"></div>';
+    let card;
+    if (!m) card = `<div class="empty" style="padding:30px 10px">${+DV.ym.slice(5)}월에 올린 배달 자료가 없어요.</div>`;
+    else {
+      const x = m.x, no = !x.hasOrders, nl = !x.hasLedger;
+      const why = [];
+      if (!nl && (m.extra.length || x.usedCall !== m.fv)) why.push(`배달요금 ${won(x.usedCall)}${m.extra.length ? ' + ' + m.extra.join(' + ') : ''}`);
+      card = `<div class="dm-card">
+        <div class="dm-head"><b>${kd(day)}</b><button class="btn ghost" onclick="dvMemoCopy()">${ic('file')}메모 복사</button></div>
+        <div class="dm-line"></div>
+        ${r('매출(배민오더 포함)', won(m.sales) + '원', 1)}${r('(카드 · 현금)', `${won(m.card)} · ${won(m.cash)}원`)}
+        ${gap}${r('만나서 현금', `${x.cashN || 0}건 ${won(x.cash)}원`)}${r('만나서 카드', `${x.cardN || 0}건 ${won(x.card)}원`)}
+        ${gap}${r('배민오더', x.hasPickup ? `${x.pickN || 0}건 ${won(m.pick)}원` : '-')}${x.hasPickup ? '<div class="dm-src">배민 주문 내역 기준</div>' : gap}
+        ${r('배달요금', no ? '-' : won(m.fv) + '원')}${r('(카드 · 현금)', no ? '-' : `${won(m.fv - m.cashFee)} · ${won(m.cashFee)}원`)}
+        ${gap}${r('마일리지 차감', nl ? '-' : won(m.used) + '원')}${why.length ? `<span class="dm-why">${why.join(' · ')}</span>` : ''}
+        ${r('마일리지 충전', nl ? '-' : won(x.charge) + '원')}${r('마일리지 잔액', x.balance != null ? won(x.balance) + '원' : '-', 1)}
+        <div class="dm-line"></div>
+        ${r('총 매출액', won(m.cumS) + '원', 1)}${r('총 마일리지 사용', won(m.cumU) + '원')}
+        ${no || nl ? `<div class="dm-src" style="margin-top:6px">${no ? '배달접수통계' : '적립금내역'} 파일이 아직 없는 날이에요.</div>` : ''}
+      </div>`;
+    }
+    box.innerHTML = `<section class="card"><div class="section-title"><strong>${ic('file')}정산방 메모 · ${STORE_NAME}</strong>
+      <span class="dm-nav"><button class="btn ghost" onclick="dvMemoStep(-1)" aria-label="이전 날">‹</button><button class="btn ghost" onclick="dvMemoStep(1)" aria-label="다음 날">›</button></span></div>
+      ${card}<div class="dv-note">매장 메모장 정산과 같은 틀이에요. 카드·현금은 손님 결제 방법 기준(선결제·만나서 카드 = 카드, 만나서 현금 = 현금)이고, 총 매출액·총 마일리지 사용은 ${+DV.ym.slice(5)}월 1일부터 그날까지예요. 노란 표시는 배달요금 말고 마일리지에서 빠진 돈이라 정산방과 차이 날 수 있는 곳이에요.</div></section>`;
+  }
+  window.dvMemoGo = d => { DV.memoDay = d; drawMemo(); document.querySelectorAll('#dv-month tr').forEach(tr => tr.classList.toggle('dv-on', !!tr.querySelector(`[onclick*="${d}"]`))); const b = document.getElementById('dv-memo'); if (b) b.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
+  window.dvMemoStep = k => {
+    if (!DV.memoDay) return;
+    const x = new Date(DV.memoDay + 'T00:00:00Z'); x.setUTCDate(x.getUTCDate() + k);
+    const d = x.toISOString().slice(0, 10);
+    if (d > kst()) return toast('다음 날 자료가 아직 없어요.');
+    DV.memoDay = d;
+    if (d.slice(0, 7) !== DV.ym) { DV.ym = d.slice(0, 7); DV.memoKeep = d; return loadMonth(); }
+    const has = ((DV.data && DV.data.days) || []).some(v => v.d === d && (v.hasOrders || v.hasLedger || v.hasPickup));
+    if (!has) { const box = document.getElementById('dv-memo'); DV.memoDay = d; drawMemoEmpty(d); return; }
+    drawMemo(); drawMonth();
+  };
+  function drawMemoEmpty(d){
+    const box = document.getElementById('dv-memo'); if (!box) return;
+    const c = box.querySelector('.dm-card, .empty'); if (c) c.outerHTML = `<div class="empty" style="padding:30px 10px">${kd(d)}은 올린 자료가 없어요.</div>`;
+  }
+  window.dvMemoCopy = () => {
+    const m = DV.memoDay && memoCalc(DV.memoDay); if (!m) return;
+    const t = memoText(DV.memoDay, m);
+    (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => toast('메모를 복사했어요')).catch(() => toast('복사하지 못했어요'));
+  };
+
   // into: 직영점 매출 조회 > 배달 정산 탭 안에 그릴 자리 (2026-11-19부터 따로 된 메뉴 없이 탭으로만 씀)
   function pageDv(into){
     try { localStorage.removeItem(PW_KEY); } catch (e) {}   // 예전에 기억해 둔 암호가 있으면 지움 (암호가 매번 바뀜)
-    const body =
+    const body = `<div id="dv-memo"></div>` +
       `<section class="card"><div class="section-title"><strong>${ic('download')}엑셀 올리기 · ${STORE_NAME}</strong><small>기간이 겹쳐도 콜번호로 걸러서 두 번 들어가지 않아요</small></div>
         <div class="dv-pw"><span>배달접수통계 암호</span><input type="password" id="dv-pw" autocomplete="off" placeholder="엑셀 출력할 때 나온 암호" aria-label="배달접수통계 엑셀 암호">
           <span class="dv-pwhelp">암호는 출력할 때마다 바뀌어요. 먼저 적고 파일을 놓아도 되고, 파일을 놓은 뒤 적어도 바로 다시 읽어요.</span></div>
