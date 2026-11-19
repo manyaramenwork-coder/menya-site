@@ -116,6 +116,25 @@ td .sm{font-size:12px;color:var(--sub)}
 .side a em{margin-left:auto;font-style:normal;font-size:11px;font-weight:700;background:var(--brand);color:#fff;border-radius:999px;padding:1px 7px}
 .side a.ext{color:var(--sub);font-size:13px}
 .side-gap{height:1px;background:var(--line);margin:8px 6px}
+.side-grp{font-size:11px;font-weight:700;color:var(--sub);letter-spacing:.4px;padding:14px 12px 4px}
+.side-grp:first-child{padding-top:2px}
+.sheet .sheet-grp{font-size:11px;font-weight:700;color:var(--sub);padding:12px 6px 2px}
+/* 영업기획 */
+.spark{display:inline-block;vertical-align:middle}
+.up{color:var(--ok);font-weight:700}
+.dn{color:var(--brand-d);font-weight:700}
+.t-new{background:#fff4dc;color:var(--warn)}
+.t-r0{background:#eceee8;color:#4a4e47}.t-r1{background:var(--blue-soft);color:var(--blue)}.t-r2{background:#e3f1e6;color:var(--ok)}
+.bp-tbl{min-width:0}
+.bp-tbl th,.bp-tbl td{padding:7px 9px;font-size:13px}
+.bp-tbl tbody tr{cursor:default}
+.note-st{display:flex;gap:6px;margin-bottom:8px}
+.note-st button{flex:1;min-height:36px;border:1px solid var(--line);background:#fff;border-radius:8px;font-size:13px}
+.note-st button.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.bp-bars{display:flex;flex-direction:column;gap:4px}
+.bp-bars div{display:flex;align-items:center;gap:8px;font-size:12px}
+.bp-bars span{flex:0 0 120px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bp-bars i{display:block;height:10px;background:var(--blue);border-radius:3px;min-width:2px}
 .shell .wrap{flex:1;min-width:0;margin:0}
 .sec-hd{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}
 .sec-hd h1{margin:0;font-size:22px}
@@ -461,6 +480,46 @@ td .sm{font-size:12px;color:var(--sub)}
       <div id="board-view" class="board" hidden></div>
     </section>
 
+    <!-- 영업기획: 정보공개서 분석 -->
+    <section id="sec-ftc" class="sec" hidden>
+      <div class="sec-hd"><h1>정보공개서 분석 <small id="ft-count"></small></h1></div>
+      <p class="muted">공정위 정보공개서 기준 <b>외식 브랜드 가맹점 수 변화</b>예요. 숫자는 각 연도 자료의 전년도 말 기준이라 실제보다 1년 정도 늦어요. 브랜드를 누르면 연도별 숫자와 조사 메모를 볼 수 있어요.</p>
+      <div class="bar">
+        <input type="search" id="ft-q" placeholder="브랜드 검색" aria-label="브랜드 검색">
+        <select id="ft-ind" aria-label="업종"><option value="">전체 업종</option></select>
+        <select id="ft-span" aria-label="비교 기간"><option value="2">2년 비교</option><option value="3">3년 비교</option><option value="1">1년 비교</option></select>
+        <select id="ft-min" aria-label="최소 매장 수"><option value="30">현재 30곳 이상</option><option value="10">10곳 이상</option><option value="100">100곳 이상</option></select>
+        <select id="ft-sort" aria-label="정렬"><option value="pct">증가율 순</option><option value="inc">늘어난 매장 수 순</option><option value="n">매장 많은 순</option></select>
+      </div>
+      <p class="muted" style="margin-top:-4px">비교 시작 연도 매장이 10곳 미만인 브랜드는 뺐어요 (브랜드명·법인명이 바뀌어 0에서 갑자기 튀는 경우 포함).</p>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>브랜드</th><th>업종</th><th>추이</th><th class="num" id="ft-h0">시작</th><th class="num" id="ft-h1">현재</th><th class="num">늘어난 수</th><th class="num">증가율</th><th class="num">신규 개점</th><th class="num">폐점</th><th class="num">CRM 매장<br><small>(청주)</small></th><th>조사</th></tr></thead>
+          <tbody id="ft-rows"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 영업기획: 네이버 플레이스 분석 -->
+    <section id="sec-naver" class="sec" hidden>
+      <div class="sec-hd"><h1>네이버 플레이스 분석 <small id="nv-count"></small></h1></div>
+      <p class="muted">CRM에 쌓인 매장(상가정보·네이버 플레이스 확인)을 브랜드별로 세서 <b>매달 1일 자동으로 기록</b>해요. 지난 기록과 비교해서 늘어난 브랜드를 찾는 화면이에요. 정보공개서보다 빨리 흐름이 보여요.</p>
+      <div class="box" id="nv-note" style="margin-bottom:10px" hidden></div>
+      <div class="bar">
+        <input type="search" id="nv-q" placeholder="브랜드 검색" aria-label="브랜드 검색">
+        <select id="nv-min" aria-label="최소 매장 수"><option value="10">현재 10곳 이상</option><option value="5">5곳 이상</option><option value="30">30곳 이상</option></select>
+        <select id="nv-sort" aria-label="정렬"><option value="inc">늘어난 매장 수 순</option><option value="pct">증가율 순</option><option value="n">매장 많은 순</option></select>
+        <label class="chk"><input type="checkbox" id="nv-new">정보공개서에 없는 브랜드만</label>
+      </div>
+      <p class="muted" style="margin-top:-4px">"정보공개서에 없음"에는 막 크는 신생 브랜드도 있지만, '만리장성'·'베트남쌀국수'처럼 같은 이름을 쓰는 개인 매장 묶음도 섞여 있어요.</p>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>브랜드</th><th class="num">현재</th><th class="num">청주</th><th class="num">1개월 전</th><th class="num">3개월 전</th><th class="num">6개월 전</th><th class="num" id="nv-h0">첫 기록 대비</th><th>정보공개서</th><th>조사</th></tr></thead>
+          <tbody id="nv-rows"></tbody>
+        </table>
+      </div>
+    </section>
+
     <!-- 샵인샵 타겟 -->
     <section id="sec-target" class="sec" hidden>
       <div class="sec-hd"><h1>샵인샵 타겟 <small id="tg-count"></small></h1><button class="btn" id="tg-copy">우편용 주소 복사</button></div>
@@ -646,6 +705,8 @@ async function load(reset){
   if (v === 'comm') return loadComm();
   if (v === 'listing') return loadListing();
   if (v === 'target') return loadTarget();
+  if (v === 'ftc') return loadFtc();
+  if (v === 'naver') return loadNaver();
   if (v === 'script') return;
   if (v === 'ingest') return loadIngest();
   if (state.dbMode === 'board') return loadBoard();
@@ -708,19 +769,27 @@ const IC = {
   target: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/>',
   script: '<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/>',
   ingest: '<path d="M21 12a9 9 0 1 1-2.6-6.4L21 8"/><path d="M21 3v5h-5"/>',
+  ftc: '<path d="M3 3v18h18"/><path d="m7 15 4-4 3 3 5-6"/>',
+  naver: '<path d="M4 4h4l8 10V4h4v16h-4L8 10v10H4z"/>',
   more: '<circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/>'
 };
 const svg = k => `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[k]}</svg>`;
-const NAV = [['map', '지도 탐색'], ['fav', '관심 매장'], ['log', '연락 기록'], ['inbox', '신청함'], ['comm', '커뮤니티'], ['listing', '양도 매물'], ['db', '전체 매장 DB'], ['target', '샵인샵 타겟'], ['script', '영업 스크립트']];
+// 메뉴 묶음: 영업기획(분석·계획) → 매장 찾기(수집) → 리드 관리(연락·기록)
+const NAV_GROUPS = [
+  ['영업기획', [['ftc', '정보공개서 분석', '공정위 가맹점 수 변화'], ['naver', '네이버 플레이스 분석', '브랜드별 매장 수 월별 추이'], ['script', '영업 스크립트', '통화하면서 보는 문구']]],
+  ['매장 찾기', [['map', '지도 탐색', '지도에서 매장 찾기'], ['db', '전체 매장 DB', '목록·보드로 전체 검색'], ['target', '샵인샵 타겟', '우리 메뉴·상권 기준 우편 대상'], ['listing', '양도 매물', '어사이드로 들어온 매물']]],
+  ['리드 관리', [['inbox', '신청함', '랜딩 신청'], ['comm', '커뮤니티 리드', '카페 글·댓글·쪽지 준 분'], ['fav', '관심 매장', '담아 둔 매장'], ['log', '연락 기록', '통화·방문 기록']]]
+];
+const NAV = NAV_GROUPS.flatMap(g => g[1].map(([k, l]) => [k, l]));
 const BNAV = [['map', '지도'], ['fav', '관심'], ['log', '기록'], ['inbox', '신청함'], ['more', '더보기']];
 state.badge = {};
 function buildNav(){
   const b = state.badge;
-  const nav = state.admin ? NAV.concat([['ingest', '수집 현황']]) : NAV;
-  $('side').innerHTML = nav.map(([k, l], i) => (i === 4 ? '<div class="side-gap"></div>' : '') +
-    `<a href="#${k}" data-v="${k}" class="${state.view === k ? 'on' : ''}" ${state.view === k ? 'aria-current="page"' : ''}>${svg(k)}<span>${l}</span>${b[k] ? `<em>${b[k]}</em>` : ''}</a>`).join('') +
+  const link = ([k, l]) => `<a href="#${k}" data-v="${k}" class="${state.view === k ? 'on' : ''}" ${state.view === k ? 'aria-current="page"' : ''}>${svg(k)}<span>${l}</span>${b[k] ? `<em>${b[k]}</em>` : ''}</a>`;
+  $('side').innerHTML = NAV_GROUPS.map(([g, items]) => `<div class="side-grp">${g}</div>` + items.map(link).join('')).join('') +
+    (state.admin ? '<div class="side-gap"></div>' + link(['ingest', '수집 현황']) : '') +
     '<div class="side-gap"></div><a href="https://menyamatsuri.work/" class="ext">매장관리로 돌아가기</a>';
-  const inMore = ['comm', 'listing', 'db', 'target', 'script', 'ingest'].includes(state.view);
+  const inMore = !BNAV.some(([k]) => k === state.view);
   $('bnav').innerHTML = BNAV.map(([k, l]) => {
     const on = k === 'more' ? inMore : state.view === k;
     const badge = k === 'more' ? (b.comm || b.listing) : b[k];
@@ -738,10 +807,11 @@ $('bnav').addEventListener('click', e => {
   go(a.dataset.v);
 });
 function openMore(){
-  const items = [['comm', '커뮤니티 리드', '카페 글·댓글·쪽지 준 분'], ['listing', '양도 매물', '어사이드로 들어온 매물'], ['db', '전체 매장 DB', '목록·보드로 전체 검색'], ['target', '샵인샵 타겟', '우리 메뉴·상권 기준 우편 대상'], ['script', '영업 스크립트', '통화하면서 보는 문구']];
-  if (state.admin) items.push(['ingest', '수집 현황', '지역 수집 진행·실패 확인 (관리자)']);
-  $('more-sheet').innerHTML = '<div class="sheet-hd">더보기</div>' + items.map(([k, t, d]) =>
-    `<button data-v="${k}">${svg(k)}<span><b>${t}</b><small>${d}</small></span>${state.badge[k] ? `<em>${state.badge[k]}</em>` : ''}</button>`).join('') +
+  const inBar = BNAV.map(([k]) => k);
+  const btn = ([k, t, d]) => `<button data-v="${k}">${svg(k)}<span><b>${t}</b><small>${d}</small></span>${state.badge[k] ? `<em>${state.badge[k]}</em>` : ''}</button>`;
+  const groups = NAV_GROUPS.map(([g, items]) => [g, items.filter(([k]) => !inBar.includes(k))]).filter(([, items]) => items.length);
+  if (state.admin) groups.push(['관리자', [['ingest', '수집 현황', '지역 수집 진행·실패 확인']]]);
+  $('more-sheet').innerHTML = '<div class="sheet-hd">더보기</div>' + groups.map(([g, items]) => `<div class="sheet-grp">${g}</div>` + items.map(btn).join('')).join('') +
     `<a href="https://menyamatsuri.work/">매장관리로 돌아가기</a><button data-v="logout" class="lo">로그아웃</button>`;
   $('more-sheet').hidden = false; $('scrim').hidden = false;
 }
@@ -750,7 +820,7 @@ $('more-sheet').addEventListener('click', async e => {
   if (b.dataset.v === 'logout') { await SB.auth.signOut(); location.reload(); return; }
   closePanel(); go(b.dataset.v);
 });
-const VIEWS = ['map', 'fav', 'log', 'inbox', 'comm', 'listing', 'db', 'target', 'script', 'ingest'];
+const VIEWS = ['map', 'fav', 'log', 'inbox', 'comm', 'listing', 'db', 'target', 'script', 'ingest', 'ftc', 'naver'];
 function go(v){
   if (!VIEWS.includes(v) || (v === 'ingest' && !state.admin)) v = 'map';
   state.view = v;
@@ -770,6 +840,122 @@ function setDbMode(m){
 $('v-list').addEventListener('click', () => setDbMode('list'));
 $('v-board').addEventListener('click', () => setDbMode('board'));
 state.dbMode = 'list';
+
+
+/* ---------- 영업기획: 정보공개서 분석 · 네이버 플레이스 분석 ---------- */
+const RST = { '미조사': 't-r0', '조사중': 't-r1', '완료': 't-r2' };
+const rTag = s => `<span class="tag ${RST[s] || 't-r0'}">${esc(s || '미조사')}</span>`;
+const fmt = v => v === null || v === undefined ? '<span class="muted">-</span>' : Number(v).toLocaleString();
+const diff = (a, b) => (a === null || a === undefined || b === null || b === undefined) ? '<span class="muted">-</span>'
+  : (a - b > 0 ? `<span class="up">+${(a - b).toLocaleString()}</span>` : a - b < 0 ? `<span class="dn">${(a - b).toLocaleString()}</span>` : '0');
+function spark(series){
+  const v = (series || []).map(x => +x[1] || 0); if (v.length < 2) return '';
+  const w = 72, h = 22, mx = Math.max(...v, 1), st = w / (v.length - 1);
+  const pts = v.map((y, i) => `${(i * st).toFixed(1)},${(h - 2 - (y / mx) * (h - 4)).toFixed(1)}`).join(' ');
+  return `<svg class="spark" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" aria-hidden="true"><polyline points="${pts}" fill="none" stroke="var(--blue)" stroke-width="2" stroke-linejoin="round"/></svg>`;
+}
+const won = v => v ? (v >= 10000 ? (v / 10000).toFixed(1).replace(/\.0$/, '') + '억' : Math.round(v / 10).toLocaleString() + '만') : '-'; // 공정위 평균매출 단위: 천원
+
+state.ft = { d: null, t: null };
+async function loadFtc(){
+  try {
+    const d = await rpc('sp_ftc_list', { p: { q: $('ft-q').value.trim(), induty: $('ft-ind').value, span: $('ft-span').value, min_n: $('ft-min').value, sort: $('ft-sort').value } });
+    state.ft.d = d; renderFtc();
+  } catch (e) { toast(errMsg(e), true); }
+}
+function renderFtc(){
+  const d = state.ft.d || {}, rows = d.rows || [];
+  const sel = $('ft-ind'), cur = sel.value;
+  sel.innerHTML = '<option value="">전체 업종</option>' + (d.industries || []).map(x => `<option>${esc(x)}</option>`).join(''); sel.value = cur;
+  $('ft-h0').textContent = (d.y0 || '') + '년'; $('ft-h1').textContent = (d.y1 || '') + '년';
+  $('ft-count').textContent = (d.total || 0).toLocaleString() + '개 브랜드' + (d.total > rows.length ? ` · 상위 ${rows.length}개 표시` : '');
+  $('ft-rows').innerHTML = rows.length ? rows.map(r => `<tr data-k="${esc(r.key)}">
+    <td><div class="nm">${esc(r.brand)}</div><div class="sm">${esc(r.corp || '')}</div></td>
+    <td>${esc(r.ind || '')}</td><td>${spark(r.series)}</td>
+    <td class="num">${fmt(r.n0)}</td><td class="num"><b>${fmt(r.n)}</b></td>
+    <td class="num">${diff(r.n, r.n0)}</td><td class="num">${r.pct === null ? '-' : r.pct + '%'}</td>
+    <td class="num">${fmt(r.new)}</td><td class="num">${fmt(r.closed)}</td>
+    <td class="num">${r.crm ? r.crm.toLocaleString() + (r.cj ? ` <small class="muted">(${r.cj})</small>` : '') : '<span class="muted">-</span>'}</td>
+    <td>${rTag(r.st)}</td></tr>`).join('')
+    : '<tr><td colspan="11" class="muted" style="text-align:center;padding:40px">조건에 맞는 브랜드가 없어요.</td></tr>';
+}
+['ft-ind', 'ft-span', 'ft-min', 'ft-sort'].forEach(id => $(id).addEventListener('change', loadFtc));
+$('ft-q').addEventListener('input', () => { clearTimeout(state.ft.t); state.ft.t = setTimeout(loadFtc, 350); });
+$('ft-rows').addEventListener('click', e => { const tr = e.target.closest('tr[data-k]'); if (tr) openBrand(tr.dataset.k); });
+
+state.nv = { d: null, t: null };
+async function loadNaver(){
+  try {
+    const d = await rpc('sp_naver_list', { p: { q: $('nv-q').value.trim(), min_n: $('nv-min').value, sort: $('nv-sort').value, only_new: $('nv-new').checked } });
+    state.nv.d = d; renderNaver();
+  } catch (e) { toast(errMsg(e), true); }
+}
+function renderNaver(){
+  const d = state.nv.d || {}, rows = d.rows || [];
+  $('nv-count').textContent = (d.total || 0).toLocaleString() + '개 브랜드' + (d.total > rows.length ? ` · 상위 ${rows.length}개 표시` : '');
+  $('nv-h0').innerHTML = '첫 기록 대비' + (d.d_first ? `<br><small>(${esc(shortDate(d.d_first))})</small>` : '');
+  const nb = $('nv-note');
+  if ((d.snaps || 0) < 2) { nb.hidden = false; nb.innerHTML = `<b>아직 기록이 ${d.snaps || 0}번뿐이에요.</b> <span class="muted">${d.d_first ? esc(shortDate(d.d_first)) + '에 첫 기록을 남겼고, ' : ''}매달 1일 기록이 쌓이면 1·3·6개월 비교 칸이 채워져요. 지금은 현재 매장 수 순으로 보세요.</span>`; }
+  else nb.hidden = true;
+  $('nv-rows').innerHTML = rows.length ? rows.map(r => `<tr data-k="${esc(r.key)}">
+    <td><div class="nm">${esc(r.key)}</div></td>
+    <td class="num"><b>${fmt(r.n)}</b></td><td class="num">${r.cj ? r.cj.toLocaleString() : '<span class="muted">-</span>'}</td>
+    <td class="num">${diff(r.n, r.s1)}</td><td class="num">${diff(r.n, r.s3)}</td><td class="num">${diff(r.n, r.s6)}</td>
+    <td class="num">${(d.snaps || 0) < 2 ? '<span class="muted">-</span>' : diff(r.n, r.s0)}</td>
+    <td>${r.in_ftc ? '<span class="tag t-C">있음</span>' : '<span class="tag t-new">없음</span>'}</td>
+    <td>${rTag(r.st)}</td></tr>`).join('')
+    : '<tr><td colspan="9" class="muted" style="text-align:center;padding:40px">조건에 맞는 브랜드가 없어요.</td></tr>';
+}
+['nv-min', 'nv-sort', 'nv-new'].forEach(id => $(id).addEventListener('change', loadNaver));
+$('nv-q').addEventListener('input', () => { clearTimeout(state.nv.t); state.nv.t = setTimeout(loadNaver, 350); });
+$('nv-rows').addEventListener('click', e => { const tr = e.target.closest('tr[data-k]'); if (tr) openBrand(tr.dataset.k); });
+
+/* 브랜드 상세 (두 화면 공용) */
+async function openBrand(key){
+  try {
+    const d = await rpc('sp_brand_detail', { p_key: key });
+    state.cur = null; state.brand = d; renderBrand(d);
+    $('scrim').hidden = false; $('panel').hidden = false;
+  } catch (e) { toast(errMsg(e), true); }
+}
+function renderBrand(d){
+  const f = d.ftc || [], rs = d.research || {}, st = rs.status || '미조사';
+  const name = (f.length ? f[f.length - 1].brand : '') || d.key;
+  const corps = [...new Set(f.map(x => x.corp).filter(Boolean))];
+  const snaps = d.snaps || [], regs = d.regions || [], mx = Math.max(1, ...regs.map(x => x.n));
+  const ftcTbl = f.length ? `<div class="tbl-wrap"><table class="bp-tbl"><thead><tr>${corps.length > 1 ? '<th>법인</th>' : ''}<th>연도</th><th class="num">가맹점</th><th class="num">신규</th><th class="num">종료</th><th class="num">해지</th><th class="num">평균 매출</th></tr></thead><tbody>` +
+    f.map(x => `<tr>${corps.length > 1 ? `<td>${esc(x.corp || '')}</td>` : ''}<td>${x.yr}</td><td class="num"><b>${fmt(x.n)}</b></td><td class="num">${fmt(x.new)}</td><td class="num">${fmt(x.end)}</td><td class="num">${fmt(x.cncl)}</td><td class="num">${won(x.sales)}</td></tr>`).join('') +
+    '</tbody></table></div><p class="muted" style="margin:6px 0 0">연도는 정보공개서 기준년도예요(숫자는 전년도 말). 평균 매출은 가맹점 1곳당 연간 금액이에요.</p>'
+    : '<p class="muted" style="margin:0">정보공개서에서 이 이름의 브랜드를 찾지 못했어요. 신생 브랜드이거나, 같은 이름을 쓰는 개인 매장일 수 있어요.</p>';
+  $('panel').innerHTML = `<div class="panel-hd"><div><h2 id="p-name">${esc(name)}</h2><div class="sm">${esc(corps.join(' · ') || '정보공개서 미등록')}${f.length ? ' · ' + esc(f[f.length - 1].ind || '') : ''}</div></div><button class="x" aria-label="닫기" data-x>×</button></div>
+  <div class="panel-bd">
+    <div class="box"><h4>조사 메모 <small class="muted">${rs.updated_at ? esc(shortDate(String(rs.updated_at).slice(0, 10))) + ' · ' + esc(rs.updated_by || '') : ''}</small></h4>
+      <div class="note-st" role="group" aria-label="조사 상태">${['미조사', '조사중', '완료'].map(x => `<button data-st="${x}" class="${x === st ? 'on' : ''}">${x}</button>`).join('')}</div>
+      <div class="fld full"><label for="bn-note">가맹 조건 · 홍보 채널 · 메뉴 특징 · 영업 방식</label><textarea id="bn-note" rows="6" placeholder="예: 가맹비 면제 이벤트, 인스타 릴스 위주 모집, 1인 운영 가능 소형 매장, 본사 직영 상권분석 제공">${esc(rs.note || '')}</textarea></div>
+      <div style="display:flex;justify-content:flex-end;margin-top:8px"><button class="btn pri" id="bn-save">저장</button></div>
+    </div>
+    <div class="box"><h4>정보공개서</h4>${ftcTbl}</div>
+    <div class="box"><h4>CRM 매장 수 <small class="muted">현재 ${fmt(d.now)}곳</small></h4>
+      ${snaps.length ? `<p class="muted" style="margin:0 0 8px">${snaps.map(x => `${esc(shortDate(x[0]))} ${Number(x[1]).toLocaleString()}곳`).join(' → ')}</p>` : '<p class="muted" style="margin:0 0 8px">월별 기록이 아직 없어요 (매장 2곳 이상인 브랜드만 기록).</p>'}
+      ${regs.length ? '<div class="bp-bars">' + regs.map(x => `<div><span title="${esc(x.r)}">${esc(x.r)}</span><i style="width:${Math.round(x.n / mx * 220)}px"></i><b>${x.n}</b></div>`).join('') + '</div>' : ''}
+    </div>
+  </div>`;
+}
+$('panel').addEventListener('click', async e => {
+  if (!state.brand || state.cur) return;
+  if (e.target.closest('[data-x]')) return closePanel();
+  const sb = e.target.closest('.note-st button');
+  if (sb) { $('panel').querySelectorAll('.note-st button').forEach(b => b.classList.toggle('on', b === sb)); return; }
+  if (e.target.id === 'bn-save') {
+    const st = ($('panel').querySelector('.note-st button.on') || {}).dataset?.st || '미조사';
+    const f = state.brand.ftc || [];
+    try {
+      const r = await rpc('sp_brand_note_save', { p: { key: state.brand.key, brand: (f.length ? f[f.length - 1].brand : state.brand.key), status: st, note: $('bn-note').value.trim() } });
+      state.brand.research = r; renderBrand(state.brand); toast('조사 메모를 저장했어요');
+      if (state.view === 'ftc') loadFtc(); else if (state.view === 'naver') loadNaver();
+    } catch (err) { toast(errMsg(err), true); }
+  }
+});
 
 /* ---------- 샵인샵 타겟 ---------- */
 state.tg = { zone: '', d: null };
