@@ -10,6 +10,7 @@
    2026-11-19 추가
    - 입금자: 기본은 점주 이름(본사 대리 발주여도 넣은 사람 이름이 아님), 가족 등이 입금할 땐 발주별로 바꾸기
    - 거래명세서: 새 창 대신 화면 위에 띄우고 '발주로 돌아가기' 버튼 (앱에서 뒤로가기가 없던 문제)
+   - 발송·완료된 발주도 관리자 계정은 삭제 가능 (시험 발주 정리용, 처리 기록 안)
    ========================================================== */
 (function(){
   const h = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -85,9 +86,25 @@
 
   /* 발송 대기(접수 완료) 발주의 '발송 처리' 칸 바로 위에 끼워 넣기 */
   let busy = false;
+  const isAdmin = () => !!(typeof SESSION !== 'undefined' && SESSION.user && SESSION.user.role === 'admin');
+  function addDel(){
+    if (!isAdmin()) return;
+    document.querySelectorAll('article.mp-o.shipped, article.mp-o.done').forEach(a => {
+      const log = a.querySelector('.mp-log'); if (!log || log.querySelector('.mp-del')) return;
+      log.insertAdjacentHTML('beforeend', `<button type="button" class="mp-del" onclick="lsDel(${+a.id.replace('mp-o-', '')})">이 발주 삭제 (시험·잘못 넣은 발주 · 관리자만)</button>`); });
+  }
+  window.lsDel = async id => {
+    const a = document.getElementById('mp-o-' + id);
+    const nm = a?.querySelector('.mp-h b')?.textContent || '', tot = a?.querySelector('.mp-tot')?.textContent || '';
+    if (!confirm(`${nm} ${tot} 발주는 이미 발송(완료)된 발주예요.\n\n삭제하면 점주 앱에서도 사라지고 되돌릴 수 없어요.\n시험이나 잘못 넣은 발주일 때만 지워 주세요. 삭제할까요?`)) return;
+    const { error } = await SB.rpc('mst_hq_order_delete', { p_id: id });
+    if (error) return toast(error.message);
+    toast('삭제했어요'); delete S.map[id];
+    if (typeof window.mpReload === 'function') window.mpReload();
+  };
   async function inject(){
     if (busy) return; busy = true;
-    try {
+    try { addDel();
       const need = a => (a.classList.contains('confirmed') && !a.querySelector('.mp-lotte')) || !a.querySelector('.ls-payer');
       const arts = [...document.querySelectorAll('article.mp-o.confirmed, article.mp-o.shipped')].filter(a => a.querySelector('.mp-next') && need(a));
       if (!arts.length) return;
