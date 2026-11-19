@@ -1,6 +1,9 @@
 
 /* ---------- 매출 관리: N오더(VD) 매장별 매출 조회 ---------- */
 let SALES = {stores:[],rows:[]}; // {stores:[], rows:[[date, storeIdx, bills, total, disc, net, card, cash]]}
+// 2026-11-19: 직영점(쌍용·불당)은 '직영점 매출 조회'(55-direct-sales)로 따로 봄 → 여기는 가맹점만
+const S_DIRECT = name => /쌍용|불당/.test(String(name || ''));
+const S_FC = i => !S_DIRECT(SALES.stores[i]);
 PATHS.chart = 'M3 21h18 M6 17v-5 M11 17V7 M16 17v-8 M21 17V4';
 let S_MIN = SALES.rows.length ? SALES.rows[0][0] : '', S_MAX = SALES.rows.length ? SALES.rows[SALES.rows.length-1][0] : '';
 const sDow = d => '일월화수목금토'[new Date(d + 'T00:00:00').getDay()];
@@ -17,12 +20,12 @@ function setSRange(k){ const [a, b] = sRange(k); document.getElementById('d1').v
 function pageSales(){
   const [a, b] = sRange('cur');
   const upd = META.salesUpdated ? META.salesUpdated + ' 업데이트' : S_MAX + '까지';
-  document.getElementById('main').innerHTML = simpleHero(['매출 관리','매장별 매출 조회'], 'N오더 · 이지포스 · SALES REPORT', '매장별 매출 조회', '포스 매출을 기간·매장별로 확인하세요. 금액은 순매출(할인 뺀 금액) 기준이에요.') +
-  `<div class="data-note"><span class="status-dot"></span><span>N오더 · 이지포스 자동 수집 · ${S_MIN} ~ ${S_MAX} · ${upd}</span><span class="tag">전 매장 연동</span></div>
+  document.getElementById('main').innerHTML = simpleHero(['매출 관리','가맹점 매출 조회'], 'N오더 · 이지포스 · SALES REPORT', '가맹점 매출 조회', '가맹점 포스 매출을 기간·매장별로 확인하세요. 금액은 순매출(할인 뺀 금액) 기준이에요. 쌍용점·불당점은 직영점 매출 조회에서 봐요.') +
+  `<div class="data-note"><span class="status-dot"></span><span>N오더 · 이지포스 자동 수집 · ${S_MIN} ~ ${S_MAX} · ${upd}</span><span class="tag">가맹점</span></div>
   <section class="card query-card"><div class="section-title"><strong>${ic('filter')}조회 조건</strong></div>
    <div class="filters">
     <div class="f"><label for="d1">영업일</label><div class="daterow"><input type="date" id="d1" value="${a}" min="${S_MIN}" max="${S_MAX}"><span>~</span><input type="date" id="d2" value="${b}" min="${S_MIN}" max="${S_MAX}"></div></div>
-    <div class="f"><label for="s-st">매장 선택</label><select id="s-st"><option value="">전체 매장</option>${SALES.stores.map((s, i) => `<option value="${i}">${esc(s)}</option>`).join('')}</select></div>
+    <div class="f"><label for="s-st">매장 선택</label><select id="s-st"><option value="">전체 가맹점</option>${SALES.stores.map((s, i) => S_FC(i) ? `<option value="${i}">${esc(s)}</option>` : '').join('')}</select></div>
     <div class="f"><label>보기 방식</label>${segHtml('sview',[['day','일별'],['month','월별'],['store','매장별']])}</div>
    </div>
    <div class="s-quick">${[['cur','이번 달'],['prev','지난 달'],['q3','최근 3개월'],['year','올해'],['all','전체']].map(([k,t]) => `<button class="btn ghost" onclick="setSRange('${k}')">${t}</button>`).join('')}</div>
@@ -33,7 +36,7 @@ function pageSales(){
 }
 function runSales(){
   const a = document.getElementById('d1').value, b = document.getElementById('d2').value, st = document.getElementById('s-st').value, view = segVal('sview');
-  const rows = SALES.rows.filter(r => r[0] >= a && r[0] <= b && (st === '' || r[1] === +st));
+  const rows = SALES.rows.filter(r => r[0] >= a && r[0] <= b && (st === '' ? S_FC(r[1]) : r[1] === +st));
   const T = rows.reduce((s, r) => { s.bills += r[2]; s.bnet += r[2] ? r[5] : 0; s.total += r[3]; s.disc += r[4]; s.net += r[5]; s.card += r[6]; s.cash += r[7]; return s; }, {bills:0,bnet:0,total:0,disc:0,net:0,card:0,cash:0});
   const days = new Set(rows.map(r => r[0])).size;
   const stIdx = st === '' ? [...new Set(rows.map(r => r[1]))].sort((x, y) => x - y) : [+st];
@@ -63,7 +66,7 @@ function runSales(){
    <div class="k"><div class="l">${ic('file')}영수건수</div><div class="v">${fmt(T.bills)}<small>건</small></div></div>
    <div class="k"><div class="l">${ic('store')}객단가</div><div class="v">${T.bills ? fmt(T.bnet / T.bills) : '-'}<small>원</small></div></div>
    <div class="k"><div class="l">${ic('clock')}하루 평균</div><div class="v">${days ? fmt(T.net / days) : 0}<small>원 · ${days}일</small></div></div></div>
-   <div class="card"><div class="meta"><div class="left"><strong>${view === 'store' ? '매장별' : view === 'month' ? '월별' : '일별'} 매출</strong><span class="count">${body.length}${unit}</span></div><button class="btn ghost" onclick="dlCsv('포스_매출')">${ic('download')}CSV 다운로드</button></div>
+   <div class="card"><div class="meta"><div class="left"><strong>${view === 'store' ? '매장별' : view === 'month' ? '월별' : '일별'} 매출</strong><span class="count">${body.length}${unit}</span></div><button class="btn ghost" onclick="dlCsv('가맹점_매출')">${ic('download')}CSV 다운로드</button></div>
    ${body.length ? `<div class="tbl-wrap">${html}</div>` : '<div class="empty">조건에 맞는 매출이 없어요.</div>'}</div>`;
 }
 (function(){
@@ -71,15 +74,15 @@ function runSales(){
   st.textContent = '.s-quick{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 12px}.s-quick .btn{padding:6px 12px;font-size:12px}td.s-we{color:#c8102e}';
   document.head.appendChild(st);
 })();
-// 메뉴: 제때 관리 아래에 "매출 관리" 추가
+// 메뉴: 제때 관리 아래에 "매출 관리" 추가 (가맹점 / 직영점 두 줄)
 const renderSideSales = renderSide;
 renderSide = function(active){
   renderSideSales(active);
   const btn = [...document.querySelectorAll('#side .cat')].find(b => b.textContent.includes('제때 관리'));
   if (!btn) return;
   const anchor = btn.nextElementSibling && btn.nextElementSibling.classList.contains('sub') ? btn.nextElementSibling : btn;
-  const open = active === 'sales-report';
-  anchor.insertAdjacentHTML('afterend', `<button class="cat ${open?'open':''}" onclick="const on=this.classList.toggle('open');this.nextElementSibling.classList.toggle('open',on)">${ic('chart')}매출 관리${ic('chevron').replace('class="icon"','class="icon ar"')}</button><div class="sub ${open?'open':''}"><a role="button" tabindex="0" class="${open?'on':''}" onclick="go('sales-report')">매장별 매출 조회</a></div>`);
+  const open = active === 'sales-report' || active === 'direct-sales';
+  anchor.insertAdjacentHTML('afterend', `<button class="cat ${open?'open':''}" onclick="const on=this.classList.toggle('open');this.nextElementSibling.classList.toggle('open',on)">${ic('chart')}매출 관리${ic('chevron').replace('class="icon"','class="icon ar"')}</button><div class="sub ${open?'open':''}"><a role="button" tabindex="0" class="${active==='sales-report'?'on':''}" onclick="go('sales-report')">가맹점 매출 조회</a><a role="button" tabindex="0" class="${active==='direct-sales'?'on':''}" onclick="go('direct-sales')">직영점 매출 조회</a></div>`);
 };
 const goSales = go;
 go = function(p, t){ if (p === 'sales-report') { closeSide(); renderSide(p); pageSales(); window.scrollTo(0,0); return; } return goSales(p, t); };

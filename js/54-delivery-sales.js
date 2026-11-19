@@ -1,6 +1,6 @@
 
 /* ==========================================================
-   배달 매출 (2026-11-18) — 매출 관리 > 배달 매출 (관리자·본사)
+   배달 매출 (2026-11-18) — 매출 관리 > 직영점 매출 조회 > 배달 정산 탭 (관리자·본사, 2026-11-19까지는 따로 된 메뉴)
    - 인프라D(배달대행) 가맹점 PC 프로그램의 엑셀 2개를 올림: 매출통계 > 배달접수통계, 적립금내역
    - 배달접수통계 xls는 프로그램이 열기 암호(RC4)를 걸어 내보냄 → 브라우저 안에서 풀어서 읽음 (암호·개인정보는 서버로 안 보냄)
    - 암호는 출력할 때마다 바뀜 → 화면 위 암호 칸에 적음 (저장 안 함, 적으면 바로 다시 읽음)
@@ -391,10 +391,10 @@ const DV_PARSE = (function(){
   window.dvDrop = i => { DV.files.splice(i, 1); drawFiles(); };
   window.dvPick = () => document.getElementById('dv-input').click();
 
-  function pageDv(){
+  // into: 직영점 매출 조회 > 배달 정산 탭 안에 그릴 자리 (2026-11-19부터 따로 된 메뉴 없이 탭으로만 씀)
+  function pageDv(into){
     try { localStorage.removeItem(PW_KEY); } catch (e) {}   // 예전에 기억해 둔 암호가 있으면 지움 (암호가 매번 바뀜)
-    document.getElementById('main').innerHTML = simpleHero(['매출 관리', '배달 매출'], 'DELIVERY · INFRA D', '배달 매출',
-      '인프라D 엑셀(배달접수통계·적립금내역)을 끌어다 놓으면 날짜별 배달 매출과 마일리지 차감이 쌓여요.') +
+    const body =
       `<section class="card"><div class="section-title"><strong>${ic('download')}엑셀 올리기 · ${STORE_NAME}</strong><small>기간이 겹쳐도 콜번호로 걸러서 두 번 들어가지 않아요</small></div>
         <div class="dv-pw"><span>배달접수통계 암호</span><input type="password" id="dv-pw" autocomplete="off" placeholder="엑셀 출력할 때 나온 암호" aria-label="배달접수통계 엑셀 암호">
           <span class="dv-pwhelp">암호는 출력할 때마다 바뀌어요. 먼저 적고 파일을 놓아도 되고, 파일을 놓은 뒤 적어도 바로 다시 읽어요.</span></div>
@@ -403,7 +403,10 @@ const DV_PARSE = (function(){
         <div class="dv-files" id="dv-files"></div>
         <div class="dv-act"><span class="filter-hint" id="dv-hint" style="margin-right:auto"></span><button class="btn ghost" onclick="dvClear()">비우기</button><button class="btn primary" id="dv-save" onclick="dvSave()" disabled>저장</button></div>
         <div class="dv-note">암호는 이 브라우저 안에서만 파일을 여는 데 쓰고 저장하거나 서버로 보내지 않아요. 고객 주소·전화·메모와 기사 정보도 서버로 보내지 않아요.</div>
-      </section><div id="dv-pick"></div><div id="dv-month"></div>` + pageFoot();
+      </section><div id="dv-pick"></div><div id="dv-month"></div>`;
+    if (into) into.innerHTML = body;
+    else document.getElementById('main').innerHTML = simpleHero(['매출 관리', '배달 매출'], 'DELIVERY · INFRA D', '배달 매출',
+      '인프라D 엑셀(배달접수통계·적립금내역)을 끌어다 놓으면 날짜별 배달 매출과 마일리지 차감이 쌓여요.') + body + pageFoot();
     const drop = document.getElementById('dv-drop'), inp = document.getElementById('dv-input');
     inp.onchange = () => { addFiles(inp.files); inp.value = ''; drawFiles(); };
     ['dragenter', 'dragover'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('on'); }));
@@ -418,25 +421,12 @@ const DV_PARSE = (function(){
   window.dvSave = save;
   window.dvRetry = () => { DV.files.forEach(f => { if (f.res && f.res.kind === 'error') f.res = null; }); drawFiles(); readAll(); };
 
-  /* ---------- 메뉴: 매출 관리 아래 (관리자·본사) ---------- */
-  const renderSideDv = renderSide;
-  renderSide = function(active){
-    renderSideDv(active);
-    if (!can()) return;
-    const nav = document.querySelector('#side .nav-items') || document.getElementById('side'); if (!nav) return;
-    const btn = [...nav.querySelectorAll('.cat')].find(b => [...b.childNodes].filter(n => n.nodeType === 3).map(n => n.textContent).join('').trim() === '매출 관리');
-    const sub = btn && btn.nextElementSibling && btn.nextElementSibling.classList.contains('sub') ? btn.nextElementSibling : null;
-    if (!sub) return;
-    sub.querySelectorAll('.js-dv-item').forEach(e => e.remove());
-    sub.insertAdjacentHTML('beforeend', `<a role="button" tabindex="0" class="js-dv-item ${active === PAGE ? 'on' : ''}" onclick="go('${PAGE}')">배달 매출</a>`);
-    if (active === PAGE) { sub.querySelectorAll('a').forEach(a => a.classList.toggle('on', a.classList.contains('js-dv-item'))); btn.classList.add('open'); sub.classList.add('open'); }
-  };
+  /* ---------- 2026-11-19: 따로 된 '배달 매출' 메뉴는 없앰 → 직영점 매출 조회 > 배달 정산 탭 (55-direct-sales) ---------- */
+  window.dvCan = can;
+  window.dvRender = el => pageDv(el);
   const goDv = go;
   go = function(p, t){
-    if (p === PAGE) {
-      if (!can()) { toast('관리자·본사 계정만 볼 수 있어요.'); return goDv('dash'); }
-      closeSide(); renderSide(p); window.__curPage = p; pageDv(); window.scrollTo(0, 0); return;
-    }
+    if (p === PAGE) { window.DS_TAB = 'dv'; return go('direct-sales'); }   // 예전 주소·바로가기로 들어와도 탭으로
     return goDv(p, t);
   };
   try { renderSide(window.__curPage || 'dash'); } catch (e) {}

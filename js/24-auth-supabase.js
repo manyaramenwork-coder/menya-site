@@ -357,7 +357,7 @@
   cst.textContent = '.inv-x{margin-left:6px;border:1px solid #dcdfd6;background:#fff;border-radius:6px;padding:2px 7px;font-size:11px;color:#7b8174;cursor:pointer}.inv-x:hover{border-color:#c8102e;color:#c8102e}';
   document.head.appendChild(cst);
 
-  const LOAD_TITLE = { 'fc-orders': ['매장 발주 (FC다움)', ['본사 발주·재고', '매장 발주 (FC다움)']], 'inv-stock': ['재고 현황', ['본사 발주·재고', '재고 현황']], 'inv-io': ['입·출고 등록', ['본사 발주·재고', '입·출고 등록']], 'inv-log': ['입·출고 내역', ['본사 발주·재고', '입·출고 내역']], 'inv-count': ['월말 재고조사', ['본사 발주·재고', '월말 재고조사']], 'user-list': ['사용자 관리', ['사용자 관리', '사용자 관리']], 'sales-report': ['매장별 매출 조회', ['매출 관리', '매장별 매출 조회']], 'hr-att': ['쌍용본점 출결관리', ['인사관리', '쌍용본점 출결관리']], dash: ['대시보드', []], 'store-orders': ['매장별 주문내역 조회', ['제때 관리', '매장별 주문내역 조회']], 'period-sales': ['기간별 공급가 조회', ['제때 관리', '기간별 공급가 조회']] };
+  const LOAD_TITLE = { 'fc-orders': ['매장 발주 (FC다움)', ['본사 발주·재고', '매장 발주 (FC다움)']], 'inv-stock': ['재고 현황', ['본사 발주·재고', '재고 현황']], 'inv-io': ['입·출고 등록', ['본사 발주·재고', '입·출고 등록']], 'inv-log': ['입·출고 내역', ['본사 발주·재고', '입·출고 내역']], 'inv-count': ['월말 재고조사', ['본사 발주·재고', '월말 재고조사']], 'user-list': ['사용자 관리', ['사용자 관리', '사용자 관리']], 'sales-report': ['가맹점 매출 조회', ['매출 관리', '가맹점 매출 조회']], 'hr-att': ['쌍용본점 출결관리', ['인사관리', '쌍용본점 출결관리']], dash: ['대시보드', []], 'store-orders': ['매장별 주문내역 조회', ['제때 관리', '매장별 주문내역 조회']], 'period-sales': ['기간별 공급가 조회', ['제때 관리', '기간별 공급가 조회']] };
   let loadSeq = 0;
   function loadingPage(p, msg, retry){
     const [title, path] = LOAD_TITLE[p] || [p, []];
