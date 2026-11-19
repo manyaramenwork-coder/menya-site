@@ -4,6 +4,7 @@
    - 인프라D(배달대행) 가맹점 PC 프로그램의 엑셀 2개를 올림: 매출통계 > 배달접수통계, 적립금내역
    - 배달접수통계 xls는 프로그램이 열기 암호(RC4)를 걸어 내보냄 → 브라우저 안에서 풀어서 읽음 (암호·개인정보는 서버로 안 보냄)
    - 암호는 출력할 때마다 바뀜 → 화면 위 암호 칸에 적음 (저장 안 함, 적으면 바로 다시 읽음)
+   - 2026-11-19: 오류 파일이 하나라도 있으면 저장 잠금(전엔 빼고 저장돼서 주문 0건이 들어감), 파일별 '빼기'. 엑셀로 다시 저장한 암호 파일(RC4 CryptoAPI)은 원본을 올리라고 안내
    - 순 배달매출 = 결제금액 합계 − 적립금 차감 전부 (배달료·부가세·월 관리비·입금 수수료 등, 출금 요청은 제외)
    - 영업일: 새벽 5시 기준 (프로그램 주문조회 기준시간과 같음). 적립금 줄은 메모 속 (날짜/콜번호)로 주문 날짜에 붙임
    - 서버: delivery_upload(관리자·본사) / delivery_data(로그인 직원), 테이블 delivery_orders · delivery_ledger
@@ -74,7 +75,7 @@ const DV_CRYPT = (function(){
   // 암호가 걸린 Workbook 스트림을 풀어 새 배열로 돌려줌 (FilePass 자리는 0으로 채움)
   function decrypt(stream, pw){
     const inf = info(stream); if (!inf) return stream;
-    if (inf.type !== 'rc4') throw new Error('지원하지 않는 암호 방식이에요. 엑셀에서 암호를 지우고 저장한 파일로 올려 주세요.');
+    if (inf.type !== 'rc4') throw new Error('엑셀에서 다시 저장하면서 바뀐 암호라 열 수 없어요. 프로그램에서 받은 원본 파일을 손대지 말고 그대로 올려 주세요.');
     if (!check(inf, pw)) throw new Error('PASSWORD');
     const h1 = baseKey(pw, inf.salt), out = new Uint8Array(stream), nb = Math.ceil(stream.length / 1024);
     const ks = new Uint8Array(nb * 1024);
@@ -230,33 +231,35 @@ const DV_PARSE = (function(){
       file.arrayBuffer().then(b => { f.buf = b; if (DV.files.every(x => x.buf)) readAll(); });
     });
   }
-  function fileLine(f){
+  function fileLine(f, i){
     const r = f.res;
     if (!r) return `<div class="dv-file"><b>${h(f.name)}</b><span class="sub">읽는 중...</span></div>`;
-    if (r.kind === 'error') return `<div class="dv-file"><b>${h(f.name)}</b><span class="bad">${h(r.msg)}</span></div>`;
+    const drop = `<button class="btn ghost" style="margin-left:auto" onclick="dvDrop(${i})">빼기</button>`;
+    if (r.kind === 'error') return `<div class="dv-file"><b>${h(f.name)}</b><span class="bad">${h(r.msg)}</span><button class="btn ghost" style="margin-left:auto" onclick="dvDrop(${i})">빼기</button></div>`;
     const ds = r.rows.map(x => x.date).sort(), range = ds.length ? `${md(ds[0])} ~ ${md(ds[ds.length - 1])}` : '';
     const wrong = r.stores && r.stores.length && !r.stores.some(s => s.includes('쌍용'));
     const body = r.kind === 'orders'
       ? `배달접수통계 · 완료 ${r.rows.filter(x => x.status === '완료').length}건 · 결제금액 ${won(r.rows.filter(x => x.status === '완료').reduce((s, x) => s + x.amount, 0))}원`
       : `적립금내역 · ${r.rows.length}줄 · 차감 ${won(-r.rows.filter(x => x.amount < 0 && !/출금/.test(x.kind)).reduce((s, x) => s + x.amount, 0))}원`;
-    return `<div class="dv-file"><b>${h(f.name)}</b><span class="ok">✓ ${body}</span><span class="sub">${range}</span>${wrong ? `<span class="bad">상점명이 ${STORE_NAME}이 아니에요: ${h(r.stores[0])}</span>` : ''}</div>`;
+    const none = r.rows.length ? '' : `<span class="bad">읽은 줄이 없어요. 프로그램에서 받은 원본을 그대로 올려 주세요</span>`;
+    return `<div class="dv-file"><b>${h(f.name)}</b><span class="${r.rows.length ? 'ok' : 'bad'}">${r.rows.length ? '✓' : '!'} ${body}</span><span class="sub">${range}</span>${none}${wrong ? `<span class="bad">상점명이 ${STORE_NAME}이 아니에요: ${h(r.stores[0])}</span>` : ''}${drop}</div>`;
   }
   function drawFiles(){
     const box = document.getElementById('dv-files'); if (!box) return;
-    box.innerHTML = DV.files.map(fileLine).join('');
-    const ready = DV.files.filter(f => f.res && (f.res.kind === 'orders' || f.res.kind === 'ledger'));
-    const bad = DV.files.some(f => f.res && f.res.kind === 'error'), wait = DV.files.some(f => !f.res);
+    box.innerHTML = DV.files.map((f, i) => fileLine(f, i)).join('');
+    const ready = DV.files.filter(f => f.res && (f.res.kind === 'orders' || f.res.kind === 'ledger') && f.res.rows.length);
+    const bad = DV.files.some(f => f.res && (f.res.kind === 'error' || !f.res.rows.length)), wait = DV.files.some(f => !f.res);
     const wrongStore = ready.some(f => f.res.stores && f.res.stores.length && !f.res.stores.some(s => s.includes('쌍용')));
     const btn = document.getElementById('dv-save');
     const needPw = DV.files.some(f => f.res && f.res.need);
-    if (btn) { btn.disabled = !ready.length || wait || wrongStore || needPw || DV.busy; btn.textContent = ready.length ? `${ready.length}개 파일 저장` : '저장'; }
+    if (btn) { btn.disabled = !ready.length || wait || bad || wrongStore || needPw || DV.busy; btn.textContent = ready.length ? `${ready.length}개 파일 저장` : '저장'; }
     const pwi = document.getElementById('dv-pw'); if (pwi) pwi.classList.toggle('need', DV.files.some(f => f.res && f.res.need));
     const hint = document.getElementById('dv-hint');
-    if (hint) hint.textContent = needPw ? '암호를 적으면 저장할 수 있어요.' : bad ? '오류가 있는 파일은 빼고 저장돼요. 다시 하려면 비우기 후 올려 주세요.' : (ready.length === 1 ? '두 파일을 같은 기간으로 같이 올리면 검산까지 맞춰 볼 수 있어요.' : '');
+    if (hint) hint.textContent = needPw ? '암호를 적으면 저장할 수 있어요.' : bad ? '빨간 글씨 파일을 빼거나 원본으로 다시 올리면 저장할 수 있어요.' : (ready.length === 1 ? '두 파일을 같은 기간으로 같이 올리면 검산까지 맞춰 볼 수 있어요.' : '');
   }
   async function save(){
-    const ready = DV.files.filter(f => f.res && (f.res.kind === 'orders' || f.res.kind === 'ledger'));
-    if (!ready.length || DV.busy) return;
+    const ready = DV.files.filter(f => f.res && (f.res.kind === 'orders' || f.res.kind === 'ledger') && f.res.rows.length);
+    if (!ready.length || DV.busy || DV.files.some(f => !f.res || f.res.kind === 'error' || !f.res.rows.length)) return;
     const orders = [].concat(...ready.filter(f => f.res.kind === 'orders').map(f => f.res.rows));
     const ledger = [].concat(...ready.filter(f => f.res.kind === 'ledger').map(f => f.res.rows));
     DV.busy = true; drawFiles();
@@ -305,6 +308,7 @@ const DV_PARSE = (function(){
   }
   window.dvMonth = k => { DV.ym = ymAddL(DV.ym, k); loadMonth(); };
   window.dvClear = () => { DV.files = []; drawFiles(); };
+  window.dvDrop = i => { DV.files.splice(i, 1); drawFiles(); };
   window.dvPick = () => document.getElementById('dv-input').click();
 
   function pageDv(){
@@ -357,4 +361,5 @@ const DV_PARSE = (function(){
   };
   try { renderSide(window.__curPage || 'dash'); } catch (e) {}
 })();
+
 
