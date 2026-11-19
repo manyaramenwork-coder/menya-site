@@ -130,7 +130,14 @@
     document.body.appendChild(ov); document.documentElement.classList.add('ls-noscroll');
     const fr = ov.querySelector('iframe'), ow = window.open;
     window.open = () => fr.contentWindow;
-    try { return origStmt(id); } finally { window.open = ow; }
+    let r; try { r = origStmt(id); } finally { window.open = ow; }
+    /* 폰에서는 A4 폭(800px) 그대로 그리고 화면 폭에 맞춰 축소 → 글자가 꺾이지 않게 (인쇄는 그대로) */
+    Promise.resolve(r).then(() => { const d = fr.contentDocument; if (!d || !d.head) return;
+      const fit = () => { const z = Math.min(1, (fr.clientWidth - 12) / 800); d.documentElement.style.setProperty('--z', z.toFixed(3)); };
+      const s = d.createElement('style');
+      s.textContent = '@media screen{.pg{box-sizing:border-box;width:800px;max-width:none;margin:12px auto;zoom:var(--z,1)}}';
+      d.head.appendChild(s); fit(); fr.contentWindow.addEventListener('resize', fit); }).catch(() => {});
+    return r;
   };
   window.lsStmtClose = () => { document.getElementById('ls-stmt')?.remove(); document.documentElement.classList.remove('ls-noscroll'); };
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('ls-stmt')) lsStmtClose(); });
