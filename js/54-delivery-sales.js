@@ -8,7 +8,7 @@
    - 순 배달매출 = 결제금액 합계 − 적립금 차감 전부 (배달료·부가세·월 관리비·입금 수수료 등, 출금 요청은 제외)
    - 영업일: 새벽 5시 기준 (프로그램 주문조회 기준시간과 같음). 적립금 줄은 메모 속 (날짜/콜번호)로 주문 날짜에 붙임
    - 서버: delivery_upload(관리자·본사) / delivery_data(로그인 직원), 테이블 delivery_orders · delivery_ledger
-   - 2026-11-19 정산방 메모: 매장 메모장 정산과 같은 틀로 날짜별 자동 기입 + 복사 (탭 맨 위). 서버 delivery_data에 cashFee·others 추가
+   - 2026-11-19 정산방 메모: 매장 메모장 정산과 같은 틀로 날짜별 자동 기입 + 복사. 월별 표 오른쪽에 붙어 따라옴(좁은 화면은 표 위). 엑셀 올리기·배민 포장 입력은 그 아래 서버 delivery_data에 cashFee·others 추가
    - 2026-11-19 배민 포장(픽업): 앱 카드결제라 포스·인프라D 어디에도 안 잡힘 → 날짜별 건수·금액(delivery_pickup).
      어사이드(브라우저 AI)가 매일 주소를 열어 넣음: functions/v1/baemin-pickup?key=...&d=11-13:1:11000,...
      이 화면에서 직접 고칠 수도 있고, 어사이드 키를 새로 만들 수 있음(키는 해시만 저장, 만들 때 한 번만 보여 줌)
@@ -208,6 +208,11 @@ const DV_PARSE = (function(){
   .dm-gap{height:7px}
   .dm-src{font-size:11px;color:var(--sub);margin-bottom:4px}
   .dm-why{display:inline-block;font-size:11px;color:#8a5a00;background:#fdf1d8;border-radius:6px;padding:1px 7px;margin:1px 0 3px}
+  .dv-split{display:grid;grid-template-columns:minmax(0,1fr) 460px;gap:18px;align-items:start}
+  .dv-split > div{min-width:0}
+  .dv-side{position:sticky;top:84px}
+  .dv-side .dm-card{max-width:none}
+  @media(max-width:1250px){.dv-split{grid-template-columns:1fr}.dv-side{position:static;grid-row:1}}
   .dv-dl{cursor:pointer;color:inherit;text-decoration:underline dotted;text-underline-offset:3px}
   .dv-t tr.dv-on td{background:#faf0ee}
   @media(max-width:420px){.dm-r{grid-template-columns:minmax(0,1fr) auto}}
@@ -471,7 +476,7 @@ const DV_PARSE = (function(){
       <span class="dm-nav"><button class="btn ghost" onclick="dvMemoStep(-1)" aria-label="이전 날">‹</button><button class="btn ghost" onclick="dvMemoStep(1)" aria-label="다음 날">›</button></span></div>
       ${card}<div class="dv-note">매장 메모장 정산과 같은 틀이에요. 카드·현금은 손님 결제 방법 기준(선결제·만나서 카드 = 카드, 만나서 현금 = 현금)이고 배민오더는 따로라 카드 + 현금 + 배민오더 = 매출이에요. 총 매출액·총 마일리지 사용은 ${+DV.ym.slice(5)}월 1일부터 그날까지예요. 노란 표시는 배달요금 말고 마일리지에서 빠진 돈이라 정산방과 차이 날 수 있는 곳이에요.</div></section>`;
   }
-  window.dvMemoGo = d => { DV.memoDay = d; drawMemo(); document.querySelectorAll('#dv-month tr').forEach(tr => tr.classList.toggle('dv-on', !!tr.querySelector(`[onclick*="${d}"]`))); const b = document.getElementById('dv-memo'); if (b) b.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
+  window.dvMemoGo = d => { DV.memoDay = d; drawMemo(); document.querySelectorAll('#dv-month tr').forEach(tr => tr.classList.toggle('dv-on', !!tr.querySelector(`[onclick*="${d}"]`))); const b = document.getElementById('dv-memo'); if (b) { const r = b.getBoundingClientRect(); if (r.bottom < 80 || r.top > innerHeight) b.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); } };
   window.dvMemoStep = k => {
     if (!DV.memoDay) return;
     const x = new Date(DV.memoDay + 'T00:00:00Z'); x.setUTCDate(x.getUTCDate() + k);
@@ -496,7 +501,7 @@ const DV_PARSE = (function(){
   // into: 직영점 매출 조회 > 배달 정산 탭 안에 그릴 자리 (2026-11-19부터 따로 된 메뉴 없이 탭으로만 씀)
   function pageDv(into){
     try { localStorage.removeItem(PW_KEY); } catch (e) {}   // 예전에 기억해 둔 암호가 있으면 지움 (암호가 매번 바뀜)
-    const body = `<div id="dv-memo"></div>` +
+    const body = `<div class="dv-split"><div id="dv-month"></div><div id="dv-memo" class="dv-side"></div></div>` +
       `<section class="card"><div class="section-title"><strong>${ic('download')}엑셀 올리기 · ${STORE_NAME}</strong><small>기간이 겹쳐도 콜번호로 걸러서 두 번 들어가지 않아요</small></div>
         <div class="dv-pw"><span>배달접수통계 암호</span><input type="password" id="dv-pw" autocomplete="off" placeholder="엑셀 출력할 때 나온 암호" aria-label="배달접수통계 엑셀 암호">
           <span class="dv-pwhelp">암호는 출력할 때마다 바뀌어요. 먼저 적고 파일을 놓아도 되고, 파일을 놓은 뒤 적어도 바로 다시 읽어요.</span></div>
@@ -505,7 +510,7 @@ const DV_PARSE = (function(){
         <div class="dv-files" id="dv-files"></div>
         <div class="dv-act"><span class="filter-hint" id="dv-hint" style="margin-right:auto"></span><button class="btn ghost" onclick="dvClear()">비우기</button><button class="btn primary" id="dv-save" onclick="dvSave()" disabled>저장</button></div>
         <div class="dv-note">암호는 이 브라우저 안에서만 파일을 여는 데 쓰고 저장하거나 서버로 보내지 않아요. 고객 주소·전화·메모와 기사 정보도 서버로 보내지 않아요.</div>
-      </section><div id="dv-pick"></div><div id="dv-month"></div>`;
+      </section><div id="dv-pick"></div>`;
     if (into) into.innerHTML = body;
     else document.getElementById('main').innerHTML = simpleHero(['매출 관리', '배달 매출'], 'DELIVERY · INFRA D', '배달 매출',
       '인프라D 엑셀(배달접수통계·적립금내역)을 끌어다 놓으면 날짜별 배달 매출과 마일리지 차감이 쌓여요.') + body + pageFoot();
