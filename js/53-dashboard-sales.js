@@ -7,6 +7,7 @@
    - '매출 조회' → 매장별 매출 조회에 쌍용점이 선택된 채로 이동
    - 데이터: 매출 관리와 같은 sales_data를 직접 받음 (LOADERS는 로그인 스크립트 안에만 있어 여기서 못 씀)
    - 2026-11-18 배달 추가: delivery_data(54-delivery-sales)의 순 배달매출을 더해 홀·포장 + 배달로 보여 줌. 두 자료는 각자 들어온 날까지
+   - 2026-11-19 배민 포장(픽업) 추가: 포스·인프라D 어디에도 안 잡히는 배민 앱 결제 픽업. 따로 한 줄 + 막대 세 번째 색
    ========================================================== */
 (function(){
   const st = document.createElement('style');
@@ -31,11 +32,12 @@
   .sv-col .h{background:var(--sub);opacity:.32}
   .sv-col.we .h{opacity:.5}.sv-col.td .h{opacity:.75}
   .sv-col .d{background:var(--brand);border-radius:2px 2px 0 0}
+  .sv-col .k{background:var(--brand);opacity:.4}
   .sv-col.fu .h{height:2px;opacity:.15}
   .sv-split{margin-top:10px;padding-top:10px;border-top:1px solid var(--line);font-size:12px;color:var(--sub);display:flex;flex-direction:column;gap:4px}
   .sv-split span{color:var(--ink);font-variant-numeric:tabular-nums}.sv-split em{font-style:normal;color:var(--sub);font-size:11px;margin-left:4px}
   .sv-split i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px;vertical-align:-1px}
-  .sv-split i.h{background:var(--sub);opacity:.5}.sv-split i.d{background:var(--brand)}
+  .sv-split i.h{background:var(--sub);opacity:.5}.sv-split i.d{background:var(--brand)}.sv-split i.k{background:var(--brand);opacity:.4}
   .sv-ax{display:flex;justify-content:space-between;font-size:10px;color:var(--sub);margin-top:5px}
   .sv-empty{color:var(--sub);font-size:12px;text-align:center;padding:22px 0}
   @media(max-width:580px){.sv-box{padding:15px}.sv-body{flex-direction:column;align-items:stretch;gap:14px}.sv-bars{height:70px}.sv-note a{margin-left:0}}
@@ -78,27 +80,36 @@
     });
     const de = dEnd ? +dEnd.slice(8, 10) : 0;
     if (de) dDays.forEach(x => { if (x.hasOrders && x.hasLedger && x.d.slice(0, 7) === pym && +x.d.slice(8, 10) <= de) dPrev += x.sales - x.usedCall - x.usedOther; });
-    const withD = !!dEnd && hasPrevD;
-    const base = prev + (withD ? dPrev : 0), now = cur + (withD ? dCur : 0);
+    // 배민 포장: 넣은 날까지 (어사이드가 매일 오전 전날까지 넣음)
+    const pk = {}; let kEnd = '', kCur = 0, kPrev = 0, hasPrevK = false;
+    dDays.forEach(x => {
+      if (!x.hasPickup) return;
+      if (x.d.slice(0, 7) === ym && x.d <= today) { pk[x.d] = x.pick || 0; kCur += x.pick || 0; if (x.d > kEnd) kEnd = x.d; }
+      else if (x.d.slice(0, 7) === pym) hasPrevK = true;
+    });
+    const ke = kEnd ? +kEnd.slice(8, 10) : 0;
+    if (ke) dDays.forEach(x => { if (x.hasPickup && x.d.slice(0, 7) === pym && +x.d.slice(8, 10) <= ke) kPrev += x.pick || 0; });
+    const withD = !!dEnd && hasPrevD, withK = !!kEnd && hasPrevK;
+    const base = prev + (withD ? dPrev : 0) + (withK ? kPrev : 0), now = cur + (withD ? dCur : 0) + (withK ? kCur : 0);
     const pct = base ? Math.round((now - base) / base * 100) : null;
-    const lab = withD ? '전월 같은 기간 대비' : `홀·포장 전월 1~${d}일 대비`;
+    const lab = withD || withK ? '전월 같은 기간 대비' : `홀·포장 전월 1~${d}일 대비`;
     const cmp = pct === null ? '<span class="sv-eq">전월 비교 데이터 없음</span>'
       : pct > 0 ? `<span class="sv-up">▲ ${pct}% ${lab}</span>` : pct < 0 ? `<span class="sv-dn">▼ ${-pct}% ${lab}</span>` : `<span class="sv-eq">${lab} 같음</span>`;
-    const tot = cur + dCur, share = tot && dEnd ? Math.round(dCur / tot * 1000) / 10 : 0;
+    const tot = cur + dCur + kCur, share = tot && dEnd ? Math.round(dCur / tot * 1000) / 10 : 0;
     const key = i => ym + '-' + String(i).padStart(2, '0');
-    let max = 1; for (let i = 1; i <= n; i++) max = Math.max(max, (day[key(i)] || 0) + Math.max(0, dd[key(i)] || 0));
+    let max = 1; for (let i = 1; i <= n; i++) max = Math.max(max, (day[key(i)] || 0) + Math.max(0, dd[key(i)] || 0) + (pk[key(i)] || 0));
     let bars = '';
     for (let i = 1; i <= n; i++) {
-      const k = key(i), hv = day[k] || 0, dv = Math.max(0, dd[k] || 0), w = dow(k);
-      if ((!end || k > end) && !(k in dd)) { bars += `<i class="sv-col fu" title="${+ym.slice(5)}/${i}(${w}) ${k <= today ? '집계 전' : ''}"><b class="h"></b></i>`; continue; }
-      const t = `${+ym.slice(5)}/${i}(${w})` + (end && k <= end ? ` 홀·포장 ${won(hv)}원` : ' 홀·포장 집계 전') + (k in dd ? ` · 배달 ${won(dd[k])}원` : '');
-      bars += `<i class="sv-col${k === end ? ' td' : ''}${/[토일]/.test(w) ? ' we' : ''}" title="${t}"><b class="d" style="height:${Math.round(dv / max * 100)}%"></b><b class="h" style="height:${hv ? Math.max(2, Math.round(hv / max * 100)) : 0}%"></b></i>`;
+      const k = key(i), hv = day[k] || 0, dv = Math.max(0, dd[k] || 0), kv = pk[k] || 0, w = dow(k);
+      if ((!end || k > end) && !(k in dd) && !kv) { bars += `<i class="sv-col fu" title="${+ym.slice(5)}/${i}(${w}) ${k <= today ? '집계 전' : ''}"><b class="h"></b></i>`; continue; }
+      const t = `${+ym.slice(5)}/${i}(${w})` + (end && k <= end ? ` 홀·포장 ${won(hv)}원` : ' 홀·포장 집계 전') + (k in dd ? ` · 배달 ${won(dd[k])}원` : '') + (kv ? ` · 배민 포장 ${won(kv)}원` : '');
+      bars += `<i class="sv-col${k === end ? ' td' : ''}${/[토일]/.test(w) ? ' we' : ''}" title="${t}"><b class="d" style="height:${Math.round(dv / max * 100)}%"></b><b class="k" style="height:${Math.round(kv / max * 100)}%"></b><b class="h" style="height:${hv ? Math.max(2, Math.round(hv / max * 100)) : 0}%"></b></i>`;
     }
     const upd = META.salesUpdated ? META.salesUpdated + ' 업데이트' : '';
     const dNote = dEnd ? '배달은 순 배달매출(마일리지 차감 후)' : '배달 매출 제외(아직 안 올림)';
     return `<div class="sv-note"><b>${stores[SV_IDX]}</b><span>${+ym.slice(5)}월 · 순매출 기준 · ${dNote}</span>${upd ? `<span>${upd}</span>` : ''}<a role="button" tabindex="0" onclick="svGo()">매출 조회 ${typeof ic === 'function' ? ic('arrow') : '→'}</a></div>
       <div class="sv-body"><div class="sv-nums"><div class="sv-l">이번 달 누적</div><div class="sv-v">${won(tot)}<small>원</small></div>${cmp}
-        <div class="sv-split"><span><i class="h"></i>홀·포장 ${won(cur)}${end ? `<em>${+end.slice(5, 7)}/${d}까지</em>` : ''}</span>${dEnd ? `<span><i class="d"></i>배달 ${won(dCur)} · ${share}%<em>${+dEnd.slice(5, 7)}/${de}까지</em></span>` : ''}</div></div>
+        <div class="sv-split"><span><i class="h"></i>홀·포장 ${won(cur)}${end ? `<em>${+end.slice(5, 7)}/${d}까지</em>` : ''}</span>${kEnd ? `<span><i class="k"></i>배민 포장 ${won(kCur)}<em>${+kEnd.slice(5, 7)}/${ke}까지</em></span>` : ''}${dEnd ? `<span><i class="d"></i>배달 ${won(dCur)} · ${share}%<em>${+dEnd.slice(5, 7)}/${de}까지</em></span>` : ''}</div></div>
         <div class="sv-chart"><div class="sv-bars">${bars}</div><div class="sv-ax"><span>1일</span><span>10일</span><span>20일</span><span>${n}일</span></div></div></div>`;
   }
 

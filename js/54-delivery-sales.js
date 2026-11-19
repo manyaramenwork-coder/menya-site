@@ -8,6 +8,10 @@
    - 순 배달매출 = 결제금액 합계 − 적립금 차감 전부 (배달료·부가세·월 관리비·입금 수수료 등, 출금 요청은 제외)
    - 영업일: 새벽 5시 기준 (프로그램 주문조회 기준시간과 같음). 적립금 줄은 메모 속 (날짜/콜번호)로 주문 날짜에 붙임
    - 서버: delivery_upload(관리자·본사) / delivery_data(로그인 직원), 테이블 delivery_orders · delivery_ledger
+   - 2026-11-19 배민 포장(픽업): 앱 카드결제라 포스·인프라D 어디에도 안 잡힘 → 날짜별 건수·금액(delivery_pickup).
+     어사이드(브라우저 AI)가 매일 주소를 열어 넣음: functions/v1/baemin-pickup?key=...&d=11-13:1:11000,...
+     이 화면에서 직접 고칠 수도 있고, 어사이드 키를 새로 만들 수 있음(키는 해시만 저장, 만들 때 한 번만 보여 줌)
+     배달 매출 = 인프라D 결제금액 + 배민 포장 (메모장 정산과 같은 기준)
    ========================================================== */
 /* ---- 엑셀(xls) 열기 암호(RC4) 풀기: 브라우저 안에서만 ---- */
 const DV_CRYPT = (function(){
@@ -177,14 +181,23 @@ const DV_PARSE = (function(){
   .dv-pw input.need{border-color:var(--brand);box-shadow:0 0 0 3px rgba(198,36,41,.12)}
   .dv-pwhelp{font-size:11px;color:var(--sub)}
   .dv-act{display:flex;gap:8px;align-items:center;justify-content:flex-end;margin-top:14px}
-  .dv-sum{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:0 0 14px}
+  .dv-sum{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin:0 0 14px}
+  .dv-pk{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
+  .dv-pk th{text-align:left;font-weight:500;color:var(--sub);font-size:12px;padding:6px 8px;border-bottom:1px solid var(--line)}
+  .dv-pk td{padding:5px 8px;border-bottom:1px solid var(--line)}.dv-pk .n{text-align:right}
+  .dv-pk input{width:110px;min-height:34px;border:1px solid var(--line);border-radius:7px;padding:4px 8px;text-align:right;font-size:13px}
+  .dv-pk .src{font-size:11px;color:var(--sub)}
+  .dv-key{margin-top:14px;padding-top:12px;border-top:1px solid var(--line);font-size:12px;color:var(--sub);display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .dv-keybox{margin-top:10px;padding:12px;border:1px solid #eed8d5;background:#faf0ee;border-radius:10px;font-size:12px;color:var(--ink);word-break:break-all;line-height:1.7}
+  .dv-keybox code{font-size:12px;background:var(--card,#fff);padding:2px 6px;border-radius:5px;border:1px solid var(--line)}
   .dv-sum div{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--card,#fff)}
   .dv-sum span{display:block;font-size:12px;color:var(--sub)}.dv-sum b{font-size:20px;font-variant-numeric:tabular-nums}
   .dv-sum .hl{background:#faf0ee;border-color:#eed8d5}.dv-sum .hl b{color:var(--brand)}
   .dv-mon{display:flex;align-items:center;gap:8px}.dv-mon b{font-size:14px;min-width:88px;text-align:center}
   .dv-t td.ck-ok{color:#2f7d32}.dv-t td.ck-bad{color:#c62429;font-weight:600}.dv-t td.ck-no{color:var(--sub)}
   .dv-note{font-size:11px;color:var(--sub);line-height:1.8;margin-top:10px}
-  @media(max-width:700px){.dv-sum{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  @media(max-width:900px){.dv-sum{grid-template-columns:repeat(3,minmax(0,1fr))}}
+  @media(max-width:600px){.dv-sum{grid-template-columns:repeat(2,minmax(0,1fr))}}
   `;
   document.head.appendChild(st);
 
@@ -269,7 +282,7 @@ const DV_PARSE = (function(){
       toast(`저장했어요 · 주문 ${data.orders}건 · 적립금 ${data.ledger}줄`);
       const ds = orders.concat(ledger).map(x => x.date).sort(); if (ds.length) DV.ym = ds[ds.length - 1].slice(0, 7);
       DV.files = []; const pwi = document.getElementById('dv-pw'); if (pwi) pwi.value = '';
-      drawFiles(); window.DV_DASH_AT = 0; await loadMonth();
+      drawFiles(); window.DV_DASH_AT = 0; await Promise.all([loadMonth(), loadPick()]);
     } catch (e) { toast('저장하지 못했어요: ' + (e.message || e)); }
     DV.busy = false; drawFiles();
   }
@@ -285,27 +298,94 @@ const DV_PARSE = (function(){
     const box = document.getElementById('dv-month'), D = DV.data; if (!box || !D) return;
     const days = D.days || [];
     const sales = days.reduce((s, d) => s + d.sales, 0), used = days.reduce((s, d) => s + d.usedCall + d.usedOther, 0);
+    const pick = days.reduce((s, d) => s + (d.pick || 0), 0), pickN = days.reduce((s, d) => s + (d.pickN || 0), 0);
     const other = days.reduce((s, d) => s + d.usedOther, 0), charge = days.reduce((s, d) => s + d.charge, 0);
     const bal = [...days].reverse().find(d => d.balance != null);
     const nav = `<div class="dv-mon"><button class="btn ghost" onclick="dvMonth(-1)" aria-label="이전 달">‹</button><b>${+DV.ym.slice(0, 4)}년 ${+DV.ym.slice(5)}월</b><button class="btn ghost" onclick="dvMonth(1)" aria-label="다음 달">›</button></div>`;
     const rows = days.slice().reverse().map(d => {
-      const fv = d.fee + d.vat, net = d.sales - d.usedCall;
-      const ck = !d.hasOrders ? ['ck-no', '주문 파일 없음'] : !d.hasLedger ? ['ck-no', '적립금 파일 없음'] : fv === d.usedCall ? ['ck-ok', '✓'] : ['ck-bad', `${won(fv - d.usedCall)} 차이`];
+      const fv = d.fee + d.vat, net = d.sales + (d.pick || 0) - d.usedCall;
+      const ck = !d.hasOrders && !d.hasLedger ? ['ck-no', '-'] : !d.hasOrders ? ['ck-no', '주문 파일 없음'] : !d.hasLedger ? ['ck-no', '적립금 파일 없음'] : fv === d.usedCall ? ['ck-ok', '✓'] : ['ck-bad', `${won(fv - d.usedCall)} 차이`];
       return `<tr><td>${md(d.d)}</td><td class="n">${d.n || '-'}</td><td class="n">${d.hasOrders ? won(d.sales) : '-'}</td>
+        <td class="n">${d.hasPickup ? (d.pickN ? `${d.pickN}건 ${won(d.pick)}` : '0') : '-'}</td>
         <td class="n">${d.cardN ? `${d.cardN}건 ${won(d.card)}` : '-'}</td><td class="n">${d.cashN ? `${d.cashN}건 ${won(d.cash)}` : '-'}</td>
         <td class="n">${d.hasOrders ? won(fv) : '-'}</td><td class="n">${d.hasLedger ? won(d.usedCall) : '-'}</td>
         <td class="n">${d.hasLedger && d.charge ? won(d.charge) : '-'}</td><td class="n">${d.balance != null ? won(d.balance) : '-'}</td>
-        <td class="n"><b>${d.hasOrders && d.hasLedger ? won(net) : '-'}</b></td><td class="${ck[0]}">${ck[1]}</td></tr>`;
+        <td class="n"><b>${d.hasOrders && d.hasLedger ? won(net) : (!d.hasOrders && !d.hasLedger && d.pick ? won(d.pick) : '-')}</b></td><td class="${ck[0]}">${ck[1]}</td></tr>`;
     }).join('');
     box.innerHTML = `<section class="card">
       <div class="meta"><div class="left"><strong>${STORE_NAME} 배달 매출</strong><span class="count">${D.uploadedAt ? D.uploadedAt + ' 올림' : '올린 기록 없음'}</span>
         <div class="result-sub">주문 ${D.lastOrder ? md(D.lastOrder) : '-'}까지 · 적립금 ${D.lastLedger ? md(D.lastLedger) : '-'}까지 반영</div></div>${nav}</div>
-      <div class="dv-sum"><div><span>배달 매출</span><b>${won(sales)}</b></div><div><span>마일리지 사용</span><b>−${won(used)}</b></div>
-        <div class="hl"><span>순 배달매출</span><b>${won(sales - used)}</b></div><div><span>마일리지 잔액</span><b>${bal ? won(bal.balance) : '-'}</b></div></div>
-      ${days.length ? `<div class="tbl-wrap"><table class="dv-t"><thead><tr><th>날짜</th><th class="n">건수</th><th class="n">매출</th><th class="n">만나서 카드</th><th class="n">만나서 현금</th><th class="n">배달요금(VAT)</th><th class="n">마일리지 차감</th><th class="n">충전</th><th class="n">잔액</th><th class="n">순 배달</th><th>검산</th></tr></thead><tbody>${rows}</tbody></table></div>` : '<div class="empty">이 달에 올린 배달 자료가 없어요.</div>'}
-      <div class="dv-note">순 배달매출 = 결제금액 합계 − 적립금 차감 전부. 월 관리비·입금 수수료 등 주문과 상관없는 차감 ${won(other)}원은 날짜별 칸이 아니라 위 합계에서만 빠져요.${charge ? ` 이 달 충전(입금) ${won(charge)}원은 매출·차감과 상관없어요.` : ''}<br>검산: 그날 배달요금+부가세가 적립금에서 빠진 금액과 같으면 ✓예요.</div>
+      <div class="dv-sum"><div><span>배달 (인프라D)</span><b>${won(sales)}</b></div><div><span>배민 포장${pickN ? ` · ${pickN}건` : ''}</span><b>${won(pick)}</b></div><div><span>마일리지 사용</span><b>−${won(used)}</b></div>
+        <div class="hl"><span>순 배달매출</span><b>${won(sales + pick - used)}</b></div><div><span>마일리지 잔액</span><b>${bal ? won(bal.balance) : '-'}</b></div></div>
+      ${days.length ? `<div class="tbl-wrap"><table class="dv-t"><thead><tr><th>날짜</th><th class="n">건수</th><th class="n">매출</th><th class="n">배민 포장</th><th class="n">만나서 카드</th><th class="n">만나서 현금</th><th class="n">배달요금(VAT)</th><th class="n">마일리지 차감</th><th class="n">충전</th><th class="n">잔액</th><th class="n">순 배달</th><th>검산</th></tr></thead><tbody>${rows}</tbody></table></div>` : '<div class="empty">이 달에 올린 배달 자료가 없어요.</div>'}
+      <div class="dv-note">순 배달매출 = 인프라D 결제금액 + 배민 포장 − 적립금 차감 전부. 월 관리비·입금 수수료 등 주문과 상관없는 차감 ${won(other)}원은 날짜별 칸이 아니라 위 합계에서만 빠져요.${charge ? ` 이 달 충전(입금) ${won(charge)}원은 매출·차감과 상관없어요.` : ''}<br>검산: 그날 배달요금+부가세가 적립금에서 빠진 금액과 같으면 ✓예요.</div>
     </section>`;
   }
+
+  /* ---------- 배민 포장(픽업): 최근 7일 직접 입력 + 어사이드 키 ---------- */
+  const addDays = (d, k) => { const x = new Date(d + 'T00:00:00Z'); x.setUTCDate(x.getUTCDate() + k); return x.toISOString().slice(0, 10); };
+  const PK = { days: [], at: '', key: null, info: null };
+  async function loadPick(){
+    const box = document.getElementById('dv-pick'); if (!box) return;
+    const to = addDays(kst(), -1), from = addDays(to, -6);
+    try {
+      const [{ data, error }, ki] = await Promise.all([
+        window.SB.rpc('delivery_data', { p_store: STORE, p_from: from, p_to: to }),
+        window.SB.rpc('pickup_key_info')]);
+      if (error) throw error;
+      const by = {}; (data.days || []).forEach(d => { by[d.d] = d; });
+      PK.days = []; for (let d = to; d >= from; d = addDays(d, -1)) PK.days.push({ d, x: by[d] || null });
+      PK.at = data.pickupAt || ''; PK.info = ki && ki.data || null;
+      drawPick();
+    } catch (e) { box.innerHTML = `<div class="empty">불러오지 못했어요. ${h(e.message || '')}</div>`; }
+  }
+  function drawPick(){
+    const box = document.getElementById('dv-pick'); if (!box) return;
+    const rows = PK.days.map(({ d, x }) => {
+      const has = x && x.hasPickup, id = d.slice(5).replace('-', '');
+      return `<tr><td>${md(d)}</td>
+        <td class="n"><input id="pk-c-${id}" data-d="${d}" data-k="c" inputmode="numeric" value="${has ? x.pickN : ''}" aria-label="${md(d)} 배민 포장 건수"></td>
+        <td class="n"><input id="pk-a-${id}" data-d="${d}" data-k="a" inputmode="numeric" value="${has ? won(x.pick) : ''}" aria-label="${md(d)} 배민 포장 금액"></td>
+        <td class="src">${has ? h(x.pickSrc || '') : '비어 있음'}</td></tr>`;
+    }).join('');
+    const ki = PK.info;
+    box.innerHTML = `<section class="card"><div class="section-title"><strong>${ic('box')}배민 포장 (픽업) · ${STORE_NAME}</strong><small>${PK.at ? '마지막 입력 ' + h(PK.at) : '아직 입력 없음'}</small></div>
+      <div class="dv-note" style="margin:0 0 10px">배민 앱에서 카드결제한 픽업 주문이에요. 포스·인프라D 어디에도 안 잡혀서 따로 넣어요. 어사이드가 매일 넣고, 여기서 직접 고칠 수도 있어요.</div>
+      <div class="tbl-wrap"><table class="dv-pk"><thead><tr><th>날짜</th><th class="n">건수</th><th class="n">금액(원)</th><th>입력</th></tr></thead><tbody>${rows}</tbody></table></div>
+      <div class="dv-act"><span class="filter-hint" id="pk-hint" style="margin-right:auto"></span><button class="btn primary" id="pk-save" onclick="dvPickSave()">배민 포장 저장</button></div>
+      <div class="dv-key"><b style="color:var(--ink)">어사이드 키</b><span>${ki ? `만든 날 ${h(ki.created || '-')} · 마지막 사용 ${h(ki.used || '아직 없음')}` : '아직 없음'}</span>
+        <button class="btn ghost" onclick="dvKeyNew()">${ki ? '키 새로 만들기' : '키 만들기'}</button></div>
+      <div id="pk-keybox"></div></section>`;
+  }
+  window.dvPickSave = async () => {
+    const hint = document.getElementById('pk-hint'), rows = [];
+    for (const { d } of PK.days) {
+      const id = d.slice(5).replace('-', ''), c = document.getElementById('pk-c-' + id).value.trim(), a = document.getElementById('pk-a-' + id).value.trim();
+      if (!c && !a) continue;
+      const cn = DV_PARSE.num(c), am = DV_PARSE.num(a);
+      if ((cn === 0) !== (am === 0)) { hint.textContent = `${md(d)}: 건수와 금액이 맞지 않아요 (둘 다 0이거나 둘 다 0보다 커야 해요)`; return; }
+      rows.push({ date: d, cnt: cn, amount: am });
+    }
+    if (!rows.length) { hint.textContent = '적은 칸이 없어요.'; return; }
+    const btn = document.getElementById('pk-save'); btn.disabled = true;
+    try {
+      const { error } = await window.SB.rpc('delivery_pickup_save', { p_store: STORE, p_rows: rows }); if (error) throw error;
+      toast(`배민 포장 저장했어요 · ${rows.length}일`); window.DV_DASH_AT = 0; await Promise.all([loadPick(), loadMonth()]);
+    } catch (e) { toast('저장하지 못했어요: ' + (e.message || e)); btn.disabled = false; }
+  };
+  window.dvKeyNew = async () => {
+    if (PK.info && !confirm('키를 새로 만들면 지금 어사이드에 넣어 둔 키는 바로 못 쓰게 돼요. 새로 만들까요?')) return;
+    try {
+      const { data, error } = await window.SB.rpc('pickup_key_rotate'); if (error) throw error;
+      const base = (window.MM_CONFIG && MM_CONFIG.url ? MM_CONFIG.url : '') + '/functions/v1/baemin-pickup';
+      const url = `${base}?key=${data}&d=`;
+      document.getElementById('pk-keybox').innerHTML = `<div class="dv-keybox"><b>새 키가 만들어졌어요. 이 화면을 벗어나면 다시 볼 수 없으니 지금 어사이드 프롬프트에 넣어 두세요.</b><br>
+        주소: <code id="pk-url">${h(url)}</code> <button class="btn ghost" onclick="navigator.clipboard.writeText(document.getElementById('pk-url').textContent).then(()=>toast('복사했어요'))">복사</button><br>
+        d= 뒤에 <code>날짜:건수:금액</code>을 쉼표로 이어 붙여요. 예: <code>11-13:1:11000,11-14:0:0</code></div>`;
+      const ki = await window.SB.rpc('pickup_key_info'); PK.info = ki.data || PK.info;
+      const keyRow = document.querySelector('#dv-pick .dv-key span'); if (keyRow && PK.info) keyRow.textContent = `만든 날 ${PK.info.created || '-'} · 마지막 사용 아직 없음`;
+    } catch (e) { toast('키를 만들지 못했어요: ' + (e.message || e)); }
+  };
   window.dvMonth = k => { DV.ym = ymAddL(DV.ym, k); loadMonth(); };
   window.dvClear = () => { DV.files = []; drawFiles(); };
   window.dvDrop = i => { DV.files.splice(i, 1); drawFiles(); };
@@ -323,7 +403,7 @@ const DV_PARSE = (function(){
         <div class="dv-files" id="dv-files"></div>
         <div class="dv-act"><span class="filter-hint" id="dv-hint" style="margin-right:auto"></span><button class="btn ghost" onclick="dvClear()">비우기</button><button class="btn primary" id="dv-save" onclick="dvSave()" disabled>저장</button></div>
         <div class="dv-note">암호는 이 브라우저 안에서만 파일을 여는 데 쓰고 저장하거나 서버로 보내지 않아요. 고객 주소·전화·메모와 기사 정보도 서버로 보내지 않아요.</div>
-      </section><div id="dv-month"></div>` + pageFoot();
+      </section><div id="dv-pick"></div><div id="dv-month"></div>` + pageFoot();
     const drop = document.getElementById('dv-drop'), inp = document.getElementById('dv-input');
     inp.onchange = () => { addFiles(inp.files); inp.value = ''; drawFiles(); };
     ['dragenter', 'dragover'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('on'); }));
@@ -333,7 +413,7 @@ const DV_PARSE = (function(){
     let pwT = 0; const pwi = document.getElementById('dv-pw');
     pwi.addEventListener('input', () => { clearTimeout(pwT); pwT = setTimeout(() => { if (DV.files.some(f => f.res && f.res.need)) dvRetry(); }, 400); });
     pwi.addEventListener('keydown', e => { if (e.key === 'Enter') dvRetry(); });
-    drawFiles(); loadMonth(); loadXlsx().catch(() => {});
+    drawFiles(); loadPick(); loadMonth(); loadXlsx().catch(() => {});
   }
   window.dvSave = save;
   window.dvRetry = () => { DV.files.forEach(f => { if (f.res && f.res.kind === 'error') f.res = null; }); drawFiles(); readAll(); };
@@ -361,5 +441,3 @@ const DV_PARSE = (function(){
   };
   try { renderSide(window.__curPage || 'dash'); } catch (e) {}
 })();
-
-
