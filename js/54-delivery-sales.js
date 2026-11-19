@@ -208,11 +208,12 @@ const DV_PARSE = (function(){
   .dm-gap{height:7px}
   .dm-src{font-size:11px;color:var(--sub);margin-bottom:4px}
   .dm-why{display:inline-block;font-size:11px;color:#8a5a00;background:#fdf1d8;border-radius:6px;padding:1px 7px;margin:1px 0 3px}
-  .dv-split{display:grid;grid-template-columns:minmax(0,1fr) 460px;gap:18px;align-items:start}
+  .dv-split{display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:16px;align-items:start}
   .dv-split > div{min-width:0}
   .dv-side{position:sticky;top:84px}
   .dv-side .dm-card{max-width:none}
-  @media(max-width:1250px){.dv-split{grid-template-columns:1fr}.dv-side{position:static;grid-row:1}}
+  @media(max-width:1000px){.dv-split{grid-template-columns:1fr}.dv-side{position:static;grid-row:1}}
+  .dv-side .dm-r{grid-template-columns:minmax(0,1fr) auto}
   .dv-dl{cursor:pointer;color:inherit;text-decoration:underline dotted;text-underline-offset:3px}
   .dv-t tr.dv-on td{background:#faf0ee}
   @media(max-width:420px){.dm-r{grid-template-columns:minmax(0,1fr) auto}}
