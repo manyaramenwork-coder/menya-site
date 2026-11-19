@@ -135,6 +135,16 @@ td .sm{font-size:12px;color:var(--sub)}
 .bp-bars div{display:flex;align-items:center;gap:8px;font-size:12px}
 .bp-bars span{flex:0 0 120px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .bp-bars i{display:block;height:10px;background:var(--blue);border-radius:3px;min-width:2px}
+.dc-hd{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;margin-bottom:8px}
+.dc-sum{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 12px;margin:8px 0}
+.dc-sum div{display:flex;justify-content:space-between;gap:8px;border-bottom:1px dashed var(--line);padding:4px 0;font-size:13px}
+.dc-sum span{color:var(--sub)}
+.dc-sec{margin-top:8px}
+.dc-sec h5{margin:12px 0 4px;font-size:13px}
+.dc-sec details{border:1px solid var(--line);border-radius:8px;margin:4px 0;background:#fff}
+.dc-sec summary{cursor:pointer;padding:7px 10px;font-size:13px}
+.dc-sec pre{white-space:pre-wrap;word-break:break-word;font:inherit;font-size:12.5px;line-height:1.55;margin:0;padding:4px 12px 10px;color:#3c403a;max-height:360px;overflow:auto}
+@media (max-width:600px){.dc-sum{grid-template-columns:1fr}}
 .shell .wrap{flex:1;min-width:0;margin:0}
 .sec-hd{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}
 .sec-hd h1{margin:0;font-size:22px}
@@ -910,6 +920,48 @@ function renderNaver(){
 $('nv-q').addEventListener('input', () => { clearTimeout(state.nv.t); state.nv.t = setTimeout(loadNaver, 350); });
 $('nv-rows').addEventListener('click', e => { const tr = e.target.closest('tr[data-k]'); if (tr) openBrand(tr.dataset.k); });
 
+
+/* 정보공개서 원문 (공정위 가맹사업거래 API, 서버 함수 ftc-disclosure 경유) */
+const FTC_SEARCH = q => 'https://franchise.ftc.go.kr/mnu/00013/program/userRqst/list.do?column=brd&searchKeyword=' + encodeURIComponent(q || '');
+function discBox(d, name){
+  const ds = d.disc || [], top = ds[0];
+  const link = `<a class="btn sm" href="${esc(FTC_SEARCH(name))}" target="_blank" rel="noopener">공정위 사이트에서 찾기 ↗</a>`;
+  if (!top) return `<div class="dc-hd"><h4 style="margin:0">정보공개서 원문</h4>${link}</div><p class="muted" style="margin:0">CRM에서 바로 열 수 있는 정보공개서가 없어요. 공정위 사이트에서 찾아보세요 (가맹사업거래 로그인 필요).</p>`;
+  return `<div class="dc-hd"><h4 style="margin:0">정보공개서 원문 <small class="muted">${esc(top.brand || '')} · ${esc(top.corp || '')}${top.rgsno ? ' · 등록번호 ' + esc(top.rgsno) : ''}</small></h4>
+    <span style="display:flex;gap:6px">${link}<button class="btn sm pri" data-dc="${top.sn}">CRM에서 열기</button></span></div>
+    <div id="dc-body"><p class="muted" style="margin:0">가맹비·교육비·인테리어·로열티·계약기간 요약과 목차별 본문을 불러와요. 처음 열 때 10~20초 걸릴 수 있어요.</p></div>`;
+}
+const kwon = k => k === null || k === undefined ? '-' : (k >= 100000 ? (k / 100000).toFixed(2).replace(/\.?0+$/, '') + '억' : (k / 10).toLocaleString(undefined, { maximumFractionDigits: 1 }) + '만원'); // 천원 단위 → 만원/억
+async function openDisc(sn){
+  const box = $('dc-body'); if (!box) return;
+  box.innerHTML = '<p class="muted" style="margin:0">공정위에서 불러오는 중…</p>';
+  try {
+    const { data, error } = await SB.functions.invoke('ftc-disclosure', { body: { sn } });
+    if (error) { let m = error.message; try { const j = await error.context.json(); m = j.error || m; } catch (_) {} throw new Error(m); }
+    if (data.error) throw new Error(data.error);
+    renderDisc(data);
+  } catch (e) { box.innerHTML = `<p class="muted" style="margin:0;color:var(--brand-d)">${esc(errMsg(e))}</p>`; }
+}
+function renderDisc(x){
+  const s = x.summary || {}, secs = x.sections || [];
+  const rows = [
+    ['최초 가맹금 합계', kwon(s.initial_total)], ['가입비', kwon(s.join_fee)], ['교육비', kwon(s.edu_fee)], ['보증금', kwon(s.deposit)],
+    ['기타 비용 합계' + (s.other_area_m2 ? ` (${Math.round(s.other_area_m2 / 3.3058)}평 기준)` : ''), kwon(s.other_total)],
+    ['인테리어' + (s.interior_per_3_3 ? ` (평당 ${kwon(s.interior_per_3_3)})` : ''), kwon(s.interior)],
+    ['로열티', s.royalty || '-'], ['계약 기간', s.term_years ? s.term_years + '년' : '-']
+  ];
+  const OPEN = /부담|계약\s*및\s*갱신\s*기간|교육ㆍ훈련의 최소시간|영업지역 보호|영업 시작까지 필요한 절차/;
+  let html = '', grp = '';
+  secs.forEach(c => {
+    if (c.lvl === 1) { html += `<h5>${esc(c.title)}</h5>`; if (c.text) html += `<details><summary>내용</summary><pre>${esc(c.text)}</pre></details>`; return; }
+    if (!c.text) { html += `<div class="sm muted" style="margin:6px 2px 0;padding-left:${(c.lvl - 2) * 12}px">${esc(c.title)}</div>`; return; }
+    html += `<details style="margin-left:${(c.lvl - 2) * 12}px"${OPEN.test(c.title) ? ' open' : ''}><summary>${esc(c.title)}</summary><pre>${esc(c.text)}</pre></details>`;
+  });
+  $('dc-body').innerHTML = `<div class="dc-sum">${rows.map(([l, v]) => `<div><span>${esc(l)}</span><b>${esc(v)}</b></div>`).join('')}</div>
+    <p class="muted" style="margin:0">요약은 본문에서 자동으로 뽑은 값이라 원문과 다를 수 있어요 (부가세 포함 여부는 본문 확인). ${x.cached ? '저장된 사본 · ' + esc(shortDate(String(x.fetched_at).slice(0, 10))) : '방금 불러옴'}</p>
+    <div class="dc-sec">${html}</div>`;
+}
+
 /* 브랜드 상세 (두 화면 공용) */
 async function openBrand(key){
   try {
@@ -934,7 +986,8 @@ function renderBrand(d){
       <div class="fld full"><label for="bn-note">가맹 조건 · 홍보 채널 · 메뉴 특징 · 영업 방식</label><textarea id="bn-note" rows="6" placeholder="예: 가맹비 면제 이벤트, 인스타 릴스 위주 모집, 1인 운영 가능 소형 매장, 본사 직영 상권분석 제공">${esc(rs.note || '')}</textarea></div>
       <div style="display:flex;justify-content:flex-end;margin-top:8px"><button class="btn pri" id="bn-save">저장</button></div>
     </div>
-    <div class="box"><h4>정보공개서</h4>${ftcTbl}</div>
+    <div class="box" id="dc-box">${discBox(d, name)}</div>
+    <div class="box"><h4>정보공개서 숫자 <small class="muted">공정위 가맹점 현황</small></h4>${ftcTbl}</div>
     <div class="box"><h4>CRM 매장 수 <small class="muted">현재 ${fmt(d.now)}곳</small></h4>
       ${snaps.length ? `<p class="muted" style="margin:0 0 8px">${snaps.map(x => `${esc(shortDate(x[0]))} ${Number(x[1]).toLocaleString()}곳`).join(' → ')}</p>` : '<p class="muted" style="margin:0 0 8px">월별 기록이 아직 없어요 (매장 2곳 이상인 브랜드만 기록).</p>'}
       ${regs.length ? '<div class="bp-bars">' + regs.map(x => `<div><span title="${esc(x.r)}">${esc(x.r)}</span><i style="width:${Math.round(x.n / mx * 220)}px"></i><b>${x.n}</b></div>`).join('') + '</div>' : ''}
@@ -944,6 +997,8 @@ function renderBrand(d){
 $('panel').addEventListener('click', async e => {
   if (!state.brand || state.cur) return;
   if (e.target.closest('[data-x]')) return closePanel();
+  const dc = e.target.closest('[data-dc]');
+  if (dc) { dc.disabled = true; await openDisc(+dc.dataset.dc); dc.disabled = false; return; }
   const sb = e.target.closest('.note-st button');
   if (sb) { $('panel').querySelectorAll('.note-st button').forEach(b => b.classList.toggle('on', b === sb)); return; }
   if (e.target.id === 'bn-save') {
