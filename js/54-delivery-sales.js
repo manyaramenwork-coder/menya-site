@@ -412,6 +412,7 @@ const DV_PARSE = (function(){
 
   /* ---------- 정산방 메모 (2026-11-19): 매장 메모장 정산과 같은 틀로 자동 기입 ----------
      - 카드/현금은 손님 결제 방법 기준: 선결제(카→선 포함)·만나서 카드 = 카드, 만나서 현금 = 현금
+       매출 줄의 카드·현금은 인프라D 결제금액만 나눔 (배민오더는 따로) → 카드 + 현금 + 배민오더 = 매출
      - 매출 = 인프라D 결제금액 + 배민오더(배민 포장), 배달요금 = 배달요금 + 부가세
      - 마일리지 차감 = 그날 적립금에서 빠진 전부 (배달요금 + 월 관리비·입금 수수료 등). 배달요금 말고 빠진 게 있으면 노란 표시
      - 총 매출액 · 총 마일리지 사용 = 그 달 1일부터 그날까지 */
@@ -426,7 +427,7 @@ const DV_PARSE = (function(){
     days.forEach(v => { if (v.d <= day) { cumS += (v.hasOrders ? v.sales : 0) + (v.pick || 0); cumU += v.usedCall + v.usedOther; } });
     const g = {}; (x.others || []).forEach(o => { const k = otherName(o.k); (g[k] = g[k] || []).push(o.a); });
     const extra = Object.entries(g).map(([k, a]) => a.every(v => v === a[0]) && a.length > 1 ? `${k} ${won(a[0])}×${a.length}` : `${k} ${won(a.reduce((s, v) => s + v, 0))}`);
-    return { x, sales, cash, card: sales - cash, fv, cashFee, used, cumS, cumU, extra, pick };
+    return { x, sales, cash, card: (x.hasOrders ? x.sales : 0) - cash, fv, cashFee, used, cumS, cumU, extra, pick };
   }
   function memoText(day, m){
     const x = m.x, L = [];
@@ -468,7 +469,7 @@ const DV_PARSE = (function(){
     }
     box.innerHTML = `<section class="card"><div class="section-title"><strong>${ic('file')}정산방 메모 · ${STORE_NAME}</strong>
       <span class="dm-nav"><button class="btn ghost" onclick="dvMemoStep(-1)" aria-label="이전 날">‹</button><button class="btn ghost" onclick="dvMemoStep(1)" aria-label="다음 날">›</button></span></div>
-      ${card}<div class="dv-note">매장 메모장 정산과 같은 틀이에요. 카드·현금은 손님 결제 방법 기준(선결제·만나서 카드 = 카드, 만나서 현금 = 현금)이고, 총 매출액·총 마일리지 사용은 ${+DV.ym.slice(5)}월 1일부터 그날까지예요. 노란 표시는 배달요금 말고 마일리지에서 빠진 돈이라 정산방과 차이 날 수 있는 곳이에요.</div></section>`;
+      ${card}<div class="dv-note">매장 메모장 정산과 같은 틀이에요. 카드·현금은 손님 결제 방법 기준(선결제·만나서 카드 = 카드, 만나서 현금 = 현금)이고 배민오더는 따로라 카드 + 현금 + 배민오더 = 매출이에요. 총 매출액·총 마일리지 사용은 ${+DV.ym.slice(5)}월 1일부터 그날까지예요. 노란 표시는 배달요금 말고 마일리지에서 빠진 돈이라 정산방과 차이 날 수 있는 곳이에요.</div></section>`;
   }
   window.dvMemoGo = d => { DV.memoDay = d; drawMemo(); document.querySelectorAll('#dv-month tr').forEach(tr => tr.classList.toggle('dv-on', !!tr.querySelector(`[onclick*="${d}"]`))); const b = document.getElementById('dv-memo'); if (b) b.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
   window.dvMemoStep = k => {
