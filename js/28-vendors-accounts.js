@@ -1,6 +1,7 @@
 
 /* ==========================================================
    거래처·계정 관리 (2026-11-03) — 거래처 현황 · 계정 현황
+   - 2026-11-20 수정: 계정 등록·수정 창에 브라우저가 워크스페이스 로그인 아이디·비밀번호를 자동으로 채우던 문제 막음 · 아이디/비밀번호 글자를 눌러도 복사 · 잘못 저장된 계정에 "비밀번호 다시 입력 필요" 표시
    - 본사 계정(admin·hq)만 메뉴가 보이고 열 수 있음
    - 비밀번호는 Supabase Vault에 암호화 저장, 화면엔 [보기]·[복사] 할 때만 받아옴 (열람 기록 남음)
    - 사용 중지·관리자 전용 지정은 관리자만
@@ -97,7 +98,9 @@
   .bi-hist div{display:grid;grid-template-columns:90px 1fr 1fr 70px;gap:8px;padding:5px 0;color:#5f6858}
   .bi-hist div.h{color:#8b9381}
   .im-grid textarea{width:100%;box-sizing:border-box;border:1px solid #dcdfd6;border-radius:8px;padding:9px 10px;font-size:13px;min-height:70px;font-family:inherit;resize:vertical}
-  .bi-pw{display:flex;gap:6px}.bi-pw input{flex:1}
+  .bi-pw{display:flex;gap:6px}.bi-pw input{flex:1}.bi-pw input.sec{-webkit-text-security:disc;text-security:disc}
+  .bi-cred .v.cp{cursor:pointer}.bi-cred .v.cp:hover{text-decoration:underline dotted;text-underline-offset:3px}
+  .bi-tag.warn{background:#fdecea;color:#b3261e;border-color:#f3c2bd}
   .bi-chk{display:flex;align-items:center;gap:8px;font-size:13px;color:#4a5244}
   .bi-chk input{width:auto !important}
   .bi-help{font-size:11px;color:#8b9381;margin-top:4px}
@@ -380,17 +383,17 @@
     if (a.vendorId) parts.push(`<a href="javascript:void(0)" onclick="biGoVendor(${a.vendorId})">거래처 정보: ${h(a.vendor)}</a>`);
     const sub = parts.join(' / ');
     return `<div class="bi-it ${a.active ? '' : 'off'}" id="bi-a${a.id}">
-      <div class="bi-name">${h(a.site)}<span class="bi-tag">${brTxt(a.brs)}${a.cat ? ' · ' + h(a.cat) : ''}</span>${a.adminOnly ? `<span class="bi-tag lock">${ic('lock')}관리자 전용</span>` : ''}${a.active ? '' : '<span class="bi-tag stop">사용 중지</span>'}</div>
+      <div class="bi-name">${h(a.site)}<span class="bi-tag">${brTxt(a.brs)}${a.cat ? ' · ' + h(a.cat) : ''}</span>${a.adminOnly ? `<span class="bi-tag lock">${ic('lock')}관리자 전용</span>` : ''}${a.active ? '' : '<span class="bi-tag stop">사용 중지</span>'}${a.pwCheck ? '<span class="bi-tag warn" title="워크스페이스 로그인 비밀번호가 잘못 저장돼 있어요. [수정]에서 이 사이트의 진짜 비밀번호를 다시 입력해주세요.">비밀번호 다시 입력 필요</span>' : ''}</div>
       <div class="bi-acts">${url ? `<a class="bi-b red" href="${h(url)}" target="_blank" rel="noopener">${ic('link')}열기</a>` : ''}<button class="bi-b" onclick="biAcctModal(${a.id})">${ic('edit')}수정</button></div>
       <div class="bi-cred">
-        ${a.uid ? `<span class="k">아이디</span><span class="v">${h(a.uid)}</span><span class="bi-acts"><button class="bi-b" onclick="biCopyUid(${a.id})">${ic('copy')}복사</button></span>` : ''}
-        ${a.hasPw ? `<span class="k">비밀번호</span><span class="v mask" id="bi-pw${a.id}">●●●●●●●●</span><span class="bi-acts"><button class="bi-b" id="bi-pwb${a.id}" onclick="biReveal(${a.id})">${ic('eye')}보기</button><button class="bi-b" onclick="biCopyPw(${a.id})">${ic('copy')}복사</button></span>` : ''}
+        ${a.uid ? `<span class="k">아이디</span><span class="v cp" title="눌러서 아이디 복사" onclick="biCopyUid(${a.id})">${h(a.uid)}</span><span class="bi-acts"><button class="bi-b" title="아이디 복사" onclick="biCopyUid(${a.id})">${ic('copy')}복사</button></span>` : ''}
+        ${a.hasPw ? `<span class="k">비밀번호</span><span class="v mask cp" id="bi-pw${a.id}" title="눌러서 비밀번호 복사" onclick="biCopyPw(${a.id})">●●●●●●●●</span><span class="bi-acts"><button class="bi-b" id="bi-pwb${a.id}" onclick="biReveal(${a.id})">${ic('eye')}보기</button><button class="bi-b" title="비밀번호 복사" onclick="biCopyPw(${a.id})">${ic('copy')}복사</button></span>` : ''}
       </div>
       ${sub ? `<div class="bi-sub">${sub}</div>` : ''}
       <div class="bi-sub" style="font-size:11px;color:#a0a796">수정 ${h(a.upd)}${a.by ? ' · ' + h(a.by) : ''}</div>
     </div>`;
   }
-  window.biCopyUid = id => { const a = BI.acct.list.find(x => x.id === id); copyText(a.uid).then(ok => toast(ok ? '아이디를 복사했어요.' : '복사가 안 돼요. 길게 눌러 직접 복사해주세요.')); };
+  window.biCopyUid = id => { const a = BI.acct.list.find(x => x.id === id); if (!a || !a.uid) return; copyText(String(a.uid).trim()).then(ok => toast(ok ? '아이디를 복사했어요.' : '복사가 안 돼요. 길게 눌러 직접 복사해주세요.')); };
   const fetchPw = (id, action) => SB.rpc('acct_reveal', { p_id: id, p_action: action }).then(({ data, error }) => { if (error) throw error; return data || ''; });
   function hidePw(id){
     const v = document.getElementById('bi-pw' + id), b = document.getElementById('bi-pwb' + id);
@@ -421,8 +424,8 @@
       <div class="f wide"><label>소속 <span>여러 개 선택 가능</span></label>${brChecks(a.brs)}</div>
       <div class="f"><label>분류</label>${catSel('acct', a.cat)}</div>
       ${fld('site', '사이트명', a.site, 'wide', '예) 제때, 배달의민족(본점)')}
-      ${fld('uid', '아이디', a.uid)}
-      <div class="f"><label>비밀번호</label><div class="bi-pw"><input id="bi-pw" type="password" autocomplete="new-password" placeholder="${a.hasPw ? '바꿀 때만 입력' : '비밀번호'}"><button type="button" class="bi-b" onclick="const i=document.getElementById('bi-pw');i.type=i.type==='password'?'text':'password'">${ic('eye')}</button></div>${a.hasPw ? '<div class="bi-help">비워두면 지금 비밀번호가 그대로 유지돼요.</div>' : ''}</div>
+      <div class="f"><label>아이디</label><input id="bi-uid" name="acct-uid-${Date.now()}" value="${h(a.uid)}" autocomplete="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore data-form-type="other" readonly onfocus="this.removeAttribute('readonly')"></div>
+      <div class="f"><label>비밀번호</label><div class="bi-pw"><input id="bi-pw" type="text" class="sec" name="acct-secret-${Date.now()}" autocomplete="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore data-form-type="other" readonly onfocus="this.removeAttribute('readonly')" placeholder="${a.hasPw ? '바꿀 때만 입력' : '비밀번호'}"><button type="button" class="bi-b" title="보이기/숨기기" onclick="document.getElementById('bi-pw').classList.toggle('sec')">${ic('eye')}</button></div>${a.hasPw ? '<div class="bi-help">비워두면 지금 비밀번호가 그대로 유지돼요.</div>' : ''}</div>
       ${fld('url', '로그인 주소', a.url, 'wide', '예) ebiz.jette.co.kr')}
       <div class="f"><label>로그인 방식</label><input id="bi-how" list="bi-hows" value="${h(a.how)}"><datalist id="bi-hows">${HOWS.map(x => `<option value="${h(x)}">`).join('')}</datalist></div>
       ${fld('purpose', '용도', a.purpose, '', '짧게, 예) 본사 발주')}
@@ -436,11 +439,16 @@
       if (!p.site) return toast('사이트명을 입력해주세요.');
       if (!p.brs.length) return toast('소속을 하나 이상 골라주세요.');
       busyBtn(true);
-      SB.rpc('acct_save', { p }).then(({ data, error }) => {
+      const save = () => SB.rpc('acct_save', { p }).then(({ data, error }) => {
+        if (error && /WS_PW_SAME/.test(error.message || '')) {
+          if (confirm('입력한 비밀번호가 워크스페이스 로그인 비밀번호와 같아요.\n브라우저가 자동으로 채운 것일 수 있어요.\n\n이 사이트 비밀번호가 정말 이게 맞으면 [확인], 다시 입력하려면 [취소]를 눌러주세요.')) { p.force = true; return save(); }
+          busyBtn(false); const i = document.getElementById('bi-pw'); if (i) { i.value = ''; i.focus(); } return;
+        }
         if (error) { busyBtn(false); return toast('저장 실패: ' + error.message); }
         closeM(); toast(id ? '계정을 수정했어요.' : '계정을 등록했어요.'); BI.hlAcct = data;
         loadAcct().then(drawAcct);
       });
+      save();
     });
   };
 
