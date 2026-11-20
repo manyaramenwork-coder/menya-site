@@ -865,7 +865,7 @@ function spark(series){
   const pts = v.map((y, i) => `${(i * st).toFixed(1)},${(h - 2 - (y / mx) * (h - 4)).toFixed(1)}`).join(' ');
   return `<svg class="spark" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" aria-hidden="true"><polyline points="${pts}" fill="none" stroke="var(--blue)" stroke-width="2" stroke-linejoin="round"/></svg>`;
 }
-const won = v => v ? (v >= 10000 ? (v / 10000).toFixed(1).replace(/\.0$/, '') + '억' : Math.round(v / 10).toLocaleString() + '만') : '-'; // 공정위 평균매출 단위: 천원
+const won = v => v ? (v >= 100000 ? (v / 100000).toFixed(1).replace(/\.0$/, '') + '억' : Math.round(v / 10).toLocaleString() + '만') : '-'; // 공정위 평균매출 단위: 천원 (100,000천원 = 1억)
 
 // 업종 여러 개 선택 (비어 있으면 전체). 묶음: 식사 업종만(기본) / 우리 관련 / 전체
 const FT_NOMEAL = ['커피', '음료 (커피 외)', '제과제빵', '아이스크림/빙수'];
