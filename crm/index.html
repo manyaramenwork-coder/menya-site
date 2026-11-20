@@ -493,18 +493,18 @@ td .sm{font-size:12px;color:var(--sub)}
     <!-- 영업기획: 정보공개서 분석 -->
     <section id="sec-ftc" class="sec" hidden>
       <div class="sec-hd"><h1>정보공개서 분석 <small id="ft-count"></small></h1></div>
-      <p class="muted">공정위 정보공개서 기준 <b>외식 브랜드 가맹점 수 변화</b>예요. 숫자는 각 연도 자료의 전년도 말 기준이라 실제보다 1년 정도 늦어요. 브랜드를 누르면 연도별 숫자와 조사 메모를 볼 수 있어요.</p>
+      <p class="muted">공정위 정보공개서 기준 <b>외식 브랜드 연도별 가맹점 수</b>예요(각 연도 말 기준). 공정위 통계는 1년 늦게 올라와서 최신 연도는 원문에서 확인하세요. 기본 순위는 <b>최근 1년 신규 개점 수</b>(가맹 모집 실적)이고, 폐점률 10% 이상은 빨간색이에요. 브랜드를 누르면 연도별 숫자와 조사 메모를 볼 수 있어요.</p>
       <div class="bar">
         <input type="search" id="ft-q" placeholder="브랜드 검색" aria-label="브랜드 검색">
-        <select id="ft-ind" aria-label="업종"><option value="">전체 업종</option></select>
-        <select id="ft-span" aria-label="비교 기간"><option value="2">2년 비교</option><option value="3">3년 비교</option><option value="1">1년 비교</option></select>
         <select id="ft-min" aria-label="최소 매장 수"><option value="30">현재 30곳 이상</option><option value="10">10곳 이상</option><option value="100">100곳 이상</option></select>
-        <select id="ft-sort" aria-label="정렬"><option value="pct">증가율 순</option><option value="inc">늘어난 매장 수 순</option><option value="n">매장 많은 순</option></select>
+        <select id="ft-sort" aria-label="정렬"><option value="new">1년 신규 개점 많은 순</option><option value="net">1년 순증 많은 순</option><option value="cagr">3년 연평균 증가율 순</option><option value="n">매장 많은 순</option></select>
       </div>
-      <p class="muted" style="margin-top:-4px">비교 시작 연도 매장이 10곳 미만인 브랜드는 뺐어요 (브랜드명·법인명이 바뀌어 0에서 갑자기 튀는 경우 포함).</p>
+      <div class="chips" id="ft-preset" role="group" aria-label="업종 묶음"><button data-p="meal" class="on">식사 업종만</button><button data-p="ours">우리 관련 (일식·분식·주점)</button><button data-p="all">전체</button></div>
+      <div class="chips region" id="ft-inds" role="group" aria-label="업종 (여러 개 선택)"></div>
+      <p class="muted" style="margin-top:-4px">순증 = 올해 말 − 작년 말 매장 수. 폐점률 = (계약 종료 + 해지) ÷ 작년 말 매장 수. 3년 연평균 증가율은 3년 전 매장이 10곳 이상인 브랜드만 계산해요. "-"는 그 해 자료가 없는 경우예요.</p>
       <div class="tbl-wrap">
         <table>
-          <thead><tr><th>브랜드</th><th>업종</th><th>추이</th><th class="num" id="ft-h0">시작</th><th class="num" id="ft-h1">현재</th><th class="num">늘어난 수</th><th class="num">증가율</th><th class="num">신규 개점</th><th class="num">폐점</th><th class="num">CRM 매장<br><small>(청주)</small></th><th>조사</th></tr></thead>
+          <thead id="ft-head"></thead>
           <tbody id="ft-rows"></tbody>
         </table>
       </div>
@@ -867,30 +867,55 @@ function spark(series){
 }
 const won = v => v ? (v >= 10000 ? (v / 10000).toFixed(1).replace(/\.0$/, '') + '억' : Math.round(v / 10).toLocaleString() + '만') : '-'; // 공정위 평균매출 단위: 천원
 
-state.ft = { d: null, t: null };
+// 업종 여러 개 선택 (비어 있으면 전체). 묶음: 식사 업종만(기본) / 우리 관련 / 전체
+const FT_NOMEAL = ['커피', '음료 (커피 외)', '제과제빵', '아이스크림/빙수'];
+const FT_OURS = ['일식', '분식', '주점'];
+state.ft = { d: null, t: null, inds: new Set(), all: [], preset: 'meal' };
+function ftPreset(k){
+  state.ft.preset = k;
+  state.ft.inds = new Set(k === 'ours' ? FT_OURS : k === 'meal' ? (state.ft.all || []).filter(x => !FT_NOMEAL.includes(x)) : []);
+  document.querySelectorAll('#ft-preset button').forEach(b => b.classList.toggle('on', b.dataset.p === k));
+}
 async function loadFtc(){
   try {
-    const d = await rpc('sp_ftc_list', { p: { q: $('ft-q').value.trim(), induty: $('ft-ind').value, span: $('ft-span').value, min_n: $('ft-min').value, sort: $('ft-sort').value } });
+    if (state.ft.preset === 'meal' && !state.ft.inds.size) {   // 첫 진입: 업종 목록을 받아 '식사 업종만' 적용
+      if (!state.ft.all.length) { const d0 = await rpc('sp_ftc_list', { p: { min_n: 100000 } }); state.ft.all = d0.industries || []; }
+      ftPreset('meal');
+    }
+    const d = await rpc('sp_ftc_list', { p: { q: $('ft-q').value.trim(), inds: [...state.ft.inds], min_n: $('ft-min').value, sort: $('ft-sort').value } });
     state.ft.d = d; renderFtc();
   } catch (e) { toast(errMsg(e), true); }
 }
 function renderFtc(){
   const d = state.ft.d || {}, rows = d.rows || [];
-  const sel = $('ft-ind'), cur = sel.value;
-  sel.innerHTML = '<option value="">전체 업종</option>' + (d.industries || []).map(x => `<option>${esc(x)}</option>`).join(''); sel.value = cur;
-  $('ft-h0').textContent = (d.y0 || '') + '년'; $('ft-h1').textContent = (d.y1 || '') + '년';
+  if (d.industries) state.ft.all = d.industries;
+  $('ft-inds').innerHTML = (state.ft.all || []).map(x => `<button data-i="${esc(x)}" class="${state.ft.inds.has(x) ? 'on' : ''}" aria-pressed="${state.ft.inds.has(x)}">${esc(x)}</button>`).join('');
+  const ys = d.years || [], L = d.latest;
+  const yv = (r, y) => { const v = r.ys ? r.ys[String(y)] : null; return v ? Number(v).toLocaleString() : '<span class="muted">-</span>'; };
+  const pc = v => v === null || v === undefined ? '<span class="muted">-</span>' : v + '%';
+  $('ft-head').innerHTML = `<tr><th>브랜드</th><th>업종</th><th>추이</th>${ys.map(y => `<th class="num">${y}년${y === L ? '<br><small>(최신)</small>' : ''}</th>`).join('')}<th class="num">1년<br>신규 개점</th><th class="num">1년<br>순증</th><th class="num">폐점률</th><th class="num">3년 연평균<br>증가율</th><th class="num">평균 매출</th><th class="num">CRM 매장<br><small>(청주)</small></th><th>조사</th></tr>`;
   $('ft-count').textContent = (d.total || 0).toLocaleString() + '개 브랜드' + (d.total > rows.length ? ` · 상위 ${rows.length}개 표시` : '');
   $('ft-rows').innerHTML = rows.length ? rows.map(r => `<tr data-k="${esc(r.key)}">
     <td><div class="nm">${esc(r.brand)}</div><div class="sm">${esc(r.corp || '')}</div></td>
-    <td>${esc(r.ind || '')}</td><td>${spark(r.series)}</td>
-    <td class="num">${fmt(r.n0)}</td><td class="num"><b>${fmt(r.n)}</b></td>
-    <td class="num">${diff(r.n, r.n0)}</td><td class="num">${r.pct === null ? '-' : r.pct + '%'}</td>
-    <td class="num">${fmt(r.new)}</td><td class="num">${fmt(r.closed)}</td>
+    <td>${esc(r.ind || '')}</td><td>${spark(ys.map(y => [y, (r.ys || {})[String(y)] || 0]))}</td>
+    ${ys.map(y => `<td class="num">${y === L ? '<b>' + yv(r, y) + '</b>' : yv(r, y)}</td>`).join('')}
+    <td class="num"><b>${fmt(r.new)}</b></td>
+    <td class="num">${r.net === null || r.net === undefined ? '<span class="muted">-</span>' : r.net > 0 ? `<span class="up">+${r.net.toLocaleString()}</span>` : r.net < 0 ? `<span class="dn">${r.net.toLocaleString()}</span>` : '0'}</td>
+    <td class="num">${r.crate !== null && r.crate !== undefined && r.crate >= 10 ? `<span class="dn"><b>${r.crate}%</b></span>` : pc(r.crate)}</td>
+    <td class="num">${pc(r.cagr)}</td>
+    <td class="num">${won(r.sales)}</td>
     <td class="num">${r.crm ? r.crm.toLocaleString() + (r.cj ? ` <small class="muted">(${r.cj})</small>` : '') : '<span class="muted">-</span>'}</td>
     <td>${rTag(r.st)}</td></tr>`).join('')
-    : '<tr><td colspan="11" class="muted" style="text-align:center;padding:40px">조건에 맞는 브랜드가 없어요.</td></tr>';
+    : `<tr><td colspan="${10 + ys.length}" class="muted" style="text-align:center;padding:40px">조건에 맞는 브랜드가 없어요.</td></tr>`;
 }
-['ft-ind', 'ft-span', 'ft-min', 'ft-sort'].forEach(id => $(id).addEventListener('change', loadFtc));
+['ft-min', 'ft-sort'].forEach(id => $(id).addEventListener('change', loadFtc));
+$('ft-preset').addEventListener('click', e => { const b = e.target.closest('button[data-p]'); if (b) { ftPreset(b.dataset.p); loadFtc(); } });
+$('ft-inds').addEventListener('click', e => {
+  const b = e.target.closest('button[data-i]'); if (!b) return;
+  const x = b.dataset.i; state.ft.inds.has(x) ? state.ft.inds.delete(x) : state.ft.inds.add(x);
+  state.ft.preset = 'custom'; document.querySelectorAll('#ft-preset button').forEach(el => el.classList.remove('on'));
+  loadFtc();
+});
 $('ft-q').addEventListener('input', () => { clearTimeout(state.ft.t); state.ft.t = setTimeout(loadFtc, 350); });
 $('ft-rows').addEventListener('click', e => { const tr = e.target.closest('tr[data-k]'); if (tr) openBrand(tr.dataset.k); });
 
@@ -983,7 +1008,7 @@ function renderBrand(d){
   const snaps = d.snaps || [], regs = d.regions || [], mx = Math.max(1, ...regs.map(x => x.n));
   const ftcTbl = f.length ? `<div class="tbl-wrap"><table class="bp-tbl"><thead><tr>${corps.length > 1 ? '<th>법인</th>' : ''}<th>연도</th><th class="num">가맹점</th><th class="num">신규</th><th class="num">종료</th><th class="num">해지</th><th class="num">평균 매출</th></tr></thead><tbody>` +
     f.map(x => `<tr>${corps.length > 1 ? `<td>${esc(x.corp || '')}</td>` : ''}<td>${x.yr}</td><td class="num"><b>${fmt(x.n)}</b></td><td class="num">${fmt(x.new)}</td><td class="num">${fmt(x.end)}</td><td class="num">${fmt(x.cncl)}</td><td class="num">${won(x.sales)}</td></tr>`).join('') +
-    '</tbody></table></div><p class="muted" style="margin:6px 0 0">연도는 정보공개서 기준년도예요(숫자는 전년도 말). 평균 매출은 가맹점 1곳당 연간 금액이에요.</p>'
+    '</tbody></table></div><p class="muted" style="margin:6px 0 0">연도는 숫자의 기준 시점(그해 말)이에요. 공정위 통계는 1년 늦게 올라와서 최신 연도는 원문에서 확인하세요. 평균 매출은 가맹점 1곳당 연간 금액이에요.</p>'
     : '<p class="muted" style="margin:0">정보공개서에서 이 이름의 브랜드를 찾지 못했어요. 신생 브랜드이거나, 같은 이름을 쓰는 개인 매장일 수 있어요.</p>';
   $('panel').innerHTML = `<div class="panel-hd"><div><h2 id="p-name">${esc(name)}</h2><div class="sm">${esc(corps.join(' · ') || '정보공개서 미등록')}${f.length ? ' · ' + esc(f[f.length - 1].ind || '') : ''}</div></div><button class="x" aria-label="닫기" data-x>×</button></div>
   <div class="panel-bd">
