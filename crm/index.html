@@ -1050,6 +1050,12 @@ function discBox(d, name){
     <div id="dc-body"><p class="muted" style="margin:0">가맹비·교육비·인테리어·로열티·계약기간 요약과 목차별 본문을 불러와요. 처음 열 때 10~20초 걸릴 수 있어요.</p></div>`;
 }
 const kwon = k => k === null || k === undefined ? '-' : (k >= 100000 ? (k / 100000).toFixed(2).replace(/\.?0+$/, '') + '억' : (k / 10).toLocaleString(undefined, { maximumFractionDigits: 1 }) + '만원'); // 천원 단위 → 만원/억
+// 정보공개서 접기: 본문은 그대로 두고 숨기기만 함 (다시 열 때 공정위를 다시 부르지 않음)
+function foldDisc(){
+  const body = $('dc-body'), btn = document.querySelector('#panel [data-dc]');
+  if (body) body.hidden = true;
+  if (btn) { btn.dataset.st = 'folded'; btn.textContent = 'CRM에서 열기'; btn.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
+}
 async function openDisc(sn){
   const box = $('dc-body'); if (!box) return;
   box.innerHTML = '<p class="muted" style="margin:0">공정위에서 불러오는 중…</p>';
@@ -1077,7 +1083,8 @@ function renderDisc(x){
   });
   $('dc-body').innerHTML = `<div class="dc-sum">${rows.map(([l, v]) => `<div><span>${esc(l)}</span><b>${esc(v)}</b></div>`).join('')}</div>
     <p class="muted" style="margin:0">요약은 본문에서 자동으로 뽑은 값이라 원문과 다를 수 있어요 (부가세 포함 여부는 본문 확인). ${x.cached ? '저장된 사본 · ' + esc(shortDate(String(x.fetched_at).slice(0, 10))) : '방금 불러옴'}</p>
-    <div class="dc-sec">${html}</div>`;
+    <div class="dc-sec">${html}</div>
+    <div style="text-align:center;margin-top:10px"><button class="btn sm" data-dcfold="1">접기 ▲</button></div>`;
 }
 
 /* 인허가 기록 (license_events, sp_brand_licenses) */
@@ -1157,7 +1164,14 @@ $('panel').addEventListener('click', async e => {
   if (!state.brand || state.cur) return;
   if (e.target.closest('[data-x]')) return closePanel();
   const dc = e.target.closest('[data-dc]');
-  if (dc) { dc.disabled = true; await openDisc(+dc.dataset.dc); dc.disabled = false; return; }
+  if (e.target.closest('[data-dcfold]')) { foldDisc(); return; }
+  if (dc) {
+    if (dc.dataset.st === 'open') { foldDisc(); return; }
+    if (dc.dataset.st === 'folded') { $('dc-body').hidden = false; dc.dataset.st = 'open'; dc.textContent = '접기'; return; }
+    dc.disabled = true; await openDisc(+dc.dataset.dc); dc.disabled = false;
+    if ($('dc-body') && $('dc-body').querySelector('.dc-sum')) { dc.dataset.st = 'open'; dc.textContent = '접기'; }
+    return;
+  }
   const lc = e.target.closest('[data-lc]');
   if (lc) { lc.disabled = true; await loadLic(); lc.disabled = false; return; }
   const lf = e.target.closest('[data-lcm],[data-lcd]');
