@@ -1090,6 +1090,12 @@ function renderDisc(x){
 /* 인허가 기록 (license_events, sp_brand_licenses) */
 state.lc = { months: 12, mode: 'all', d: null };
 const NAVER_MAP = (n, a) => 'https://map.naver.com/p/search/' + encodeURIComponent([n, (a || '').split(',')[0]].filter(Boolean).join(' '));
+// 인허가 기록 접기: 불러온 목록은 그대로 두고 숨기기만 함
+function foldLic(){
+  const body = $('lc-body'), btn = document.querySelector('#panel [data-lc]');
+  if (body) body.hidden = true;
+  if (btn) { btn.dataset.st = 'folded'; btn.textContent = '열기'; btn.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
+}
 async function loadLic(){
   const box = $('lc-body'); if (!box || !state.brand) return;
   box.innerHTML = '<p class="muted" style="margin:0">불러오는 중…</p>';
@@ -1118,7 +1124,8 @@ function renderLic(){
         <td><a class="nv" href="${esc(NAVER_MAP(r.name, r.addr))}" target="_blank" rel="noopener">지도</a></td></tr>`).join('')}</tbody></table></div>
         ${rows.length >= 500 ? '<p class="muted" style="margin:6px 0 0">최근 500곳까지만 보여요.</p>' : ''}`
       : '<p class="muted" style="margin:0">이 기간에 잡힌 매장이 없어요.</p>'}
-    <p class="muted" style="margin:6px 0 0">상호에 브랜드명이 들어간 매장만 잡혀요 (직영·가맹 구분 없음). 인허가 3년치 수집이 끝나기 전에는 숫자가 적게 나올 수 있어요.</p>`;
+    <p class="muted" style="margin:6px 0 0">상호에 브랜드명이 들어간 매장만 잡혀요 (직영·가맹 구분 없음). 인허가 3년치 수집이 끝나기 전에는 숫자가 적게 나올 수 있어요.</p>
+    <div style="text-align:center;margin-top:10px"><button class="btn sm" data-lcfold="1">접기 ▲</button></div>`;
 }
 function copyLic(){
   const rows = (state.lc.d || {}).rows || [];
@@ -1173,7 +1180,14 @@ $('panel').addEventListener('click', async e => {
     return;
   }
   const lc = e.target.closest('[data-lc]');
-  if (lc) { lc.disabled = true; await loadLic(); lc.disabled = false; return; }
+  if (e.target.closest('[data-lcfold]')) { foldLic(); return; }
+  if (lc) {
+    if (lc.dataset.st === 'open') { foldLic(); return; }
+    if (lc.dataset.st === 'folded') { $('lc-body').hidden = false; lc.dataset.st = 'open'; lc.textContent = '접기'; return; }
+    lc.disabled = true; await loadLic(); lc.disabled = false;
+    if (state.lc.d) { lc.dataset.st = 'open'; lc.textContent = '접기'; }
+    return;
+  }
   const lf = e.target.closest('[data-lcm],[data-lcd]');
   if (lf) { if (lf.dataset.lcm) state.lc.months = +lf.dataset.lcm; if (lf.dataset.lcd) state.lc.mode = lf.dataset.lcd; await loadLic(); return; }
   if (e.target.closest('[data-lccopy]')) { copyLic(); return; }
