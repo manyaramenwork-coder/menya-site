@@ -16,6 +16,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
 <script>
 /* 매장관리 사이트와 같은 Supabase·같은 계정. crm 주소는 도메인이 달라 로그인은 따로 한 번 필요 */
 window.MM_CONFIG = { url: 'https://bauaychmvbfmtqototvt.supabase.co', key: 'sb_publishable_rfd_8qDKEpokFmGACsBJ7A_qhHmQlEB', idDomain: '@menya.local' };
@@ -34,6 +36,49 @@ button{cursor:pointer}
 :focus-visible{outline:2px solid var(--brand);outline-offset:2px}
 a{color:var(--blue)}
 [hidden]{display:none!important}
+
+/* 영업 스크립트 */
+.sc-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;margin-bottom:12px}
+.sc-bar .chips{margin:0;padding:0}
+.sc-acts{display:flex;gap:6px;flex-wrap:wrap}
+.sc-meta{font-size:12px;color:var(--sub);margin:-4px 0 12px}
+.sc-meta b{color:var(--warn);font-weight:600}
+.sc-doc{background:#fff;border:1px solid var(--line);border-radius:12px;padding:6px 22px 18px;max-width:980px}
+.sc-doc details{border-bottom:1px solid var(--line)}
+.sc-doc details:last-child{border-bottom:0}
+.sc-doc summary{cursor:pointer;list-style:none;padding:14px 0;font-size:16px;font-weight:700;display:flex;align-items:center;gap:8px}
+.sc-doc summary::-webkit-details-marker{display:none}
+.sc-doc summary::before{content:'';width:7px;height:7px;border-right:2px solid var(--sub);border-bottom:2px solid var(--sub);transform:rotate(-45deg);transition:transform .15s;flex:none}
+.sc-doc details[open] summary::before{transform:rotate(45deg)}
+.sc-doc .sc-body{padding:0 0 14px 15px}
+.md{font-size:14px;line-height:1.7}
+.md p{margin:8px 0}
+.md ul,.md ol{margin:6px 0;padding-left:22px}
+.md li{margin:3px 0}
+.md li input[type=checkbox]{margin-right:6px;vertical-align:-2px}
+.md li:has(> input[type=checkbox]){list-style:none;margin-left:-20px}
+.md blockquote{margin:10px 0;padding:10px 14px;background:var(--blue-soft);border-left:4px solid var(--blue);border-radius:0 10px 10px 0;font-size:15px}
+.md blockquote p{margin:0}
+.md table{border-collapse:collapse;width:100%;margin:10px 0;font-size:13px}
+.md th,.md td{border:1px solid var(--line);padding:7px 10px;text-align:left;vertical-align:top}
+.md th{background:#f3f4ef;font-weight:600}
+.md h3,.md h4{margin:14px 0 6px;font-size:14px}
+.md mark.fill{background:#fff3cd;color:var(--warn);border-radius:4px;padding:0 4px;font-style:normal;font-weight:600}
+.sc-edit{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.sc-edit textarea{width:100%;min-height:68vh;border:1px solid var(--line);border-radius:12px;padding:14px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px;line-height:1.6;resize:vertical;background:#fff}
+.sc-edit .sc-prev{border:1px solid var(--line);border-radius:12px;padding:6px 18px;background:#fff;max-height:68vh;overflow:auto}
+.sc-form{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+.sc-form input{height:38px;border:1px solid var(--line);border-radius:10px;padding:0 12px;background:#fff}
+.sc-form #sc-title{min-width:220px}
+.sc-form #sc-note{flex:1;min-width:200px}
+.sc-help{font-size:12px;color:var(--sub);margin:8px 0 0}
+.sc-help code{background:#f0f1ec;border-radius:4px;padding:0 4px}
+.sc-vers{background:#fff;border:1px solid var(--line);border-radius:12px;margin-bottom:12px;max-width:980px}
+.sc-vers button{display:flex;gap:10px;width:100%;text-align:left;border:0;border-bottom:1px solid var(--line);background:none;padding:10px 14px;font-size:13px}
+.sc-vers button:last-child{border-bottom:0}
+.sc-vers button.on{background:var(--blue-soft)}
+.sc-vers .v{font-weight:700;min-width:36px}
+@media (max-width:900px){.sc-edit{grid-template-columns:1fr}.sc-edit .sc-prev{display:none}.sc-doc{padding:4px 14px 14px}}
 
 /* 상단 */
 .top{background:var(--side);color:#fff;display:flex;align-items:center;gap:16px;padding:0 20px;min-height:56px;padding-top:env(safe-area-inset-top,0px);position:sticky;top:0;z-index:20}
@@ -507,10 +552,23 @@ td .sm{font-size:12px;color:var(--sub)}
     <!-- 영업 스크립트 -->
     <section id="sec-script" class="sec" hidden>
       <div class="sec-hd"><h1>영업 스크립트</h1></div>
-      <div class="box">
-        <h4>준비 중이에요</h4>
-        <p class="muted" style="margin:0">회사 자료(비용, 수수료, 메뉴, 조리, 인력, 오유미당 조건)를 확인한 뒤 통화 순서대로 채워 넣을 예정이에요.<br>
-        1) 첫 인사 30초 · 2) 상황 파악 질문 · 3) 유형별 제안 · 4) 자주 나오는 질문 · 5) 거절 대응 · 6) 다음 약속 잡기 · 7) 문자 템플릿</p>
+      <div class="sc-bar">
+        <div class="chips" id="sc-tabs" aria-label="스크립트 목록"></div>
+        <div class="sc-acts" id="sc-acts"></div>
+      </div>
+      <div class="sc-meta" id="sc-meta"></div>
+      <div class="sc-vers" id="sc-vers" hidden></div>
+      <div id="sc-view"></div>
+      <div id="sc-editor" hidden>
+        <div class="sc-form">
+          <input id="sc-title" placeholder="스크립트 제목" maxlength="60">
+          <input id="sc-note" placeholder="무엇을 고쳤는지 (선택, 예: 4단계 사례 추가)" maxlength="120">
+        </div>
+        <div class="sc-edit">
+          <textarea id="sc-body" spellcheck="false" aria-label="스크립트 내용"></textarea>
+          <div class="sc-prev md" id="sc-prev" aria-label="미리보기"></div>
+        </div>
+        <p class="sc-help"><code>## 제목</code> 단계(접고 펼치기) · <code>&gt; 멘트</code> 말할 문장 · <code>- 항목</code> 목록 · <code>- [ ] 할 일</code> 체크 · <code>**굵게**</code> · 표는 <code>| 칸 | 칸 |</code> · <code>*[채워 넣기]*</code> 노란 표시 · 저장 Ctrl+S</p>
       </div>
     </section>
   </main>
@@ -650,7 +708,7 @@ async function load(reset){
   if (v === 'target') return loadTarget();
   if (v === 'ftc') return loadFtc();
   if (v === 'naver') return loadNaver();
-  if (v === 'script') return;
+  if (v === 'script') return loadScript();
   if (v === 'ingest') return loadIngest();
   if (state.dbMode === 'board') return loadBoard();
   if (reset) { state.offset = 0; state.rows = []; }
@@ -766,6 +824,10 @@ $('more-sheet').addEventListener('click', async e => {
 const VIEWS = ['fav', 'log', 'inbox', 'comm', 'listing', 'db', 'target', 'script', 'ingest', 'ftc', 'naver'];
 function go(v){
   if (!VIEWS.includes(v) || (v === 'ingest' && !state.admin)) v = 'db';
+  if (state.view === 'script' && v !== 'script' && SC.editing) {
+    if (SC.dirty && !confirm('저장하지 않은 스크립트 수정 내용이 있어요. 나갈까요?')) { buildNav(); return; }
+    SC.editing = false; SC.dirty = false;
+  }
   state.view = v;
   VIEWS.forEach(k => $('sec-' + k).hidden = k !== v);
   $('filters').hidden = v !== 'db';
@@ -782,6 +844,100 @@ function setDbMode(m){
 $('v-list').addEventListener('click', () => setDbMode('list'));
 $('v-board').addEventListener('click', () => setDbMode('board'));
 state.dbMode = 'list';
+
+
+/* ---------- 영업 스크립트 (CRM에서 보고 바로 수정, 저장마다 버전) ---------- */
+const SC = { list: [], slug: null, doc: null, editing: false, showVers: false, dirty: false };
+function mdHtml(src){
+  if (!window.marked || !window.DOMPurify) return `<pre style="white-space:pre-wrap">${esc(src)}</pre>`;
+  // 5~10분처럼 물결 하나는 취소선이 되지 않게 (취소선은 ~~두 개~~)
+  let h = marked.parse(String(src || '').replace(/(^|[^~\\])~(?!~)/g, '$1\\~'), { gfm: true, breaks: false });
+  h = h.replace(/<em>\[([^\]<]{1,40})\]<\/em>/g, '<mark class="fill">[$1]</mark>');
+  return DOMPurify.sanitize(h);
+}
+// ## 제목 단위로 접고 펼치기
+function mdSections(src){
+  const parts = []; let cur = null;
+  (src || '').split('\n').forEach(line => {
+    const m = /^##\s+(.+)$/.exec(line);
+    if (m) { cur = { t: m[1].trim(), lines: [] }; parts.push(cur); }
+    else { if (!cur) { cur = { t: null, lines: [] }; parts.push(cur); } cur.lines.push(line); }
+  });
+  return parts.map(p => p.t === null
+    ? (p.lines.join('\n').trim() ? `<div class="md" style="padding-top:12px">${mdHtml(p.lines.join('\n'))}</div>` : '')
+    : `<details open><summary>${mdHtml(p.t).replace(/^<p>|<\/p>\s*$/g, '')}</summary><div class="sc-body md">${mdHtml(p.lines.join('\n'))}</div></details>`).join('');
+}
+const fmtDT = t => { const d = new Date(t); return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; };
+async function loadScript(slug, version){
+  if (SC.editing && SC.dirty && !confirm('저장하지 않은 수정 내용이 있어요. 나갈까요?')) return;
+  SC.editing = false; SC.dirty = false;
+  try {
+    SC.list = await rpc('sp_script_list', {}) || [];
+    SC.slug = slug || SC.slug || (SC.list[0] && SC.list[0].slug) || null;
+    if (SC.slug && !SC.list.some(x => x.slug === SC.slug)) SC.slug = SC.list[0] ? SC.list[0].slug : null;
+    SC.doc = SC.slug ? await rpc('sp_script_get', { p_slug: SC.slug, p_version: version || null }) : null;
+    renderScript();
+  } catch (e) { toast(errMsg(e), true); }
+}
+function renderScript(){
+  const d = SC.doc, old = d && d.version !== d.latest;
+  $('sc-tabs').innerHTML = SC.list.map(x => `<button data-s="${esc(x.slug)}" class="${x.slug === SC.slug ? 'on' : ''}">${esc(x.title)}</button>`).join('');
+  $('sc-acts').innerHTML = SC.editing
+    ? `<button class="btn sm" id="sc-cancel">취소</button><button class="btn sm pri" id="sc-save">저장</button>`
+    : (d ? (old
+        ? `<button class="btn sm" id="sc-latest">최신으로</button><button class="btn sm pri" id="sc-restore">이 버전으로 되돌리기</button>`
+        : `<button class="btn sm" id="sc-fold">모두 접기</button><button class="btn sm" id="sc-hist">이전 버전 (${d.versions.length})</button><button class="btn sm pri" id="sc-edit">수정</button>`)
+      : '') + (SC.editing ? '' : `<button class="btn sm" id="sc-new">+ 새 스크립트</button>`);
+  $('sc-meta').innerHTML = d && !SC.editing
+    ? (old ? `<b>v${d.version} (이전 버전 보는 중)</b> · ` : `v${d.version} · `) + `${esc(d.saved_by || '')} ${esc(fmtDT(d.saved_at))} 저장${d.note ? ' · ' + esc(d.note) : ''}`
+    : '';
+  $('sc-vers').hidden = !(SC.showVers && d && !SC.editing);
+  if (!$('sc-vers').hidden) $('sc-vers').innerHTML = d.versions.map(v =>
+    `<button data-v="${v.version}" class="${v.version === d.version ? 'on' : ''}"><span class="v">v${v.version}</span><span>${esc(fmtDT(v.saved_at))} · ${esc(v.saved_by || '')}</span><span class="muted">${esc(v.note || '')}</span></button>`).join('');
+  $('sc-view').hidden = SC.editing; $('sc-editor').hidden = !SC.editing;
+  if (!SC.editing) $('sc-view').innerHTML = d ? `<div class="sc-doc">${mdSections(d.body)}</div>`
+    : `<div class="box"><h4>아직 스크립트가 없어요</h4><p class="muted" style="margin:0">오른쪽 위 <b>+ 새 스크립트</b>로 만들어 주세요.</p></div>`;
+}
+function openEditor(isNew){
+  SC.editing = true; SC.dirty = false; SC.showVers = false; SC.isNew = !!isNew;
+  const d = SC.doc;
+  $('sc-title').value = isNew ? '' : d.title;
+  $('sc-body').value = isNew ? '## 1단계. \n\n> "멘트"\n\n- 메모\n' : d.body;
+  $('sc-note').value = isNew ? '처음 작성' : '';
+  renderScript(); scPreview(); (isNew ? $('sc-title') : $('sc-body')).focus();
+}
+let scT; function scPreview(){ clearTimeout(scT); scT = setTimeout(() => { $('sc-prev').innerHTML = mdSections($('sc-body').value); $('sc-prev').querySelectorAll('details').forEach(x => x.open = true); }, 150); }
+['sc-body', 'sc-title', 'sc-note'].forEach(id => $(id).addEventListener('input', () => { SC.dirty = true; if (id === 'sc-body') scPreview(); }));
+async function saveScript(){
+  const title = $('sc-title').value.trim(); if (!title) { toast('제목을 입력하세요', true); $('sc-title').focus(); return; }
+  const b = $('sc-save'); if (b) b.disabled = true;
+  try {
+    const r = await rpc('sp_script_save', { p: { slug: SC.isNew ? null : SC.slug, title, body: $('sc-body').value, note: $('sc-note').value, base_version: SC.isNew ? null : SC.doc.latest } });
+    SC.dirty = false; SC.editing = false; toast(`저장했어요 (v${r.version})`); loadScript(r.slug);
+  } catch (e) { toast(errMsg(e), true); if (b) b.disabled = false; }
+}
+async function restoreScript(){
+  const d = SC.doc; if (!confirm(`v${d.version} 내용으로 되돌릴까요? 새 버전(v${d.latest + 1})으로 저장돼요.`)) return;
+  try {
+    const r = await rpc('sp_script_save', { p: { slug: d.slug, title: d.title, body: d.body, note: `v${d.version}으로 되돌림`, base_version: d.latest } });
+    SC.showVers = false; toast(`되돌렸어요 (v${r.version})`); loadScript(d.slug);
+  } catch (e) { toast(errMsg(e), true); }
+}
+$('sc-tabs').addEventListener('click', e => { const b = e.target.closest('button[data-s]'); if (b && b.dataset.s !== SC.slug) { SC.showVers = false; loadScript(b.dataset.s); } });
+$('sc-vers').addEventListener('click', e => { const b = e.target.closest('button[data-v]'); if (b) loadScript(SC.slug, +b.dataset.v); });
+$('sc-acts').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.id === 'sc-edit') openEditor(false);
+  else if (b.id === 'sc-new') openEditor(true);
+  else if (b.id === 'sc-save') saveScript();
+  else if (b.id === 'sc-cancel') { if (SC.dirty && !confirm('수정한 내용을 버릴까요?')) return; SC.dirty = false; SC.editing = false; if (!SC.doc) $('sc-editor').hidden = true; renderScript(); }
+  else if (b.id === 'sc-hist') { SC.showVers = !SC.showVers; renderScript(); }
+  else if (b.id === 'sc-latest') { SC.showVers = false; loadScript(SC.slug); }
+  else if (b.id === 'sc-restore') restoreScript();
+  else if (b.id === 'sc-fold') { const ds = $('sc-view').querySelectorAll('details'), anyOpen = [...ds].some(x => x.open); ds.forEach(x => x.open = !anyOpen); b.textContent = anyOpen ? '모두 펼치기' : '모두 접기'; }
+});
+document.addEventListener('keydown', e => { if (SC.editing && state.view === 'script' && (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') { e.preventDefault(); saveScript(); } });
+window.addEventListener('beforeunload', e => { if (SC.editing && SC.dirty) { e.preventDefault(); e.returnValue = ''; } });
 
 
 /* ---------- 영업기획: 정보공개서 분석 · 급성장 브랜드 ---------- */
