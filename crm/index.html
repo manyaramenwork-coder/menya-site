@@ -16,9 +16,6 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/topojson-client@3.1.0/dist/topojson-client.min.js"></script>
 <script>
 /* 매장관리 사이트와 같은 Supabase·같은 계정. crm 주소는 도메인이 달라 로그인은 따로 한 번 필요 */
 window.MM_CONFIG = { url: 'https://bauaychmvbfmtqototvt.supabase.co', key: 'sb_publishable_rfd_8qDKEpokFmGACsBJ7A_qhHmQlEB', idDomain: '@menya.local' };
@@ -90,6 +87,7 @@ td .sm{font-size:12px;color:var(--sub)}
 .t-A{background:var(--ink);color:#fff}
 .t-B{background:var(--brand-soft);color:var(--brand-d)}
 .t-C{background:#eceee8;color:#4a4e47}
+.t-ok{background:#e6f1e9;color:#2f6b3f}
 .t-U{border:1px dashed #b7bbb3;color:var(--sub);padding:1px 6px;font-weight:500}
 .t-org{background:var(--blue-soft);color:var(--blue)}
 .t-st{background:#eceee8;color:#3c403a}
@@ -212,56 +210,6 @@ td .sm{font-size:12px;color:var(--sub)}
   .hide-m{display:none}
 }
 
-/* 지도 + 오른쪽 매장 목록 */
-.map-wrap{display:flex;gap:12px;align-items:stretch}
-.map-wrap #map{flex:1;min-width:0}
-#map-list{flex:0 0 320px;height:max(420px, calc(100vh - 250px));overflow-y:auto;background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:12px;box-sizing:border-box}
-.ml-hd{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
-.ml-hd b{font-size:15px}
-.ml-hd small{color:var(--sub)}
-.ml-item{display:flex;gap:10px;align-items:flex-start;width:100%;text-align:left;border:1px solid transparent;border-bottom-color:#eef0eb;background:none;padding:10px 8px;border-radius:10px;cursor:pointer}
-.ml-item:hover{background:#f6f7f3}
-.ml-item.on{background:#eef3fb;border-color:#9bb4dc}
-.ml-item .dot{flex:none;width:12px;height:12px;border-radius:50%;margin-top:4px;border:1.5px solid #fff;box-shadow:0 0 0 1px #c9ccc4}
-.ml-item .tx{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
-.ml-item .tx b{font-size:14px}
-.ml-item .tx small{font-size:12px;color:var(--sub)}
-.ml-item .go{flex:none;align-self:center;font-size:12px;border:1px solid var(--line);background:#fff;border-radius:8px;padding:6px 10px;min-height:34px}
-@media (max-width:900px){
-  .map-wrap{flex-direction:column}
-  .map-wrap #map{flex:none;width:100%}
-  .map-wrap.has-list #map{height:52vh;min-height:320px}
-  #map-list{flex:none;height:auto;max-height:none}
-}
-
-/* 지도 위 도구줄 */
-.mapbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin-bottom:10px}
-.mapbar .chips{margin-bottom:0;padding-bottom:0}
-.mapbar .mcount{margin-left:auto;font-size:13px;color:var(--sub)}
-.legend .lg-bub{display:inline-block;width:14px;height:14px;border-radius:50%;background:rgba(198,36,41,.88);border:2px solid #fff;box-shadow:0 0 0 1px #c9ccc4;vertical-align:-2px}
-@media (max-width:900px){.mapbar .mcount{margin-left:0;width:100%}}
-/* 지도 */
-.crumb{display:flex;flex-wrap:wrap;align-items:center;gap:4px;margin-bottom:10px;font-size:14px}
-.crumb button{border:0;background:none;padding:4px 6px;border-radius:6px;color:var(--blue);font-weight:500}
-.crumb button:disabled{color:var(--ink);font-weight:700;cursor:default}
-.crumb span{color:var(--sub)}
-.crumb .hint{margin-left:auto;font-size:12px;color:var(--sub)}
-#map.plain{background:var(--bg)}
-#map{height:max(420px, calc(100vh - 250px));border-radius:var(--radius);border:1px solid var(--line);background:#e9ece6;z-index:0}
-.bub{display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:50%;background:rgba(198,36,41,.88);color:#fff;border:2px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.25);text-align:center;line-height:1.15;cursor:pointer;font-family:inherit}
-.bub small{font-size:11px;font-weight:500;max-width:90%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.bub b{font-size:14px;font-weight:700;font-variant-numeric:tabular-nums}
-.bub:hover{background:var(--brand-d)}
-.leaflet-tooltip.lbl{background:transparent;border:0;box-shadow:none;padding:0;font-weight:700;font-size:12px;color:#232621;text-align:center;line-height:1.2;text-shadow:0 0 3px #fff,0 0 3px #fff,0 0 2px #fff;pointer-events:none}
-.leaflet-tooltip.lbl::before{display:none}
-.leaflet-tooltip.lbl small{display:block;font-weight:600;color:var(--brand-d)}
-.leaflet-tooltip.lbl.sm{font-size:11px;font-weight:600}
-.leaflet-tooltip.lbl.sm small{font-size:10px}
-.scale{display:inline-flex;align-items:center;gap:6px}
-.scale b{display:inline-block;width:90px;height:10px;border-radius:5px;background:linear-gradient(90deg,#eceee8,rgba(198,36,41,.75))}
-.legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:10px;font-size:12px;color:var(--sub)}
-.legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:-1px}
-
 /* 상세 패널 */
 .scrim{position:fixed;inset:0;background:rgba(20,22,19,.35);z-index:40}
 .panel{position:fixed;top:0;right:0;bottom:0;width:min(640px,100%);background:var(--bg);z-index:41;display:flex;flex-direction:column;box-shadow:-12px 0 32px rgba(0,0,0,.12);padding-top:env(safe-area-inset-top,0px)}
@@ -376,7 +324,7 @@ td .sm{font-size:12px;color:var(--sub)}
   <nav class="side" id="side" aria-label="주 메뉴"></nav>
 
   <main class="wrap">
-    <!-- 지도·전체 DB 공용 필터 -->
+    <!-- 전체 DB 필터 -->
     <div id="filters">
       <div class="bar">
         <input type="search" id="f-q" placeholder="상호, 주소, 전화번호 검색">
@@ -392,27 +340,10 @@ td .sm{font-size:12px;color:var(--sub)}
         <label class="chk db-only"><input type="checkbox" id="f-due">재연락 대상만</label>
         <label class="chk" title="기본은 체인점을 숨겨요"><input type="checkbox" id="f-chain">체인 포함</label>
         <label class="chk db-only" title="업소명없음·숫자만 등 상호를 확인해야 하는 매장"><input type="checkbox" id="f-nc">상호 확인 필요만</label>
+        <label class="chk db-only" title="생맥주·중국집·냉면, 호프·포차 같은 상호, 10~20평 밖 매장은 기본으로 숨겨요"><input type="checkbox" id="f-all">기준 밖 매장도 보기</label>
       </div>
       <div class="cats" id="cats" aria-label="업종"></div>
     </div>
-
-    <!-- 지도 탐색 -->
-    <section id="sec-map" class="sec" hidden>
-      <div class="mapbar">
-        <div class="chips" id="m-kind" role="group" aria-label="업종"><button data-v="izk" class="on">일식+주점</button><button data-v="jp">일식</button><button data-v="pub">주점</button><button data-v="del">배달형</button><button data-v="all">전체</button></div>
-        <label class="chk"><input type="checkbox" id="m-tel">전화번호 있는 곳만</label>
-        <span class="mcount" id="m-count" aria-live="polite"></span>
-      </div>
-      <div class="map-wrap">
-        <div id="map" role="region" aria-label="매장 지도"></div>
-        <aside id="map-list" hidden aria-label="화면 안 매장 목록">
-          <div class="ml-hd"><b id="ml-title"></b><small id="ml-count"></small></div>
-          <div class="chips" id="ml-sort"><button data-v="score" class="on">점수순</button><button data-v="name">이름순</button><button data-v="stage">진행 중 먼저</button></div>
-          <div id="ml-items"></div>
-        </aside>
-      </div>
-      <div class="legend" id="legend"></div>
-    </section>
 
     <!-- 관심 매장 -->
     <section id="sec-fav" class="sec" hidden>
@@ -540,7 +471,7 @@ td .sm{font-size:12px;color:var(--sub)}
         <select id="tg-sort" aria-label="정렬"><option value="density">주변 매장 많은 순</option><option value="name">이름순</option><option value="area">평수 작은 순</option></select>
         <label class="chk"><input type="checkbox" id="tg-own">우리 매장 제외</label>
         <label class="chk"><input type="checkbox" id="tg-chain">체인 제외</label>
-        <label class="chk"><input type="checkbox" id="tg-area">10~15평만</label>
+        <label class="chk"><input type="checkbox" id="tg-area">10~20평만</label>
       </div>
       <div class="chips" id="tg-zone" role="group" aria-label="상권"></div>
       <section class="stats" id="tg-stats" aria-label="타겟 요약"></section>
@@ -621,7 +552,7 @@ const SEG = { izakaya: '이자카야·일식', delivery: '배달' };
 const chainTag = r => (r.chain || r.is_chain ? ' <span class="tag t-C">체인</span>' : '') + (r.name_check ? ' <span class="tag t-U">상호 확인 필요</span>' : '');
 const KIND = { call: '통화', sms: '문자', meeting: '미팅', memo: '메모', landing: '랜딩 신청', stage: '단계 변경', import: '수집' };
 
-const state = { view: 'map', cats: [], offset: 0, rows: [], users: [], regions: [], cur: null };
+const state = { view: 'db', cats: [], offset: 0, rows: [], users: [], regions: [], cur: null };
 
 function toast(m, err){ const t = $('toast'); t.textContent = m; t.className = 'toast' + (err ? ' err' : ''); t.hidden = false; clearTimeout(t._h); t._h = setTimeout(() => t.hidden = true, 2600); }
 function errMsg(e){ const m = String((e && e.message) || e || ''); return m.replace(/^.*?:\s*/, '') || '처리하지 못했어요. 잠시 후 다시 시도하세요.'; }
@@ -634,6 +565,8 @@ function naverLink(r){
   if (u) return u;
   return 'https://map.naver.com/p/search/' + encodeURIComponent([r.name, r.sigungu, r.dong].filter(Boolean).join(' '));
 }
+// 평수: 10~20평이면 '평수 맞음', 모르면 '평수 미확인', 기준 밖이면 평수만 표시(기본 목록에선 숨겨짐)
+function pyTag(r){ if (r.pyeong == null) return '<span class="muted">평수 미확인</span>'; return r.area_ok ? `<span class="tag t-ok">${r.pyeong}평 맞음</span>` : `${r.pyeong}평`; }
 function lunchTag(l){ return `<span class="tag t-${esc(l || 'U')}">${esc(LUNCH[l] || '미확인')}</span>`; }
 
 /* ---------- 로그인 ---------- */
@@ -663,7 +596,7 @@ async function boot(){
     const { data: me } = await SB.from('profiles').select('name, role').eq('id', data.session.user.id).maybeSingle();
     $('me').textContent = me && me.name ? me.name : '';
     state.admin = !!(me && me.role === 'admin');
-    applyStats(s); fillFilters(s); go(location.hash.slice(1) || 'map');
+    applyStats(s); fillFilters(s); go(location.hash.slice(1) || 'db');
   } catch (e) {
     if (/권한/.test(e.message || '')) show('noperm'); else { show('app'); toast(errMsg(e), true); }
   }
@@ -689,7 +622,7 @@ function fillFilters(s){
 function filters(){
   const [sido, sigungu] = ($('f-region').value || '|').split('|');
   return { sido, sigungu, stage: $('f-stage').value, lunch: $('f-lunch').value, org: $('f-org').value,
-    mine: $('f-mine').checked, due: $('f-due').checked, chain: $('f-chain').checked, name_check: $('f-nc').checked, q: $('f-q').value.trim(), cats: state.cats };
+    mine: $('f-mine').checked, due: $('f-due').checked, chain: $('f-chain').checked, name_check: $('f-nc').checked, all: $('f-all').checked, q: $('f-q').value.trim(), cats: state.cats };
 }
 function renderCats(cats){
   const keys = Object.keys(cats || {}).sort((a, b) => cats[b] - cats[a]);
@@ -702,14 +635,13 @@ $('cats').addEventListener('click', e => {
   if (!c) state.cats = []; else state.cats = state.cats.includes(c) ? state.cats.filter(x => x !== c) : state.cats.concat(c);
   load(true);
 });
-['f-region', 'f-stage', 'f-lunch', 'f-org', 'f-mine', 'f-due', 'f-chain', 'f-nc'].forEach(id => $(id).addEventListener('change', () => load(true)));
+['f-region', 'f-stage', 'f-lunch', 'f-org', 'f-mine', 'f-due', 'f-chain', 'f-nc', 'f-all'].forEach(id => $(id).addEventListener('change', () => load(true)));
 let qT; $('f-q').addEventListener('input', () => { clearTimeout(qT); qT = setTimeout(() => load(true), 300); });
 
 /* ---------- 목록 ---------- */
 const PAGE = 100;
 async function load(reset){
   const v = state.view;
-  if (v === 'map') return loadMap();
   if (v === 'fav') return loadFav();
   if (v === 'log') return loadLog();
   if (v === 'inbox') return loadInbox();
@@ -734,7 +666,7 @@ function renderRows(total){
   if (!state.rows.length) { tb.innerHTML = `<tr><td colspan="8" class="muted" style="text-align:center;padding:40px">조건에 맞는 매장이 없어요. 필터를 줄이거나 매장을 추가하세요.</td></tr>`; $('more').hidden = true; return; }
   tb.innerHTML = state.rows.map(r => `<tr data-id="${r.id}">
     <td><div class="nm">${esc(r.name)}${r.branch ? ' ' + esc(r.branch) : ''}${chainTag(r)}<a class="nv" href="${esc(naverLink(r))}" target="_blank" rel="noopener" title="네이버 플레이스">N ${r.naver ? '플레이스' : '검색'}</a></div><div class="sm">${esc(SRC[r.source] || r.source)}${r.tel ? ' · ' + esc(tel(r.tel)) : ''}</div></td>
-    <td>${esc(r.cat || '')}${r.segment ? `<div class="sm">${esc(SEG[r.segment] || r.segment)}</div>` : ''}</td>
+    <td>${esc(r.cat || '')}${r.segment ? `<div class="sm">${esc(SEG[r.segment] || r.segment)}</div>` : ''}<div class="sm">${pyTag(r)}</div></td>
     <td>${esc([r.sigungu, r.dong].filter(Boolean).join(' '))}</td>
     <td><span class="tag t-st">${esc(ST[r.stage])}</span></td>
     <td>${lunchTag(r.lunch)}</td>
@@ -788,11 +720,11 @@ const svg = k => `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" st
 // 메뉴 묶음: 영업기획(분석·계획) → 매장 찾기(수집) → 리드 관리(연락·기록)
 const NAV_GROUPS = [
   ['영업기획', [['ftc', '정보공개서 분석', '공정위 가맹점 수 변화'], ['naver', '급성장 브랜드', '인허가 최근 개업·폐업 추이'], ['script', '영업 스크립트', '통화하면서 보는 문구']]],
-  ['매장 찾기', [['map', '지도 탐색', '지도에서 매장 찾기'], ['db', '전체 매장 DB', '목록·보드로 전체 검색'], ['target', '샵인샵 타겟', '우리 메뉴·상권 기준 우편 대상'], ['listing', '양도 매물', '어사이드로 들어온 매물']]],
+  ['매장 찾기', [['db', '전체 매장 DB', '목록·보드로 전체 검색'], ['target', '샵인샵 타겟', '우리 메뉴·상권 기준 우편 대상'], ['listing', '양도 매물', '어사이드로 들어온 매물']]],
   ['리드 관리', [['inbox', '신청함', '랜딩 신청'], ['comm', '커뮤니티 리드', '카페 글·댓글·쪽지 준 분'], ['fav', '관심 매장', '담아 둔 매장'], ['log', '연락 기록', '통화·방문 기록']]]
 ];
 const NAV = NAV_GROUPS.flatMap(g => g[1].map(([k, l]) => [k, l]));
-const BNAV = [['map', '지도'], ['fav', '관심'], ['log', '기록'], ['inbox', '신청함'], ['more', '더보기']];
+const BNAV = [['fav', '관심'], ['db', '매장'], ['log', '기록'], ['inbox', '신청함'], ['more', '더보기']];
 state.badge = {};
 function buildNav(){
   const b = state.badge;
@@ -831,13 +763,12 @@ $('more-sheet').addEventListener('click', async e => {
   if (b.dataset.v === 'logout') { await SB.auth.signOut(); location.reload(); return; }
   closePanel(); go(b.dataset.v);
 });
-const VIEWS = ['map', 'fav', 'log', 'inbox', 'comm', 'listing', 'db', 'target', 'script', 'ingest', 'ftc', 'naver'];
+const VIEWS = ['fav', 'log', 'inbox', 'comm', 'listing', 'db', 'target', 'script', 'ingest', 'ftc', 'naver'];
 function go(v){
-  if (!VIEWS.includes(v) || (v === 'ingest' && !state.admin)) v = 'map';
+  if (!VIEWS.includes(v) || (v === 'ingest' && !state.admin)) v = 'db';
   state.view = v;
   VIEWS.forEach(k => $('sec-' + k).hidden = k !== v);
-  $('filters').hidden = !(v === 'map' || v === 'db');
-  $('cats').hidden = v === 'map';
+  $('filters').hidden = v !== 'db';
   document.querySelectorAll('.db-only').forEach(x => x.hidden = v !== 'db');
   if (location.hash !== '#' + v) history.replaceState(null, '', '#' + v);
   buildNav(); window.scrollTo(0, 0);
@@ -1112,7 +1043,7 @@ function renderTarget(){
     Object.keys(ZONE_LBL).map(k => `<button data-v="${esc(k)}" class="${state.tg.zone === k ? 'on' : ''}">${ZONE_LBL[k]} <small>${(z[k] || 0).toLocaleString()}</small></button>`).join('');
   $('tg-stats').innerHTML = [
     ['대상 매장', (d.base || 0) + '곳'], ['지금 보이는', (d.total || 0) + '곳'], ['우리 매장', (d.own || 0) + '곳'],
-    ['체인', (d.chain || 0) + '곳'], ['평수 확인', (d.area_known || 0) + '곳'], ['10~15평', (d.area_ok || 0) + '곳']
+    ['체인', (d.chain || 0) + '곳'], ['평수 확인', (d.area_known || 0) + '곳'], ['10~20평', (d.area_ok || 0) + '곳']
   ].map(([l, v]) => `<div class="stat"><b>${esc(v)}</b><span>${esc(l)}</span></div>`).join('');
   $('tg-count').textContent = (d.total || 0).toLocaleString() + '곳';
   $('tg-rows').innerHTML = rows.length ? rows.map(r => `<tr data-id="${r.id}">
@@ -1447,199 +1378,6 @@ $('listing-list').addEventListener('click', e => { if (e.target.closest('a')) re
 async function refreshStats(){ try { const s = await rpc('lead_stats'); applyStats(s); } catch (e) {} }
 
 
-/* ---------- 지도: 멀리 보면 지역 블록(시도→시군구), 가까이 보면 지도 위 숫자 원·매장 점 ---------- */
-const Z_SGG = 9, Z_DETAIL = 12; // 이 확대 단계부터 시군구 블록 / 실제 지도
-const STAGE_COLOR = { collected: '#9aa097', contacted: '#e0a33c', interested: '#c62429', meeting: '#7a1015', trial: '#7a1015', proposal: '#7a1015', contract: '#1f4e8c', hold: '#c9cbc4', rejected: '#4d514a' };
-state.geo = { sido: '', sigungu: '', dong: '' }; // 예전 코드 호환용
-state.mkind = 'izk'; state.mapFitKey = '';
-const KOREA = [[33.1, 124.9], [38.6, 130.95]];
-let MAP = null, PTS = null, RENDER = null, TILES = null, MARKS = {};
-const GEO = {};
-const norm = s => String(s || '').replace(/\s/g, '');
-function geoFile(name){
-  if (!GEO[name]) GEO[name] = fetch('geo/' + name + '.json').then(r => { if (!r.ok) throw new Error('경계 파일을 못 불러왔어요 (geo/' + name + '.json)'); return r.json(); })
-    .then(tp => topojson.feature(tp, tp.objects[name]).features)
-    .catch(e => { delete GEO[name]; throw e; });
-  return GEO[name];
-}
-function setTiles(on){
-  if (!MAP || !TILES) return;
-  if (on && !MAP.hasLayer(TILES)) TILES.addTo(MAP);
-  if (!on && MAP.hasLayer(TILES)) MAP.removeLayer(TILES);
-  $('map').classList.toggle('plain', !on);
-}
-function ensureMap(){
-  if (MAP) { setTimeout(() => MAP.invalidateSize(), 0); return; }
-  RENDER = L.canvas({ padding: .3 });
-  MAP = L.map('map', { zoomControl: true, zoomSnap: .5, preferCanvas: true, minZoom: 6, maxBounds: [[31.5, 122.5], [39.8, 132.5]] });
-  MAP.fitBounds(KOREA);
-  TILES = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, opacity: .7, attribution: '&copy; OpenStreetMap' });
-  MAP.attributionControl.addAttribution('경계: 통계청 SGIS, admdongkor(CC BY 4.0)');
-  REG.group = L.layerGroup().addTo(MAP); PTS = L.layerGroup().addTo(MAP);
-  MAP.on('moveend', () => { if (state.view === 'map') queueMap(); });
-  $('legend').innerHTML = '<span class="scale">매장 적음<b></b>많음</span><span><i class="lg-bub"></i>숫자 원 = 그 근처 매장 수</span>' + [['collected', '수집'], ['contacted', '1차 통화'], ['interested', '관심'], ['meeting', '미팅~제안'], ['contract', '계약'], ['hold', '보류'], ['rejected', '거절']]
-    .map(([k, v]) => `<span><i style="background:${STAGE_COLOR[k]}"></i>${v}</span>`).join('') + '<span>테두리 굵은 점 = 재연락 기한 지남</span>';
-}
-function mapFilters(){
-  const f = filters();
-  return { sido: f.sido, sigungu: f.sigungu, stage: f.stage, lunch: f.lunch, chain: f.chain, q: f.q, kind: state.mkind, tel: $('m-tel').checked };
-}
-// 필터가 바뀌면: 지역·검색어가 바뀐 경우엔 그 결과가 있는 곳으로 이동, 아니면 지금 화면을 다시 그림
-async function loadMap(){
-  ensureMap();
-  const f = mapFilters(), key = [f.sido, f.sigungu, f.q].join('|');
-  if (key !== state.mapFitKey) {
-    state.mapFitKey = key;
-    if (!f.sido && !f.q) { MAP.fitBounds(KOREA); queueMap(); return; }
-    try {
-      const b = await rpc('lead_map', { p: { ...f, fit: true } });
-      if (state.view !== 'map') return;
-      if (!b.total) { toast('조건에 맞는 매장이 없어요'); loadMapNow(); return; }
-      const bb = L.latLngBounds([b.minlat, b.minlng], [b.maxlat, b.maxlng]);
-      MAP.flyToBounds(bb.pad(.05), { padding: [20, 20], maxZoom: 17, duration: .5 });
-      return; // 이동이 끝나면 moveend에서 다시 그림
-    } catch (e) { toast(errMsg(e), true); }
-  }
-  loadMapNow();
-}
-let mapT; function queueMap(){ clearTimeout(mapT); mapT = setTimeout(loadMapNow, 250); }
-let mapSeq = 0;
-const REG = { group: null, layer: null, level: '', key: '', data: null };
-function fillFor(n, max){
-  if (!n) return { fillColor: '#eceee8', fillOpacity: .55 };
-  return { fillColor: '#c62429', fillOpacity: .12 + .63 * Math.sqrt(n / max) };
-}
-async function drawRegions(level, seq){
-  setTiles(false); PTS.clearLayers(); MARKS = {}; state.mlPoints = []; showMapList(false);
-  const f = mapFilters(), key = level + JSON.stringify(f);
-  if (REG.level === level && REG.key === key && REG.layer) { $('m-count').textContent = REG.label; return; }
-  $('m-count').textContent = '불러오는 중…';
-  const [feats, d] = await Promise.all([geoFile(level), rpc('lead_map', { p: { ...f, group: level } })]);
-  if (seq !== mapSeq || state.view !== 'map') return;
-  const counts = {};
-  (d.groups || []).forEach(g => { const k = level === 'sido' ? norm(g.sido) : norm(g.sido) + '|' + norm(g.sigungu); counts[k] = (counts[k] || 0) + g.n; });
-  const keyOf = level === 'sido' ? (p => norm(p.sidonm)) : (p => norm(p.sidonm) + '|' + p.sggk);
-  const nameOf = level === 'sido' ? (p => p.sidonm) : (p => p.sggnm);
-  const max = Math.max(1, ...feats.map(ft => counts[keyOf(ft.properties)] || 0));
-  if (REG.layer) REG.group.removeLayer(REG.layer);
-  const base = { color: '#ffffff', weight: level === 'sido' ? 1.5 : 1 };
-  REG.layer = L.geoJSON({ type: 'FeatureCollection', features: feats }, {
-    style: ft => ({ ...base, ...fillFor(counts[keyOf(ft.properties)] || 0, max) }),
-    onEachFeature: (ft, lyr) => {
-      const n = counts[keyOf(ft.properties)] || 0, nm = nameOf(ft.properties);
-      if (n) lyr.bindTooltip(`${esc(nm)}<small>${n.toLocaleString()}</small>`, { permanent: true, direction: 'center', className: 'lbl' + (level === 'sgg' ? ' sm' : '') });
-      else lyr.bindTooltip(`${esc(nm)} 0곳`, { sticky: true });
-      lyr.on('mouseover', () => { lyr.setStyle({ color: '#232621', weight: 2.5 }); lyr.bringToFront(); });
-      lyr.on('mouseout', () => REG.layer && REG.layer.resetStyle(lyr));
-      lyr.on('click', () => {
-        const b = lyr.getBounds();
-        const z = Math.max(level === 'sido' ? Z_SGG : Z_DETAIL, Math.min(MAP.getBoundsZoom(b, false, L.point(20, 20)), 15));
-        MAP.flyTo(b.getCenter(), z, { duration: .5 });
-      });
-    }
-  }).addTo(REG.group);
-  REG.level = level; REG.key = key;
-  REG.label = `${level === 'sido' ? '전국' : '시군구별'} ${(d.total || 0).toLocaleString()}곳 · 지역을 누르면 들어가요`;
-  $('m-count').textContent = REG.label;
-}
-function clearRegions(){ if (REG.layer) { REG.group.removeLayer(REG.layer); REG.layer = null; REG.level = ''; } }
-async function loadMapNow(){
-  if (!MAP) return;
-  const seq = ++mapSeq, zf = MAP.getZoom();
-  if (zf < Z_DETAIL) {
-    try { await drawRegions(zf < Z_SGG ? 'sido' : 'sgg', seq); }
-    catch (e) { if (seq === mapSeq) { $('m-count').textContent = ''; toast(errMsg(e), true); } }
-    return;
-  }
-  clearRegions(); setTiles(true);
-  const bd = MAP.getBounds().pad(.15), z = Math.round(zf);
-  $('m-count').textContent = '불러오는 중…';
-  try {
-    const d = await rpc('lead_map', { p: { ...mapFilters(), zoom: z,
-      minlat: bd.getSouth(), maxlat: bd.getNorth(), minlng: bd.getWest(), maxlng: bd.getEast() } });
-    if (seq !== mapSeq || state.view !== 'map') return;
-    PTS.clearLayers(); MARKS = {};
-    if (d.mode === 'clusters') {
-      const cs = d.clusters || [], max = Math.max(1, ...cs.map(c => c.n));
-      cs.forEach(c => {
-        const s = Math.round(28 + 30 * Math.sqrt(c.n / max));
-        const label = c.n >= 10000 ? (c.n / 10000).toFixed(1) + '만' : c.n >= 1000 ? (c.n / 1000).toFixed(1) + '천' : c.n;
-        const m = L.marker([c.lat, c.lng], { icon: L.divIcon({ className: '', iconSize: [s, s],
-          html: `<div class="bub" style="width:${s}px;height:${s}px"><b>${label}</b></div>` }), keyboard: false });
-        m.on('click', () => {
-          const bb = L.latLngBounds([c.minlat, c.minlng], [c.maxlat, c.maxlng]);
-          if (bb.getNorthEast().equals(bb.getSouthWest())) MAP.flyTo(bb.getCenter(), Math.min(17, MAP.getZoom() + 3), { duration: .4 });
-          else MAP.flyToBounds(bb, { padding: [30, 30], maxZoom: 17, duration: .4 });
-        });
-        PTS.addLayer(m);
-      });
-      state.mlPoints = []; state.mlSel = null; showMapList(false);
-      $('m-count').textContent = `이 화면 ${d.total.toLocaleString()}곳 · 확대하면 매장이 보여요`;
-    } else {
-      const ps = d.points || [];
-      state.mlPoints = ps; if (!ps.some(p => p.id === state.mlSel)) state.mlSel = null;
-      ps.forEach(p => {
-        const m = L.circleMarker([p.lat, p.lng], { renderer: RENDER, ...markStyle(p, p.id === state.mlSel) });
-        m.bindTooltip(`<b>${esc(p.name)}${p.branch ? ' ' + esc(p.branch) : ''}</b><br>${esc(p.cat || '')} · ${esc(ST[p.stage])}${p.tel ? ' · ' + esc(tel(p.tel)) : ''}`, { direction: 'top' });
-        m.on('click', () => { selectMark(p.id, false); openLead(p.id); });
-        MARKS[p.id] = m; PTS.addLayer(m);
-      });
-      showMapList(true); $('ml-title').textContent = '화면 안 매장'; renderMapList();
-      $('m-count').textContent = d.total > ps.length ? `이 화면 ${d.total.toLocaleString()}곳 중 점수 높은 ${ps.length.toLocaleString()}곳` : `이 화면 ${d.total.toLocaleString()}곳`;
-      if (!ps.length) $('m-count').textContent = '이 화면에는 조건에 맞는 매장이 없어요';
-    }
-  } catch (e) { if (seq === mapSeq) { $('m-count').textContent = ''; toast(errMsg(e), true); } }
-}
-$('m-kind').addEventListener('click', e => {
-  const b = e.target.closest('button'); if (!b) return;
-  state.mkind = b.dataset.v; [...$('m-kind').children].forEach(x => x.classList.toggle('on', x === b)); loadMapNow();
-});
-$('m-tel').addEventListener('change', () => loadMapNow());
-
-/* 화면 안 매장 목록 ↔ 지도 연결 */
-state.mlSort = 'score';
-function markStyle(p, sel){
-  return sel ? { radius: 11, weight: 3, color: '#1f4e8c', fillColor: STAGE_COLOR[p.stage] || '#9aa097', fillOpacity: 1 }
-             : { radius: 6, weight: p.overdue ? 3 : 1, color: p.overdue ? '#232621' : '#ffffff', fillColor: STAGE_COLOR[p.stage] || '#9aa097', fillOpacity: .95 };
-}
-function showMapList(on){
-  const was = !$('map-list').hidden;
-  $('map-list').hidden = !on;
-  document.querySelector('.map-wrap').classList.toggle('has-list', on);
-  if (MAP && was !== on) setTimeout(() => MAP.invalidateSize(), 0);
-}
-function renderMapList(){
-  const ps = (state.mlPoints || []).slice(), s = state.mlSort;
-  const prog = p => ['collected', 'rejected'].includes(p.stage) ? 1 : 0;
-  ps.sort((a, b) => s === 'name' ? a.name.localeCompare(b.name, 'ko') : s === 'stage' ? prog(a) - prog(b) || b.score - a.score : b.score - a.score);
-  $('ml-count').textContent = ps.length.toLocaleString() + '곳';
-  $('ml-items').innerHTML = ps.length ? ps.slice(0, 300).map(p => `<div class="ml-item${state.mlSel === p.id ? ' on' : ''}" data-id="${p.id}" role="button" tabindex="0">
-      <span class="dot" style="background:${STAGE_COLOR[p.stage] || '#9aa097'}"></span>
-      <span class="tx"><b>${esc(p.name)}${p.branch ? ' ' + esc(p.branch) : ''}${chainTag(p)}</b>
-        <small>${esc(p.cat || '')} · ${esc(ST[p.stage])}${p.tel ? ' · ' + esc(tel(p.tel)) : ''}${p.overdue ? ' · <span class="late">재연락 지남</span>' : ''}</small>
-        <span class="tags">${lunchTag(p.lunch)}</span></span>
-      <button class="go" data-open="${p.id}">상세</button></div>`).join('') + (ps.length > 300 ? `<div class="empty-box">목록은 300곳까지 보여요. 지도를 더 확대하세요.</div>` : '')
-    : '<div class="empty-box">조건에 맞는 매장이 없어요.</div>';
-}
-function selectMark(id, move){
-  const prev = state.mlSel; state.mlSel = id;
-  const pts = state.mlPoints || [];
-  if (prev && MARKS[prev]) MARKS[prev].setStyle(markStyle(pts.find(x => x.id === prev) || {}, false));
-  const p = pts.find(x => x.id === id), m = MARKS[id];
-  if (m && p) { m.setStyle(markStyle(p, true)); m.bringToFront(); m.openTooltip(); if (move) MAP.flyTo([p.lat, p.lng], Math.max(MAP.getZoom(), 17), { duration: .5 }); }
-  document.querySelectorAll('#ml-items .ml-item').forEach(el => el.classList.toggle('on', +el.dataset.id === id));
-  const el = document.querySelector(`#ml-items .ml-item[data-id="${id}"]`);
-  if (el && !move) el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-}
-$('ml-items').addEventListener('click', e => {
-  const o = e.target.closest('[data-open]'); if (o) { e.stopPropagation(); selectMark(+o.dataset.open, true); openLead(+o.dataset.open); return; }
-  const it = e.target.closest('.ml-item'); if (!it) return;
-  selectMark(+it.dataset.id, true);
-  if (window.innerWidth <= 900) document.getElementById('map').scrollIntoView({ behavior: 'smooth', block: 'start' });
-});
-$('ml-items').addEventListener('keydown', e => { if (e.key === 'Enter') { const it = e.target.closest('.ml-item'); if (it) selectMark(+it.dataset.id, true); } });
-$('ml-sort').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; state.mlSort = b.dataset.v; [...$('ml-sort').children].forEach(x => x.classList.toggle('on', x === b)); renderMapList(); });
-
 /* ---------- 상세 ---------- */
 function closePanel(){ $('panel').hidden = true; $('scrim').hidden = true; $('addbox').hidden = true; $('more-sheet').hidden = true; state.cur = null; }
 $('scrim').addEventListener('click', closePanel);
@@ -1814,7 +1552,7 @@ async function logCall(kind){
 }
 async function refreshAfter(id){
   const [d, s] = await Promise.all([rpc('lead_get', { p_id: id }), rpc('lead_stats')]);
-  state.cur = d; renderPanel(d); applyStats(s); if (state.view !== 'map') load(true); else queueMap();
+  state.cur = d; renderPanel(d); applyStats(s); load(true);
 }
 
 /* ---------- 매장 추가 ---------- */
