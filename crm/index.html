@@ -188,6 +188,10 @@ td .sm{font-size:12px;color:var(--sub)}
 .dc-sec summary{cursor:pointer;padding:7px 10px;font-size:13px}
 .dc-sec pre{white-space:pre-wrap;word-break:break-word;font:inherit;font-size:12.5px;line-height:1.55;margin:0;padding:4px 12px 10px;color:#3c403a;max-height:360px;overflow:auto}
 @media (max-width:600px){.dc-sum{grid-template-columns:1fr}}
+/* 급성장 브랜드: 제외한 브랜드 줄 */
+#nv-rows tr.ex td{color:var(--sub)}
+#nv-rows tr.ex .nm{text-decoration:line-through;text-decoration-color:#b7bbb3}
+#nv-rows .btn.sm{height:30px;padding:0 10px;font-size:12px}
 .shell .wrap{flex:1;min-width:0;margin:0}
 .sec-hd{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}
 .sec-hd h1{margin:0;font-size:22px}
@@ -496,12 +500,13 @@ td .sm{font-size:12px;color:var(--sub)}
         <select id="nv-ind" aria-label="업종"><option value="">전체 업종</option></select>
         <select id="nv-min" aria-label="최소 개업 수"><option value="10">3년 개업 10곳 이상</option><option value="5">5곳 이상</option><option value="30">30곳 이상</option><option value="100">100곳 이상</option></select>
         <select id="nv-sort" aria-label="정렬"><option value="net1">최근 1년 순증 순</option><option value="open1">최근 1년 개업 순</option><option value="net3">3년 순증 순</option><option value="fpct">정보공개서 2년 증가율 순</option><option value="crate">폐점 비율 낮은 순</option></select>
+        <select id="nv-excl" aria-label="제외한 브랜드"><option value="hide">제외한 브랜드 숨기기</option><option value="only">제외한 브랜드만 보기</option><option value="all">제외한 브랜드도 함께 보기</option></select>
         <label class="chk"><input type="checkbox" id="nv-surge">최근 급증만</label>
       </div>
-      <p class="muted" style="margin-top:-4px">순증 = 개업 − 폐업. <b>최근 급증</b>은 최근 1년 순증이 그 전 2년 연평균보다 1.5배 이상 많은 브랜드예요. 폐업 신고를 늦게 하는 매장이 있어서 폐업은 실제보다 적게 잡힐 수 있어요.</p>
+      <p class="muted" style="margin-top:-4px">순증 = 개업 − 폐업. <b>최근 급증</b>은 최근 1년 순증이 그 전 2년 연평균보다 1.5배 이상 많은 브랜드예요. 폐업 신고를 늦게 하는 매장이 있어서 폐업은 실제보다 적게 잡힐 수 있어요. 백화점 팝업 같은 <b>한시적 영업</b>은 세지 않아요. 이름이 흔해서 다른 가게가 섞이는 브랜드는 오른쪽 <b>제외</b>를 누르면 목록에서 빠져요.</p>
       <div class="tbl-wrap">
         <table>
-          <thead><tr><th>브랜드</th><th>업종</th><th class="num">1년 개업</th><th class="num">1년 폐업</th><th class="num">1년 순증</th><th class="num">3년 순증</th><th class="num">폐점 비율<br><small>(3년)</small></th><th class="num">정보공개서<br><small id="nv-fy">가맹점</small></th><th class="num">2년 증가율</th><th>조사</th></tr></thead>
+          <thead><tr><th>브랜드</th><th>업종</th><th class="num">1년 개업</th><th class="num">1년 폐업</th><th class="num">1년 순증</th><th class="num">3년 순증</th><th class="num">폐점 비율<br><small>(3년)</small></th><th class="num">정보공개서<br><small id="nv-fy">가맹점</small></th><th class="num">2년 증가율</th><th>조사</th><th></th></tr></thead>
           <tbody id="nv-rows"></tbody>
         </table>
       </div>
@@ -1006,11 +1011,12 @@ $('ft-inds').addEventListener('click', e => {
 $('ft-q').addEventListener('input', () => { clearTimeout(state.ft.t); state.ft.t = setTimeout(loadFtc, 350); });
 $('ft-rows').addEventListener('click', e => { const tr = e.target.closest('tr[data-k]'); if (tr) openBrand(tr.dataset.k); });
 
-/* 급성장 브랜드: 인허가 최근 3년 개업·폐업 (license_events, 수집기 license-event-fetch) */
+/* 급성장 브랜드: 인허가 최근 3년 개업·폐업 (license_events, 수집기 license-event-fetch)
+   한시적·팝업 영업은 서버에서 빼고 셈. 제외 표시한 브랜드(license_brand_excl)는 기본으로 숨김 */
 state.nv = { d: null, t: null };
 async function loadNaver(){
   try {
-    const d = await rpc('sp_growth_list', { p: { q: $('nv-q').value.trim(), induty: $('nv-ind').value, min_n: $('nv-min').value, sort: $('nv-sort').value, surge: $('nv-surge').checked } });
+    const d = await rpc('sp_growth_list', { p: { q: $('nv-q').value.trim(), induty: $('nv-ind').value, min_n: $('nv-min').value, sort: $('nv-sort').value, surge: $('nv-surge').checked, excl: $('nv-excl').value } });
     state.nv.d = d; renderNaver();
   } catch (e) { toast(errMsg(e), true); }
 }
@@ -1018,25 +1024,43 @@ function renderNaver(){
   const d = state.nv.d || {}, rows = d.rows || [], pg = d.progress || {};
   const sel = $('nv-ind'), cur = sel.value;
   sel.innerHTML = '<option value="">전체 업종</option>' + (d.industries || []).map(x => `<option>${esc(x)}</option>`).join(''); sel.value = cur;
-  $('nv-count').textContent = (d.total || 0).toLocaleString() + '개 브랜드' + (d.total > rows.length ? ` · 상위 ${rows.length}개 표시` : '');
+  $('nv-count').textContent = (d.total || 0).toLocaleString() + '개 브랜드' + (d.total > rows.length ? ` · 상위 ${rows.length}개 표시` : '') + (d.excl_count ? ` · 제외 ${d.excl_count}개` : '');
   const nb = $('nv-note'), busy = pg.jobs && pg.finished < pg.jobs;
   nb.hidden = !busy;
   if (busy) nb.innerHTML = `<b>아직 수집 중이에요${pg.total ? ` (약 ${Math.round(100 * pg.done / pg.total)}%)` : ''}.</b> <span class="muted">최근 개업·폐업부터 들어와서 지금은 1년 숫자가 먼저 차고, 3년 숫자와 ‘최근 급증’ 표시는 수집이 끝나야 정확해요.</span>`;
   const fy = rows.find(r => r.fy); $('nv-fy').textContent = fy ? fy.fy + '년 가맹점' : '가맹점';
   const net = v => v > 0 ? `<span class="up">+${v.toLocaleString()}</span>` : v < 0 ? `<span class="dn">${v.toLocaleString()}</span>` : '0';
-  $('nv-rows').innerHTML = rows.length ? rows.map(r => `<tr data-k="${esc(r.key)}">
-    <td><div class="nm">${esc(r.brand)}${r.surge ? ' <span class="tag t-new">최근 급증</span>' : ''}</div></td>
+  $('nv-rows').innerHTML = rows.length ? rows.map(r => `<tr data-k="${esc(r.key)}"${r.ex ? ' class="ex"' : ''}>
+    <td><div class="nm">${esc(r.brand)}${r.surge && !r.ex ? ' <span class="tag t-new">최근 급증</span>' : ''}</div>${r.ex ? `<div class="sm">제외함${r.ex_reason ? ' · ' + esc(r.ex_reason) : ''}</div>` : ''}</td>
     <td>${esc(r.ind || '')}</td>
     <td class="num">${Number(r.o1).toLocaleString()}</td><td class="num">${Number(r.c1).toLocaleString()}</td>
     <td class="num"><b>${net(r.n1)}</b></td><td class="num">${net(r.n3)}</td>
     <td class="num">${r.crate == null ? '<span class="muted">-</span>' : r.crate + '%'}</td>
     <td class="num">${fmt(r.fn)}</td><td class="num">${r.fpct == null ? '<span class="muted">-</span>' : r.fpct + '%'}</td>
-    <td>${rTag(r.st)}</td></tr>`).join('')
-    : '<tr><td colspan="10" class="muted" style="text-align:center;padding:40px">조건에 맞는 브랜드가 없어요.</td></tr>';
+    <td>${rTag(r.st)}</td>
+    <td><button class="btn sm" data-ex="${esc(r.bkey)}" data-on="${r.ex ? 0 : 1}" data-nm="${esc(r.brand)}">${r.ex ? '되돌리기' : '제외'}</button></td></tr>`).join('')
+    : `<tr><td colspan="11" class="muted" style="text-align:center;padding:40px">${$('nv-excl').value === 'only' ? '제외한 브랜드가 없어요.' : '조건에 맞는 브랜드가 없어요.'}</td></tr>`;
 }
-['nv-ind', 'nv-min', 'nv-sort', 'nv-surge'].forEach(id => $(id).addEventListener('change', loadNaver));
+async function toggleExcl(b){
+  const on = b.dataset.on === '1', nm = b.dataset.nm || '';
+  let reason = '';
+  if (on) {
+    reason = prompt(`'${nm}'을(를) 급성장 목록에서 뺄까요?\n이유를 적어 두면 나중에 보기 좋아요 (비워도 돼요).`, '흔한 상호라 다른 가게가 섞임');
+    if (reason === null) return;
+  } else if (!confirm(`'${nm}'을(를) 다시 급성장 목록에 넣을까요?`)) return;
+  b.disabled = true;
+  try {
+    await rpc('sp_growth_exclude', { p: { bkey: b.dataset.ex, on, reason: (reason || '').trim() } });
+    toast(on ? `'${nm}'을(를) 목록에서 뺐어요` : `'${nm}'을(를) 다시 넣었어요`);
+    loadNaver();
+  } catch (e) { toast(errMsg(e), true); b.disabled = false; }
+}
+['nv-ind', 'nv-min', 'nv-sort', 'nv-surge', 'nv-excl'].forEach(id => $(id).addEventListener('change', loadNaver));
 $('nv-q').addEventListener('input', () => { clearTimeout(state.nv.t); state.nv.t = setTimeout(loadNaver, 350); });
-$('nv-rows').addEventListener('click', e => { const tr = e.target.closest('tr[data-k]'); if (tr) openBrand(tr.dataset.k); });
+$('nv-rows').addEventListener('click', e => {
+  const b = e.target.closest('button[data-ex]'); if (b) { toggleExcl(b); return; }
+  const tr = e.target.closest('tr[data-k]'); if (tr) openBrand(tr.dataset.k);
+});
 
 
 /* 정보공개서 원문 (공정위 가맹사업거래 API, 서버 함수 ftc-disclosure 경유) */
