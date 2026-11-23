@@ -2,3 +2,7 @@
   Cache-Control: no-cache
 /css/*
   Cache-Control: no-cache
+/crm/js/*
+  Cache-Control: no-cache
+/crm/css/*
+  Cache-Control: no-cache
