@@ -1,8 +1,12 @@
 /js/*
   Cache-Control: no-cache
+  Content-Type: application/javascript; charset=utf-8
 /css/*
   Cache-Control: no-cache
+  Content-Type: text/css; charset=utf-8
 /crm/js/*
   Cache-Control: no-cache
+  Content-Type: application/javascript; charset=utf-8
 /crm/css/*
   Cache-Control: no-cache
+  Content-Type: text/css; charset=utf-8
