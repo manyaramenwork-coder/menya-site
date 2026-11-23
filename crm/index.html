@@ -268,6 +268,19 @@ td .sm{font-size:12px;color:var(--sub)}
 .panel-hd .x{margin-left:auto;border:0;background:none;font-size:22px;line-height:1;padding:4px 8px;border-radius:8px}
 .panel-bd{flex:1;overflow-y:auto;padding:16px 20px calc(40px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:14px}
 .box{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+/* 상권분석 (소상공인365 iFrame) */
+.ar-frame{background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.ar-frame iframe{display:block;width:100%;border:0;height:max(720px,calc(100vh - 210px))}
+.ar-frame.tall iframe{height:1300px}
+.ar-empty{padding:48px 20px;text-align:center}
+.ar-open{display:inline-flex;align-items:center;text-decoration:none;color:inherit}
+.ar-open[hidden]{display:none}
+.ar-keys{margin-bottom:12px}
+.ar-keys summary{cursor:pointer;font-weight:600;font-size:13px}
+.ar-keys .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px 12px;margin:12px 0}
+.ar-keys label{display:block;font-size:12px;color:var(--sub);margin-bottom:3px}
+.ar-keys input{width:100%;box-sizing:border-box;height:36px;border:1px solid var(--line);border-radius:8px;padding:0 10px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px}
+@media (max-width:600px){.ar-frame iframe{height:max(560px,calc(100vh - 230px))}.ar-frame.tall iframe{height:1100px}}
 .box h4{margin:0 0 10px;font-size:14px}
 .steps{display:flex;flex-wrap:wrap;gap:6px}
 .steps button{border:1px solid var(--line);background:#fff;border-radius:8px;padding:6px 10px;font-size:13px}
@@ -468,6 +481,20 @@ td .sm{font-size:12px;color:var(--sub)}
         <div class="more"><button class="btn" id="more" hidden>더 보기</button></div>
       </div>
       <div id="board-view" class="board" hidden></div>
+    </section>
+
+    <!-- 영업기획: 상권분석 (소상공인365 오픈API iFrame) -->
+    <section id="sec-area" class="sec" hidden>
+      <div class="sec-hd"><h1>상권분석 <small>소상공인365</small></h1><a class="btn ar-open" id="ar-open" href="#" target="_blank" rel="noopener" hidden>새 창으로 열기</a></div>
+      <p class="muted" id="ar-desc"></p>
+      <div class="chips" id="ar-tabs" role="tablist" aria-label="분석 종류"></div>
+      <details class="box ar-keys" id="ar-keys" hidden>
+        <summary>365 인증키 설정 (관리자)</summary>
+        <p class="muted" style="margin:8px 0 0">소상공인365 마이페이지 → 오픈 API 신청현황에서 API명을 누르면 인증키가 보여요. 키는 영업관리 데이터베이스에만 저장되고 GitHub 코드에는 남지 않아요. 비워 두면 그 탭은 '인증키 없음'으로 표시돼요.</p>
+        <div class="grid" id="ar-key-fields"></div>
+        <button class="btn pri" id="ar-key-save">저장</button>
+      </details>
+      <div class="ar-frame" id="ar-frame"></div>
     </section>
 
     <!-- 영업기획: 정보공개서 분석 -->
@@ -711,6 +738,7 @@ async function load(reset){
   if (v === 'comm') return loadComm();
   if (v === 'listing') return loadListing();
   if (v === 'target') return loadTarget();
+  if (v === 'area') return loadArea();
   if (v === 'ftc') return loadFtc();
   if (v === 'naver') return loadNaver();
   if (v === 'script') return loadScript();
@@ -765,7 +793,7 @@ async function loadBoard(){
 $('board-view').addEventListener('click', e => { const c = e.target.closest('.card'); if (c) openLead(+c.dataset.id); });
 /* ---------- 메뉴·화면 전환 ---------- */
 const IC = {
-  map: '<path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2zM9 4v14M15 6v14"/>',
+  area: '<path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2zM9 4v14M15 6v14"/>',
   fav: '<path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.3 6.5 20.2l1-6.2L3 9.6l6.2-.9z"/>',
   log: '<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',
   inbox: '<path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.5 5h13L22 12v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-6z"/>',
@@ -782,7 +810,7 @@ const IC = {
 const svg = k => `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[k]}</svg>`;
 // 메뉴 묶음: 영업기획(분석·계획) → 매장 찾기(수집) → 리드 관리(연락·기록)
 const NAV_GROUPS = [
-  ['영업기획', [['ftc', '정보공개서 분석', '공정위 가맹점 수 변화'], ['naver', '급성장 브랜드', '인허가 최근 개업·폐업 추이'], ['script', '영업 스크립트', '통화하면서 보는 문구']]],
+  ['영업기획', [['area', '상권분석', '소상공인365 상권·입지 분석'], ['ftc', '정보공개서 분석', '공정위 가맹점 수 변화'], ['naver', '급성장 브랜드', '인허가 최근 개업·폐업 추이'], ['script', '영업 스크립트', '통화하면서 보는 문구']]],
   ['매장 찾기', [['db', '전체 매장 DB', '목록·보드로 전체 검색'], ['target', '샵인샵 타겟', '우리 메뉴·상권 기준 우편 대상'], ['listing', '양도 매물', '어사이드로 들어온 매물']]],
   ['리드 관리', [['inbox', '신청함', '랜딩 신청'], ['comm', '커뮤니티 리드', '카페 글·댓글·쪽지 준 분'], ['fav', '관심 매장', '담아 둔 매장'], ['log', '연락 기록', '통화·방문 기록']]]
 ];
@@ -826,7 +854,7 @@ $('more-sheet').addEventListener('click', async e => {
   if (b.dataset.v === 'logout') { await SB.auth.signOut(); location.reload(); return; }
   closePanel(); go(b.dataset.v);
 });
-const VIEWS = ['fav', 'log', 'inbox', 'comm', 'listing', 'db', 'target', 'script', 'ingest', 'ftc', 'naver'];
+const VIEWS = ['fav', 'log', 'inbox', 'comm', 'listing', 'db', 'target', 'script', 'ingest', 'ftc', 'naver', 'area'];
 function go(v){
   if (!VIEWS.includes(v) || (v === 'ingest' && !state.admin)) v = 'db';
   if (state.view === 'script' && v !== 'script' && SC.editing) {
@@ -849,6 +877,59 @@ function setDbMode(m){
 $('v-list').addEventListener('click', () => setDbMode('list'));
 $('v-board').addEventListener('click', () => setDbMode('board'));
 state.dbMode = 'list';
+
+
+/* ---------- 상권분석: 소상공인365 오픈API iFrame ----------
+   주소: https://bigdata.sbiz.or.kr/#/openApi/{서비스명}?certKey={인증키}
+   인증키는 공개 저장소에 두지 않고 lead_settings('sbiz365_keys')에 저장 → sbiz_keys_get / sbiz_keys_set RPC */
+const SBIZ = [
+  ['detail', '상세분석', '지역·업종을 골라 매출·유동인구·점포 수 등 상권 리포트를 봐요.', 0],
+  ['locAnls', '입지분석', '후보 위치를 찍어 주변 입지 점수와 경쟁 환경을 봐요.', 0],
+  ['startupPublic', '상권지도', '지도에서 업종별 밀집도와 상권 경계를 한눈에 봐요.', 0],
+  ['hpReport', '트렌드 분석', '뜨는 상권·업종의 매출과 점포 변화 흐름을 봐요.', 0],
+  ['dashboardStats', '인구통계', '지역별 인구·연령대·가구 분포를 봐요.', 1],
+  ['dashboardStore', '업소통계', '지역·업종별 업소 수와 개·폐업 추이를 봐요.', 1]
+];
+const AR = { keys: null, tab: null };
+try { AR.tab = localStorage.getItem('crm-area-tab'); } catch (e) {}
+if (!SBIZ.some(x => x[0] === AR.tab)) AR.tab = SBIZ[0][0];
+const sbizUrl = (svc, key) => 'https://bigdata.sbiz.or.kr/#/openApi/' + svc + '?certKey=' + encodeURIComponent(key);
+async function loadArea(){
+  $('ar-keys').hidden = !state.admin;
+  if (AR.keys === null) {
+    try { AR.keys = await rpc('sbiz_keys_get') || {}; }
+    catch (e) { AR.keys = null; toast(errMsg(e), true); }
+  }
+  if (state.admin) $('ar-key-fields').innerHTML = SBIZ.map(([k, l]) => `<div><label for="ark-${k}">${l} <small>(${k})</small></label><input id="ark-${k}" data-k="${k}" autocomplete="off" spellcheck="false" value="${esc((AR.keys || {})[k] || '')}"></div>`).join('');
+  renderArea();
+}
+function renderArea(){
+  const keys = AR.keys || {};
+  $('ar-tabs').innerHTML = SBIZ.map(([k, l]) => `<button role="tab" data-t="${k}" class="${k === AR.tab ? 'on' : ''}" aria-selected="${k === AR.tab}">${l}</button>`).join('');
+  const t = SBIZ.find(x => x[0] === AR.tab), key = keys[t[0]];
+  $('ar-desc').textContent = t[2] + ' 자료 출처: 소상공인시장진흥공단 소상공인365.';
+  const box = $('ar-frame'); box.classList.toggle('tall', !!t[3]);
+  if (!key) {
+    $('ar-open').hidden = true;
+    box.innerHTML = `<div class="ar-empty muted">${esc(t[1])} 인증키가 아직 등록되지 않았어요.${state.admin ? '<br>위의 <b>365 인증키 설정</b>을 열어 넣어 주세요.' : '<br>관리자에게 등록을 요청하세요.'}</div>`;
+    return;
+  }
+  const url = sbizUrl(t[0], key);
+  $('ar-open').href = url; $('ar-open').hidden = false;
+  const f = box.querySelector('iframe');
+  if (f && f.dataset.t === t[0]) return;
+  box.innerHTML = `<iframe data-t="${t[0]}" src="${esc(url)}" title="소상공인365 ${esc(t[1])} 화면" loading="lazy" allow="geolocation; clipboard-write; fullscreen" referrerpolicy="strict-origin-when-cross-origin"></iframe>`;
+}
+$('ar-tabs').addEventListener('click', e => {
+  const b = e.target.closest('button[data-t]'); if (!b) return;
+  AR.tab = b.dataset.t; try { localStorage.setItem('crm-area-tab', AR.tab); } catch (err) {}
+  renderArea();
+});
+$('ar-key-save').addEventListener('click', async () => {
+  const p = {}; document.querySelectorAll('#ar-key-fields input').forEach(i => p[i.dataset.k] = i.value.trim());
+  try { AR.keys = await rpc('sbiz_keys_set', { p }) || {}; toast('인증키를 저장했어요.'); $('ar-keys').open = false; $('ar-frame').innerHTML = ''; renderArea(); }
+  catch (e) { toast(errMsg(e), true); }
+});
 
 
 /* ---------- 영업 스크립트 (CRM에서 보고 바로 수정, 저장마다 버전) ---------- */
