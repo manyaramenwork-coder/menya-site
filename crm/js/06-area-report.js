@@ -25,7 +25,7 @@ $('rp-q').addEventListener('input', () => {
     const rows = [...addr.map(a => ({ k: 'addr', label: a.label, sub: a.sub, lat: a.lat, lng: a.lng })),
                   ...(shops || []).map(r => ({ k: 'shop', label: r.name + (r.branch ? ' ' + r.branch : ''), sub: [r.sigungu, r.dong, r.cat].filter(Boolean).join(' · '), lat: r.lat, lng: r.lng, addr: r.addr }))];
     const grp = (k, t) => { const g = rows.map((r, i) => [r, i]).filter(([r]) => r.k === k); return g.length ? `<div class="rp-sg">${t}</div>` + g.map(([r, i]) => `<button data-i="${i}">${esc(r.label)}<small>${esc(r.sub || '')}</small></button>`).join('') : ''; };
-    $('rp-sug').innerHTML = rows.length ? grp('addr', '주소') + grp('shop', '영업관리 매장') : '<div class="muted" style="padding:10px 12px">찾는 결과가 없어요. 도로명 주소(예: 불당25로 176)나 지번(예: 불당동 1497)으로 찾아 보세요.</div>';
+    $('rp-sug').innerHTML = rows.length ? grp('addr', '주소') + grp('shop', '영업관리 매장') : '<div class="muted" style="padding:10px 12px">찾는 결과가 없어요. 도로명 주소(예: 불덕25로 176)나 지번(예: 불당동 1497)으로 찾아 보세요.</div>';
     $('rp-sug').hidden = false; $('rp-sug')._rows = rows;
   }, 300);
 });
@@ -35,10 +35,10 @@ $('rp-sug').addEventListener('click', e => {
   $('rp-sug').hidden = true; $('rp-q').value = r.label;
   RP.place = { lat: r.lat, lng: r.lng, label: r.label, addr: r.addr || (r.k === 'addr' ? r.label : '') };
   try { localStorage.setItem('crm-rp', JSON.stringify({ place: RP.place, r: RP.r })); } catch (e2) {}
-  rpPick(); rpShow(false); rpMapFrame();
+  RP.data = null; RP.pop = null; rpPick(); rpShow(false); rpMapFrame(true);
 });
 document.addEventListener('click', e => { if (!e.target.closest('.rp-find')) $('rp-sug').hidden = true; });
-$('rp-rad').addEventListener('click', e => { const b = e.target.closest('button[data-r]'); if (!b) return; RP.r = +b.dataset.r; rpRad(); rpPick(); if (RP.place && !$('rp-body').hidden) rpLoad(false); });
+$('rp-rad').addEventListener('click', e => { const b = e.target.closest('button[data-r]'); if (!b) return; RP.r = +b.dataset.r; rpRad(); rpPick(); rpDraw(true); if (RP.place && !$('rp-body').hidden) rpLoad(false); });
 $('rp-fresh').addEventListener('click', () => { if (RP.place && confirm('공공데이터를 새로 불러올까요? (10~30초 걸려요)')) rpLoad(true); });
 $('rp-print').addEventListener('click', () => window.print());
 async function rpLoad(fresh){
@@ -167,13 +167,61 @@ function rpShow(report){
 function rpPick(){
   const ok = !!RP.place;
   $('rp-go').disabled = !ok;
-  $('rp-pick').innerHTML = ok ? `상담 위치 <b>${esc(RP.place.label || '')}</b> · 반경 ${RP.r >= 1000 ? '1km' : RP.r + 'm'} — <b>분석하기</b>를 누르면 보고서가 만들어져요.` : '예비점주님이 알려 준 주소(또는 매장 이름)를 검색해 상담 위치를 골라 주세요. 아래 지도는 소상공인365 상권지도예요.';
+  $('rp-pick').innerHTML = ok ? `상담 위치 <b>${esc(RP.place.label || '')}</b> · 반경 ${RP.r >= 1000 ? '1km' : RP.r + 'm'} — 지도에서 핀이 맞는 자리인지 확인해 주세요. 다르면 <b>핀을 끌거나 지도를 눌러</b> 옮기고, 맞으면 <b>분석하기</b>를 눌러요.` : '예비점주님이 알려 준 주소(또는 매장 이름)를 검색해 상담 위치를 골라 주세요. 지도를 눌러서 고를 수도 있어요. (365 상권지도는 옆 <b>상권지도</b> 탭에서 볼 수 있어요)';
 }
-function rpMapFrame(){
-  const key = (AR.keys || {}).startupPublic, box = $('rp-map');
-  if (!key) { box.innerHTML = `<div class="ar-empty muted">상권지도 인증키가 아직 등록되지 않았어요.${state.admin ? '<br>다른 탭(상세분석 등)에서 <b>365 인증키 설정</b>을 열어 넣어 주세요.' : ''}</div>`; return; }
-  if (box.querySelector('iframe')) return;
-  box.innerHTML = `<iframe src="${esc(sbizUrl('startupPublic', key))}" title="소상공인365 상권지도" loading="lazy" allow="geolocation; clipboard-write; fullscreen" referrerpolicy="strict-origin-when-cross-origin"></iframe>`;
+/* 위치 확인 지도: 네이버 지도(워크스페이스와 같은 키). 핀을 끌거나 지도를 눌러 위치 조정 → 분석하기
+   ※ 네이버 클라우드 Maps 앱의 Web 서비스 URL에 https://crm.menyamatsuri.work 가 등록돼 있어야 열림 */
+const NAVER_ID = 'timg82m9f5';
+const NM = { map: null, el: null, mk: null, circle: null, dots: [], loading: null };
+function nmLoad(){
+  if (window.naver && naver.maps && naver.maps.Map) return Promise.resolve(true);
+  if (NM.loading) return NM.loading;
+  NM.loading = new Promise(ok => {
+    const s = document.createElement('script');
+    s.src = 'https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=' + NAVER_ID;
+    s.onload = () => ok(!!(window.naver && naver.maps && naver.maps.Map));
+    s.onerror = () => { NM.loading = null; ok(false); };
+    document.head.appendChild(s);
+    setTimeout(() => ok(!!(window.naver && naver.maps && naver.maps.Map)), 10000);
+  });
+  return NM.loading;
+}
+async function rpMapFrame(fit){
+  const box = $('rp-map');
+  if (!NM.map || !NM.el || !box.contains(NM.el)) {
+    box.innerHTML = '<div class="rp-nmap" style="height:max(520px,calc(100vh - 300px))"></div>';
+    NM.el = box.firstChild; NM.map = null; NM.mk = null; NM.circle = null; NM.dots = [];
+    const ok = await nmLoad();
+    if (!ok) { box.innerHTML = '<div class="ar-empty muted">네이버 지도를 불러오지 못했어요.<br><small>네이버 클라우드 Maps 앱 설정의 Web 서비스 URL에 https://crm.menyamatsuri.work 가 등록돼 있는지 확인해 주세요.<br>지도가 없어도 주소로 고른 위치로 분석하기는 할 수 있어요.</small></div>'; NM.el = null; return; }
+    const c = RP.place ? new naver.maps.LatLng(RP.place.lat, RP.place.lng) : new naver.maps.LatLng(36.815, 127.105);
+    NM.map = new naver.maps.Map(NM.el, { center: c, zoom: RP.place ? (RP.r >= 1000 ? 15 : 16) : 13, zoomControl: true, zoomControlOptions: { position: naver.maps.Position.TOP_RIGHT }, mapDataControl: false, scaleControl: true });
+    naver.maps.Event.addListener(NM.map, 'click', e => rpSetPin(e.coord.lat(), e.coord.lng()));
+    fit = true;
+  }
+  rpDraw(fit);
+}
+function rpSetPin(lat, lng){
+  if (!RP.place) RP.place = { label: '지도에서 고른 위치' };
+  RP.place.lat = +(+lat).toFixed(6); RP.place.lng = +(+lng).toFixed(6);
+  if (!/위치 조정|지도에서 고른/.test(RP.place.label || '')) RP.place.label = (RP.place.label || '') + ' (위치 조정)';
+  RP.data = null; RP.pop = null;
+  try { localStorage.setItem('crm-rp', JSON.stringify({ place: RP.place, r: RP.r })); } catch (e) {}
+  rpPick(); rpDraw(false);
+}
+function rpDraw(fit){
+  if (!NM.map || !RP.place) return;
+  const p = new naver.maps.LatLng(RP.place.lat, RP.place.lng);
+  if (!NM.mk) {
+    NM.mk = new naver.maps.Marker({ map: NM.map, position: p, draggable: true, title: '상담 위치 (끌어서 옮기기)' });
+    naver.maps.Event.addListener(NM.mk, 'dragend', () => { const q = NM.mk.getPosition(); rpSetPin(q.lat(), q.lng()); });
+  } else NM.mk.setPosition(p);
+  if (!NM.circle) NM.circle = new naver.maps.Circle({ map: NM.map, center: p, radius: RP.r, strokeColor: '#c62429', strokeOpacity: .7, strokeWeight: 2, fillColor: '#c62429', fillOpacity: .06, clickable: false });
+  else { NM.circle.setCenter(p); NM.circle.setRadius(RP.r); }
+  NM.dots.forEach(x => x.setMap(null)); NM.dots = [];
+  const d = RP.data;
+  if (d && d.center && Math.abs(d.center.lat - RP.place.lat) < 1e-5 && Math.abs(d.center.lng - RP.place.lng) < 1e-5)
+    (d.stores || []).filter(OURS).forEach(s => NM.dots.push(new naver.maps.Circle({ map: NM.map, center: new naver.maps.LatLng(s.la, s.ln), radius: 10, strokeColor: '#fff', strokeWeight: 1, fillColor: '#c62429', fillOpacity: .9, clickable: false })));
+  if (fit) { NM.map.setCenter(p); NM.map.setZoom(RP.r >= 1000 ? 15 : 16); }
 }
 $('rp-go').addEventListener('click', () => rpLoad(false));
 $('rp-back').addEventListener('click', () => { rpShow(false); rpMapFrame(); });
@@ -202,12 +250,12 @@ function rpRender(d){
   const popu = (db.popular || []).slice(0, 10);
   const onePct = p ? pct(p.one, p.households) : null;
   const title = RP.place && RP.place.label ? RP.place.label : (c.sgg + ' ' + c.dong);
-  const pg = (n, t, body) => `<section class="rp-page"><div class="rp-ph"><span>${n ? String(n).padStart(2, '0') : ''}</span><h3>${t}</h3><img src="report-logo-dark.png" alt="멘야마쯔리" class="rp-ph-logo"></div>${body}<div class="rp-pf"><b>멘야마쯔리 상권 분석 보고서</b><span>${esc(title)} · 반경 ${rr} · ${esc(today)}</span><em>내부용</em></div></section>`;
+  const pg = (n, t, body) => `<section class="rp-page"><div class="rp-ph"><span>${n ? String(n).padStart(2, '0') : ''}</span><h3>${t}</h3><img src="report-logo-dark.png" alt="멘야마씌리" class="rp-ph-logo"></div>${body}<div class="rp-pf"><b>멘야마씌리 상권 분석 보고서</b><span>${esc(title)} · 반경 ${rr} · ${esc(today)}</span><em>내부용</em></div></section>`;
   const fl = x => esc(x.f ? (/^\d+$/.test(x.f) ? x.f + '층' : x.f) : '-');
   $('rp-body').innerHTML = `<div class="rp-doc">
   <section class="rp-page rp-cover">
     <div class="rp-cv-hero"><img class="bg" src="report-cover.jpg" alt=""><i class="ov"></i>
-      <div class="rp-cv-top"><img class="lg-l" src="report-logo-light.png" alt="멘야마쯔리"><img class="lg-d" src="report-logo-dark.png" alt="멘야마쯔리"><span>내부용 · ${esc(today)}</span></div>
+      <div class="rp-cv-top"><img class="lg-l" src="report-logo-light.png" alt="멘야마씌리"><img class="lg-d" src="report-logo-dark.png" alt="멘야마씌리"><span>내부용 · ${esc(today)}</span></div>
       <div class="rp-cv-ttl"><small>MENYAMATSURI · STORE LOCATION REPORT</small><h1>상권 분석 보고서</h1>
         <p class="rp-cv-addr">${esc(title)}</p><p class="rp-cv-sub">${esc([c.sido, c.sgg, c.dong].filter(Boolean).join(' '))} · 반경 ${rr}</p></div>
     </div>
