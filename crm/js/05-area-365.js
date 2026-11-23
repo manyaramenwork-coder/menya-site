@@ -44,3 +44,41 @@ function renderArea(){
   box.innerHTML = `<iframe data-t="${t[0]}" src="${esc(url)}" title="소상공인365 ${esc(t[1])} 화면" loading="lazy" allow="geolocation; clipboard-write; fullscreen" referrerpolicy="strict-origin-when-cross-origin"></iframe>`;
 }
 
+
+/* ---------- 상권 리포트: 주소 검색 버튼 + Enter 검색 ----------
+   (06-area-report.js의 추천 목록·선택 로직을 그대로 쓰고, 버튼과 즉시 검색만 더함) */
+(() => {
+  const q = $('rp-q'), sug = $('rp-sug');
+  if (!q || $('rp-search')) return;
+  const st = document.createElement('style');
+  st.textContent = '.rp-in{display:flex;gap:6px;align-items:center}.rp-in input{flex:1 1 auto;min-width:0}.rp-in #rp-search{flex:none;height:38px;padding:0 16px;white-space:nowrap}';
+  document.head.appendChild(st);
+  const w = document.createElement('div'); w.className = 'rp-in';
+  q.parentNode.insertBefore(w, q); w.appendChild(q);
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'btn pri'; b.id = 'rp-search'; b.textContent = '검색';
+  w.appendChild(b);
+  let seq = 0;
+  async function go(){
+    if (typeof rpT !== 'undefined') clearTimeout(rpT);   // 입력 중 자동 검색 취소
+    const v = q.value.trim();
+    if (v.length < 2) { toast('주소나 매장 이름을 두 글자 이상 입력해 주세요.'); q.focus(); return; }
+    const my = ++seq; b.disabled = true;
+    sug.innerHTML = '<div class="muted" style="padding:10px 12px">찾는 중이에요…</div>'; sug.hidden = false;
+    try {
+      const [addr, shops] = await Promise.all([
+        SB.functions.invoke('area-pop', { body: { q: v } }).then(r => (r.data && r.data.items) || []).catch(() => []),
+        rpc('area_place_search', { q: v }).catch(() => [])
+      ]);
+      if (my !== seq) return;
+      const rows = [...addr.map(a => ({ k: 'addr', label: a.label, sub: a.sub, lat: a.lat, lng: a.lng })),
+                    ...(shops || []).map(r => ({ k: 'shop', label: r.name + (r.branch ? ' ' + r.branch : ''), sub: [r.sigungu, r.dong, r.cat].filter(Boolean).join(' · '), lat: r.lat, lng: r.lng, addr: r.addr }))];
+      const grp = (k, t) => { const g = rows.map((r, i) => [r, i]).filter(([r]) => r.k === k); return g.length ? `<div class="rp-sg">${t}</div>` + g.map(([r, i]) => `<button data-i="${i}">${esc(r.label)}<small>${esc(r.sub || '')}</small></button>`).join('') : ''; };
+      sug._rows = rows;
+      sug.innerHTML = rows.length ? grp('addr', '주소') + grp('shop', '영업관리 매장') : '<div class="muted" style="padding:10px 12px">찾는 결과가 없어요. 도로명 주소(예: 불당25로 176)나 지번(예: 불당동 1497)으로 찾아 보세요.</div>';
+      sug.hidden = false;
+      if (rows.length === 1) sug.querySelector('button[data-i]').click();   // 결과가 하나면 바로 지도로
+    } finally { if (my === seq) b.disabled = false; }
+  }
+  q.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); go(); } });
+  b.addEventListener('click', go);
+})();
