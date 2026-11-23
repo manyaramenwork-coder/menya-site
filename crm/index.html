@@ -63,6 +63,10 @@ a{color:var(--blue)}
 .md th,.md td{border:1px solid var(--line);padding:7px 10px;text-align:left;vertical-align:top}
 .md th{background:#f3f4ef;font-weight:600}
 .md h3,.md h4{margin:14px 0 6px;font-size:14px}
+.md mark:not(.fill){background:#ffe866;color:inherit;border-radius:3px;padding:0 2px}
+.sc-tools{display:flex;gap:6px;align-items:center;margin-bottom:8px}
+.sc-tools .hl-sw{display:inline-block;width:12px;height:12px;border-radius:3px;background:#ffe866;border:1px solid #e6c900;margin-right:6px;vertical-align:-1px}
+.sc-tools .tip{font-size:12px;color:var(--sub)}
 .md mark.fill{background:#fff3cd;color:var(--warn);border-radius:4px;padding:0 4px;font-style:normal;font-weight:600}
 .sc-edit{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .sc-edit textarea{width:100%;min-height:68vh;border:1px solid var(--line);border-radius:12px;padding:14px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px;line-height:1.6;resize:vertical;background:#fff}
@@ -596,11 +600,16 @@ td .sm{font-size:12px;color:var(--sub)}
           <input id="sc-title" placeholder="스크립트 제목" maxlength="60">
           <input id="sc-note" placeholder="무엇을 고쳤는지 (선택, 예: 4단계 사례 추가)" maxlength="120">
         </div>
+        <div class="sc-tools">
+          <button type="button" class="btn sm" id="sc-hl" title="글자를 드래그한 뒤 누르세요 (Ctrl+Shift+Y)"><span class="hl-sw"></span>형광펜</button>
+          <button type="button" class="btn sm" id="sc-hl-off" title="형광펜 칠한 부분을 드래그한 뒤 누르세요">형광펜 지우기</button>
+          <span class="tip">칠할 글자를 드래그한 뒤 누르세요</span>
+        </div>
         <div class="sc-edit">
           <textarea id="sc-body" spellcheck="false" aria-label="스크립트 내용"></textarea>
           <div class="sc-prev md" id="sc-prev" aria-label="미리보기"></div>
         </div>
-        <p class="sc-help"><code>## 제목</code> 단계(접고 펼치기) · <code>&gt; 멘트</code> 말할 문장 · <code>- 항목</code> 목록 · <code>- [ ] 할 일</code> 체크 · <code>**굵게**</code> · 표는 <code>| 칸 | 칸 |</code> · <code>*[채워 넣기]*</code> 노란 표시 · 저장 Ctrl+S</p>
+        <p class="sc-help"><code>## 제목</code> 단계(접고 펼치기) · <code>&gt; 멘트</code> 말할 문장 · <code>- 항목</code> 목록 · <code>- [ ] 할 일</code> 체크 · <code>**굵게**</code> · 표는 <code>| 칸 | 칸 |</code> · <code>*[채워 넣기]*</code> 노란 표시 · 형광펜 Ctrl+Shift+Y · 저장 Ctrl+S</p>
       </div>
     </section>
   </main>
@@ -994,6 +1003,37 @@ function openEditor(isNew){
 }
 let scT; function scPreview(){ clearTimeout(scT); scT = setTimeout(() => { $('sc-prev').innerHTML = mdSections($('sc-body').value); $('sc-prev').querySelectorAll('details').forEach(x => x.open = true); }, 150); }
 ['sc-body', 'sc-title', 'sc-note'].forEach(id => $(id).addEventListener('input', () => { SC.dirty = true; if (id === 'sc-body') scPreview(); }));
+/* 형광펜: 선택한 글자를 <mark>로 감싸기 / 풀기 */
+function scHighlight(off){
+  const ta = $('sc-body'); let a = ta.selectionStart, b = ta.selectionEnd; const v = ta.value;
+  if (a === b) { toast('칠할 글자를 먼저 드래그하세요', true); ta.focus(); return; }
+  // 선택이 <mark> 안쪽만 잡혔으면 태그까지 넓히기
+  if (v.slice(a - 6, a) === '<mark>' && v.slice(b, b + 7) === '</mark>') { a -= 6; b += 7; }
+  const sel = v.slice(a, b);
+  const unmark = t => t.replace(/<mark>([\s\S]*?)<\/mark>/g, '$1');
+  const wrap = t => { const m = /^(\s*)([\s\S]*?)(\s*)$/.exec(t); return m[2] ? m[1] + '<mark>' + unmark(m[2]) + '</mark>' + m[3] : t; };
+  const pre = /^(\s*(?:#{1,6}\s+|>\s*|[-*+]\s+(?:\[[ xX]\]\s+)?|\d+[.)]\s+)*)([\s\S]*)$/;
+  let out;
+  if (off || /^\s*<mark>[\s\S]*<\/mark>\s*$/.test(sel) && !/<\/mark>[\s\S]*<mark>/.test(sel)) {
+    out = unmark(sel);
+  } else {
+    out = sel.split('\n').map(line => {
+      if (!line.trim()) return line;
+      if (line.includes('|')) { // 표 줄: 칸마다 감싸기 (구분선 줄은 그대로)
+        if (/^[\s:|-]+$/.test(line)) return line;
+        return line.split('|').map(wrap).join('|');
+      }
+      const m = pre.exec(line); return m[1] + wrap(m[2]);
+    }).join('\n');
+  }
+  ta.focus(); ta.setSelectionRange(a, b);
+  if (!document.execCommand || !document.execCommand('insertText', false, out)) ta.setRangeText(out, a, b, 'end');
+  ta.setSelectionRange(a, a + out.length);
+  SC.dirty = true; scPreview();
+}
+$('sc-hl').addEventListener('click', () => scHighlight(false));
+$('sc-hl-off').addEventListener('click', () => scHighlight(true));
+$('sc-body').addEventListener('keydown', e => { if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'y') { e.preventDefault(); scHighlight(false); } });
 async function saveScript(){
   const title = $('sc-title').value.trim(); if (!title) { toast('제목을 입력하세요', true); $('sc-title').focus(); return; }
   const b = $('sc-save'); if (b) b.disabled = true;
