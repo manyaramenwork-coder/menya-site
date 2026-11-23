@@ -1,0 +1,127 @@
+/* ---------- 영업관리 테마: 네이비 + 보라 (2026-11-23) ----------
+   crm.css 다음에 불러와 화면 색·모양만 덮어씀. 인쇄(A4 상권 보고서)는 건드리지 않음.
+   경고·기한 지남·오류 같은 '빨강 의미'는 --danger로 따로 유지. */
+:root{
+  --bg:#f3f4fb; --card:#fff; --ink:#1d2045; --sub:#6c7090; --line:#e6e8f3; --side:#1a1d4a;
+  --brand:#6b4df5; --brand-d:#5534e6; --brand-soft:#efebff; --blue:#3f5bd9; --blue-soft:#e9edfd;
+  --danger:#e0353b; --danger-soft:#fdecec;
+  --grad:linear-gradient(135deg,#7c5cff 0%,#5b3df0 100%);
+  --shadow:0 2px 10px rgba(35,38,110,.05),0 1px 2px rgba(35,38,110,.04);
+  --radius:16px;
+}
+@media screen{
+  body{background:var(--bg)}
+  ::selection{background:#ddd4ff}
+
+  /* 상단바 */
+  .top{background:linear-gradient(90deg,#171a44 0%,#23276a 100%);min-height:60px;box-shadow:0 2px 12px rgba(20,22,70,.18)}
+  .top .brand{font-size:17px;letter-spacing:-.3px;display:flex;align-items:center;gap:10px}
+  .top .brand::before{content:"";width:30px;height:30px;border-radius:9px;background:var(--grad) center/18px no-repeat;flex:none;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 11h18a9 9 0 0 1-18 0z'/%3E%3Cpath d='M8 7l9-4M10 8l9-3'/%3E%3C/svg%3E"),var(--grad)}
+  .top .brand small{color:#a9add8;margin-left:0}
+  .top a,.top button.lnk,.top .me{color:#c9ccef}
+  .top a:hover,.top button.lnk:hover{background:rgba(255,255,255,.1);color:#fff}
+  .top .me{background:rgba(255,255,255,.08);padding:6px 12px;border-radius:999px}
+
+  /* 사이드바 */
+  .side{top:60px;height:calc(100vh - 60px);background:linear-gradient(180deg,#1a1d4a 0%,#202462 100%);border-right:0;padding:18px 12px}
+  .side a{color:#d3d5f3;font-weight:500}
+  .side a svg{opacity:.85}
+  .side a:hover{background:rgba(255,255,255,.07);color:#fff}
+  .side a.on{background:var(--grad);color:#fff;box-shadow:0 6px 16px rgba(107,77,245,.35)}
+  .side a.on svg{opacity:1}
+  .side a em{background:#8b6cff;box-shadow:0 0 0 2px #1d2050}
+  .side a.ext{color:#9195c4}
+  .side-grp{color:#8a8ec2;letter-spacing:.6px}
+  .side-gap{background:rgba(255,255,255,.1)}
+
+  /* 본문 */
+  .shell .wrap{padding:24px 26px 60px}
+  .sec-hd h1{font-size:24px;letter-spacing:-.4px;color:var(--ink)}
+  .sec-hd h1 small{color:var(--brand);background:var(--brand-soft);border-radius:999px;padding:3px 10px;font-size:12px;font-weight:600;vertical-align:middle}
+  .muted{color:var(--sub)}
+
+  /* 버튼·입력 */
+  .btn{border-radius:12px;border-color:var(--line);transition:background .15s,box-shadow .15s,border-color .15s}
+  .btn:hover:not(:disabled){border-color:#cfd2ec}
+  .btn.pri{background:var(--grad);border:0;box-shadow:0 4px 12px rgba(107,77,245,.28)}
+  .btn.pri:hover:not(:disabled){background:linear-gradient(135deg,#6e4ff7 0%,#4f31e0 100%);box-shadow:0 6px 16px rgba(107,77,245,.36)}
+  .btn.pri:disabled{opacity:.45;box-shadow:none}
+  .bar select,.bar input[type=search],.rp-find input,input,select,textarea{border-color:var(--line);border-radius:12px}
+  .bar select,.bar input[type=search]{height:40px}
+  input:focus,select:focus,textarea:focus{outline:0;border-color:#a594ff!important;box-shadow:0 0 0 3px rgba(107,77,245,.15)}
+  :focus-visible{outline-color:var(--brand)}
+  input[type=checkbox],input[type=radio]{accent-color:var(--brand)}
+  .chk{border-radius:12px}
+
+  /* 반경 같은 토글: 선택 = 진한 네이비 */
+  .seg{border-radius:12px;border-color:var(--line);padding:3px;gap:2px;background:#fff}
+  .seg button{border-radius:9px;height:34px}
+  .seg button.on{background:var(--side);color:#fff}
+
+  /* 탭·업종 칩: 선택 = 보라 */
+  .chips button,.cats button{border-color:var(--line);transition:background .15s,border-color .15s}
+  .chips button:hover,.cats button:hover{border-color:#c9bfff}
+  .chips button.on,.cats button.on{background:var(--grad);border-color:transparent;color:#fff;box-shadow:0 4px 10px rgba(107,77,245,.25)}
+  .chips.region button.on{background:var(--blue);box-shadow:none}
+  #ar-tabs{background:#fff;border:1px solid var(--line);border-radius:999px;padding:4px;display:inline-flex;max-width:100%;gap:2px;box-shadow:var(--shadow)}
+  #ar-tabs button{border:0;background:none;min-height:34px;padding:6px 16px}
+  #ar-tabs button.on{background:var(--grad);color:#fff}
+
+  /* 카드류 */
+  .stat,.tbl-wrap,.box,.rp-card,.item,.card,.grid-cards>*{border-color:var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+  .stats{gap:12px}
+  .stat{padding:16px 18px;position:relative;overflow:hidden}
+  .stat::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--grad);opacity:.9}
+  .stat b{font-size:26px;color:var(--ink)}
+  .stat span{font-weight:500}
+  .stat.alert::before{background:var(--danger)}
+  .stat.alert b{color:var(--danger)}
+
+  /* 표 */
+  th{background:#f7f7fd;color:#7a7e9c}
+  tbody tr{transition:background .12s}
+  tbody tr:hover td{background:#faf9ff}
+  td .nm{color:var(--ink)}
+
+  /* 빨강 의미는 그대로 빨강 */
+  .t-late{background:var(--danger)}
+  .t-B{background:var(--danger-soft);color:#b7262b}
+  .late,.dn{color:var(--danger)}
+  .item.act-call,.act.call{border-left-color:var(--danger)}
+  .st-fail{background:var(--danger-soft);color:var(--danger)}
+  .ig-err,.login .err,.sheet .lo{color:var(--danger)}
+  .toast{border-radius:12px}
+  .toast.err{background:var(--danger)}
+
+  /* 상세 패널·모달 */
+  .panel{background:var(--bg)}
+  .panel-hd{border-bottom-color:var(--line)}
+  .modal{border-radius:18px}
+
+  /* 상권 리포트 검색줄 */
+  .rp-bar{background:#fff;border:1px solid var(--line);border-radius:18px;padding:10px;box-shadow:var(--shadow)}
+  .rp-find input{height:42px;padding-left:38px;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%238a8eb0' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.5-3.5'/%3E%3C/svg%3E") 12px center no-repeat}
+  .rp-in #rp-search,.rp-bar .btn{height:42px}
+  .rp-bar .seg button{height:36px}
+  .rp-sug{border-radius:14px;top:48px;box-shadow:0 14px 34px rgba(30,32,90,.14)}
+  .rp-sug button:hover{background:var(--brand-soft)}
+  .rp-sg{background:#f7f7fd;color:var(--brand)}
+  .ar-frame{border-radius:18px;overflow:hidden;box-shadow:var(--shadow)}
+
+  /* 보고서(A4)는 멘야마쯔리 빨강 그대로 */
+  #rp-body{--brand:#c62429;--brand-d:#a01b21;--brand-soft:#fbe9e9}
+
+  /* 로그인 */
+  .login{border-radius:20px;box-shadow:0 20px 50px rgba(30,32,90,.12);border:1px solid var(--line)}
+
+  /* 모바일 하단 메뉴 */
+  .bnav{border-top-color:var(--line);box-shadow:0 -4px 16px rgba(30,32,90,.06)}
+  .bnav a.on{color:var(--brand)}
+  .bnav .dot{background:var(--danger)}
+}
+@media screen and (max-width:900px){
+  .shell .wrap{padding:16px 14px 90px}
+  .rp-bar{padding:8px}
+  #ar-tabs{border-radius:14px;display:flex;overflow-x:auto}
+}
