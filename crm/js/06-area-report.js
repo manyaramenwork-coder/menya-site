@@ -25,7 +25,7 @@ $('rp-q').addEventListener('input', () => {
     const rows = [...addr.map(a => ({ k: 'addr', label: a.label, sub: a.sub, lat: a.lat, lng: a.lng })),
                   ...(shops || []).map(r => ({ k: 'shop', label: r.name + (r.branch ? ' ' + r.branch : ''), sub: [r.sigungu, r.dong, r.cat].filter(Boolean).join(' · '), lat: r.lat, lng: r.lng, addr: r.addr }))];
     const grp = (k, t) => { const g = rows.map((r, i) => [r, i]).filter(([r]) => r.k === k); return g.length ? `<div class="rp-sg">${t}</div>` + g.map(([r, i]) => `<button data-i="${i}">${esc(r.label)}<small>${esc(r.sub || '')}</small></button>`).join('') : ''; };
-    $('rp-sug').innerHTML = rows.length ? grp('addr', '주소') + grp('shop', '영업관리 매장') : '<div class="muted" style="padding:10px 12px">찾는 결과가 없어요. 도로명 주소(예: 불덕25로 176)나 지번(예: 불당동 1497)으로 찾아 보세요.</div>';
+    $('rp-sug').innerHTML = rows.length ? grp('addr', '주소') + grp('shop', '영업관리 매장') : '<div class="muted" style="padding:10px 12px">찾는 결과가 없어요. 도로명 주소(예: 불당25로 176)나 지번(예: 불당동 1497)으로 찾아 보세요.</div>';
     $('rp-sug').hidden = false; $('rp-sug')._rows = rows;
   }, 300);
 });
@@ -250,12 +250,12 @@ function rpRender(d){
   const popu = (db.popular || []).slice(0, 10);
   const onePct = p ? pct(p.one, p.households) : null;
   const title = RP.place && RP.place.label ? RP.place.label : (c.sgg + ' ' + c.dong);
-  const pg = (n, t, body) => `<section class="rp-page"><div class="rp-ph"><span>${n ? String(n).padStart(2, '0') : ''}</span><h3>${t}</h3><img src="report-logo-dark.png" alt="멘야마씌리" class="rp-ph-logo"></div>${body}<div class="rp-pf"><b>멘야마씌리 상권 분석 보고서</b><span>${esc(title)} · 반경 ${rr} · ${esc(today)}</span><em>내부용</em></div></section>`;
+  const pg = (n, t, body) => `<section class="rp-page"><div class="rp-ph"><span>${n ? String(n).padStart(2, '0') : ''}</span><h3>${t}</h3><img src="report-logo-dark.png" alt="멘야마쯔리" class="rp-ph-logo"></div>${body}<div class="rp-pf"><b>멘야마쯔리 상권 분석 보고서</b><span>${esc(title)} · 반경 ${rr} · ${esc(today)}</span><em>내부용</em></div></section>`;
   const fl = x => esc(x.f ? (/^\d+$/.test(x.f) ? x.f + '층' : x.f) : '-');
   $('rp-body').innerHTML = `<div class="rp-doc">
   <section class="rp-page rp-cover">
     <div class="rp-cv-hero"><img class="bg" src="report-cover.jpg" alt=""><i class="ov"></i>
-      <div class="rp-cv-top"><img class="lg-l" src="report-logo-light.png" alt="멘야마씌리"><img class="lg-d" src="report-logo-dark.png" alt="멘야마씌리"><span>내부용 · ${esc(today)}</span></div>
+      <div class="rp-cv-top"><img class="lg-l" src="report-logo-light.png" alt="멘야마쯔리"><img class="lg-d" src="report-logo-dark.png" alt="멘야마쯔리"><span>내부용 · ${esc(today)}</span></div>
       <div class="rp-cv-ttl"><small>MENYAMATSURI · STORE LOCATION REPORT</small><h1>상권 분석 보고서</h1>
         <p class="rp-cv-addr">${esc(title)}</p><p class="rp-cv-sub">${esc([c.sido, c.sgg, c.dong].filter(Boolean).join(' '))} · 반경 ${rr}</p></div>
     </div>
