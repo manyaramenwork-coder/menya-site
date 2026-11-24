@@ -1,4 +1,3 @@
-
 // v5.2: 트렌드 분석 — 상권 탭 (공공데이터 상가정보 + 네이버 지도 + 기준 업종 선택)
 // 조회: Edge Function sbiz-radius (실시간) / 기록: area_daily(수집일)·area_shops(업소별 처음·마지막 본 날) — 매일 새벽 3시 sbiz-collect
 // 디자인 분업 규칙: id 와 js- 로 시작하는 class 는 기능용(건드리지 말 것), tr- 로 시작하는 class 는 꾸밈용
@@ -122,7 +121,7 @@
     AR.map = null; AR.marks = []; AR.circle = null;
     trTabOrig(tab);
     const b = document.querySelectorAll('#tr-tabs button')[1];
-    if (b) b.innerHTML = '상권';
+    if (b) b.innerHTML = '주변 경쟁점';
     if (tab === 'area') { AR.cat = { m: RAMEN, s: '', q: '' }; areaPage(); }
   };
 
@@ -269,7 +268,7 @@
     const out = document.getElementById('ar-out'); if (!out || !AR.sel) return;
     if (AR.chart) { AR.chart.destroy(); AR.chart = null; }
     const s = AR.sel;
-    out.innerHTML = `<div class="card"><div class="tr-loading">상권 정보를 가져오는 중이에요...</div></div>`;
+    out.innerHTML = `<div class="card"><div class="tr-loading">주변 업소 정보를 가져오는 중이에요...</div></div>`;
     try {
       const [live, hist] = await Promise.all([
         callRadius(s.lat, s.lng, AR.radius),
