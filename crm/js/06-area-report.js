@@ -241,6 +241,43 @@ function rpRegion(c){
     <p class="rp-note" style="margin-top:8px">사업체 ${nf(tot)}곳 · 종사자 ${nf(totW)}명. 종사자가 많은 산업(제조업·보건·교육 등)이 크면 점심·퇴근 수요가 받쳐 줘요.</p></div>` : `<div class="rp-card" style="margin-top:12px"><h3>${nm} 산업구조</h3><p class="muted" style="margin:6px 0 0">사업체 자료를 불러오지 못했어요.</p></div>`;
   return popCard + migCard + indCard;
 }
+/* 진입 기회 × 생존율 매트릭스
+   생존율: 인허가 2023-11-19 이후 개업 코호트, 1년·2년 뒤 영업 중 비율(area-pop lic.surv — 반경 3km · 전국)
+   공급: 소상공인 상가정보 음식 중분류 비중(반경) − 시군구 비중 */
+const SV_MCLS = { '한식': '한식', '중식': '중식', '일식': '일식', '서양식': '양식', '동남아시아': '외국음식', '기타 외국': '외국음식', '기타 간이': '분식·간편식', '주점': '주점', '비알코올': '카페·디저트' };
+function rpSurvRows(d){
+  const S = RP.pop && RP.pop.lic && RP.pop.lic.surv; if (!S) return null;
+  const nat = Object.fromEntries((S.nat || []).map(x => [x.g, x]));
+  const sup = {};
+  (d.food.mcls || []).forEach(m => { const g = SV_MCLS[String(m.nm).trim()]; if (!g) return;
+    const o = (sup[g] ||= { n: 0, sgg: 0 }); o.n += m.n; o.sgg += m.sgg || 0; });
+  const rate = (k, n) => n ? k / n * 100 : null;
+  return (S.local || []).filter(l => nat[l.g]).map(l => {
+    const N = nat[l.g], h = l.n2 >= 20 ? 2 : 1;
+    const loc = h === 2 ? rate(l.k2, l.n2) : rate(l.k1, l.n1), na = h === 2 ? rate(N.k2, N.n2) : rate(N.k1, N.n1);
+    const s = sup[l.g], gap = s && d.food.n && d.sggFood ? pct(s.n, d.food.n) - pct(s.sgg, d.sggFood) : null;
+    const few = (h === 2 ? l.n2 : l.n1) < 20;
+    const hi = loc != null && na != null ? loc >= na : null, lack = gap != null ? gap < 0 : null;
+    const q = hi == null || lack == null || few ? null : lack && hi ? 'best' : !lack && hi ? 'stable' : lack && !hi ? 'risk' : 'avoid';
+    return { g: l.g, opens: l.opens, l1: rate(l.k1, l.n1), n1: l.n1, l2: rate(l.k2, l.n2), n2: l.n2, a1: rate(N.k1, N.n1), a2: rate(N.k2, N.n2), h, loc, na, gap, few, q };
+  });
+}
+const SV_Q = { best: ['◎ 최적 진입', '공급 부족 + 생존율 높음', '#2f6f4e'], stable: ['○ 안정·경쟁', '공급 충분 + 생존율 높음', '#2a78d6'], risk: ['△ 기회·위험', '공급 부족 + 생존율 낮음', '#d08a1e'], avoid: ['× 주의', '공급 충분 + 생존율 낮음', '#a8431a'] };
+function rpSurv(d){
+  const rows = rpSurvRows(d);
+  if (!rows) return `<div class="rp-card"><p class="muted" style="margin:0">${RP.popErr ? '생존율 자료를 불러오지 못했어요.' : '생존율 자료를 불러오는 중이에요…'}</p></div>`;
+  if (!rows.length) return '<div class="rp-card"><p class="muted" style="margin:0">반경 3km 안에 2023년 11월 이후 개업한 음식점이 없어 생존율을 계산할 수 없어요.</p></div>';
+  const sv = (v, n) => v == null ? '<span class="muted">-</span>' : `${v.toFixed(1)}%${n != null && n < 20 ? ' <small class="muted">(표본 ' + n + ')</small>' : ''}`;
+  const tag = r => r.q ? `<span class="rp-tag" style="border-color:${SV_Q[r.q][2]};color:${SV_Q[r.q][2]}">${SV_Q[r.q][0]}</span>` : '<span class="muted" style="font-size:11px">판단 보류</span>';
+  const box = q => { const xs = rows.filter(r => r.q === q); return `<div style="border:1px solid #e3e5df;border-top:3px solid ${SV_Q[q][2]};border-radius:8px;padding:10px 12px;min-height:74px"><b style="color:${SV_Q[q][2]}">${SV_Q[q][0]}</b><div class="muted" style="font-size:11px;margin:2px 0 6px">${SV_Q[q][1]}</div>${xs.length ? xs.map(r => `<div style="font-size:13px${r.g === '일식' ? ';font-weight:700' : ''}">${esc(r.g)} <span class="muted" style="font-size:11px">${r.loc.toFixed(0)}%</span></div>`).join('') : '<div class="muted" style="font-size:12px">해당 없음</div>'}</div>`; };
+  return `<div class="rp-card"><h3>업종별 생존율 — 반경 3km vs 전국</h3><p class="src">행정안전부 인허가(일반·휴게음식점) · 2023년 11월 이후 개업한 가게가 1년·2년 뒤에도 영업 중인 비율 · 공급은 반경 ${d.center.radius >= 1000 ? '1km' : d.center.radius + 'm'} 음식점 비중 − 시군구 비중</p>
+    <div class="tw"><table class="rp-tbl"><thead><tr><th>업종</th><th class="num">3km 개업</th><th class="num">1년 생존<br><small>3km / 전국</small></th><th class="num">2년 생존<br><small>3km / 전국</small></th><th>공급(반경 − 시군구)</th><th></th></tr></thead><tbody>
+    ${rows.map(r => `<tr${r.g === '일식' ? ' class="hl"' : ''}><td>${esc(r.g)}</td><td class="num">${nf(r.opens)}</td><td class="num">${sv(r.l1, r.n1)} <span class="muted">/ ${r.a1 != null ? r.a1.toFixed(1) + '%' : '-'}</span></td><td class="num">${sv(r.l2, r.n2)} <span class="muted">/ ${r.a2 != null ? r.a2.toFixed(1) + '%' : '-'}</span></td><td>${gapCell(r.gap)}</td><td>${tag(r)}</td></tr>`).join('')}
+    </tbody></table></div></div>
+    <div class="rp-card" style="margin-top:12px"><h3>진입 기회 × 생존율 매트릭스</h3><p class="src">공급 부족 = 반경 음식점 중 그 업종 비중이 시군구보다 낮음 · 생존율 높음 = 3km 생존율이 전국 같은 업종 이상(2년 표본이 20곳 미만이면 1년 기준) · 표본 20곳 미만은 판단 보류</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">${box('best')}${box('stable')}${box('risk')}${box('avoid')}</div>
+    <p class="rp-note" style="margin-top:8px">생존율은 2023년 11월부터 쌓인 인허가 자료라 아직 2년까지만 볼 수 있어요. 폐업 신고가 늦게 들어오는 경우가 있어 실제보다 조금 높게 나올 수 있어요.</p></div>`;
+}
 function rpShow(report){
   $('rp-body').hidden = !report; $('rp-map').hidden = report;
   $('rp-back').hidden = !report; $('rp-print').hidden = !report; $('rp-fresh').hidden = !report;
@@ -321,6 +358,8 @@ function rpSummary(d){
   if (K && K.r != null) out.push(`인구 천 명당 음식점 <b>${k1(K.r)}곳</b>(${esc((p.sgg || {}).name || '시군구')} ${k1(K.s)}곳)${K.s ? ` — 시군구 평균의 <b>${(K.r / K.s).toFixed(1)}배</b>` : ''}.`);
   const tr = p && p.region && p.region.trend || [], tl = tr[tr.length - 1], t5 = tl && tr.find(x => x.y === tl.y - 5);
   if (tl && t5) { const g = chg(t5.pop, tl.pop); out.push(`${esc((p.sgg || {}).name || '시군구')} 인구는 5년 전보다 <b>${pfs(g)}</b>(${nf(t5.pop)} → ${nf(tl.pop)}명)${RP.mig && (RP.mig.years || []).length ? `, 최근 순이동 ${(() => { const y = RP.mig.years.filter(x => !(x.months && x.months < 12)).slice(-1)[0]; return y ? `${y.y}년 <b>${y.net > 0 ? '+' : ''}${nf(y.net)}명</b>` : '-'; })()}` : ''}.`); }
+  const SR = rpSurvRows(d), jp = SR && SR.find(r => r.g === '일식');
+  if (jp && jp.loc != null) out.push(`일식 ${jp.h}년 생존율(반경 3km) <b>${jp.loc.toFixed(1)}%</b> — 전국 ${jp.na != null ? jp.na.toFixed(1) + '%' : '-'}${jp.q ? `, 판정 <b>${SV_Q[jp.q][0]}</b>` : jp.few ? ' (표본 적음)' : ''}.`);
   const L = p && p.lic;
   if (L && L.progress >= 100) { const y = new Date().getFullYear() - 1, r = (L.by_year || []).find(x => x.y === y) || {}; out.push(`작년(${y}) 반경 안 음식점 개업 <b>${nf(r.opens || 0)}곳</b>, 폐업 <b>${nf(r.closes || 0)}곳</b>(개인 매장 포함).`); }
   else { const y = new Date().getFullYear() - 1, r = ((d.db || {}).fr_by_year || []).find(x => x.y === y) || {}; out.push(`작년(${y}) 프랜차이즈 개업 <b>${nf(r.opens || 0)}곳</b>, 폐업 <b>${nf(r.closes || 0)}곳</b>(개인 매장은 수집 중).`); }
@@ -355,7 +394,7 @@ function rpRender(d){
     </div>
     <div class="rp-sum"><h3>핵심 정리</h3><ul>${rpSummary(d).map(x => `<li>${x}</li>`).join('')}</ul>
       <p class="rp-note">종합 점수·등급은 넣지 않았어요. 아래 지표를 보고 판단해 주세요.</p></div>
-    <div class="rp-toc"><b>목차</b><ol><li>배후 인구</li><li>지역 흐름</li><li>우리 메뉴 경쟁점</li><li>음식점 개업·폐업</li><li>업종 구성</li><li>매출 참고</li><li>주변 음식점 목록 · 자료 출처</li></ol></div>
+    <div class="rp-toc"><b>목차</b><ol><li>배후 인구</li><li>지역 흐름</li><li>우리 메뉴 경쟁점</li><li>음식점 개업·폐업</li><li>업종 구성</li><li>매출 참고</li><li>진입 판단 — 업종별 생존율</li><li>주변 음식점 목록 · 자료 출처</li></ol></div>
     <p class="rp-cv-foot"><img src="report-logo-dark.png" alt="">자료 기준 ${esc(when)} · 통계청 SGIS · 소상공인시장진흥공단 · 행정안전부 · 공정거래위원회 · 내부용</p>
     </div>
   </section>
@@ -377,11 +416,12 @@ function rpRender(d){
     <div class="tw"><table class="rp-tbl"><thead><tr><th>업종</th><th class="num">브랜드 수</th><th class="num">중앙값</th><th class="num">평균</th></tr></thead><tbody>
     ${ftc.map(x => `<tr${/일식/.test(x.ind) ? ' class="hl"' : ''}><td>${esc(x.ind)}</td><td class="num">${nf(x.n)}</td><td class="num">${manwon(x.med)}</td><td class="num">${manwon(x.avg)}</td></tr>`).join('')}
     </tbody></table></div><p class="rp-note" style="margin-top:8px">이 상권의 실제 카드 매출·유동인구는 소상공인365 <b>상세분석</b> 탭에서 같은 주소로 확인해 주세요.</p></div>`)}
-  ${pg(7, '주변 음식점 목록 · 자료 출처', `<div class="rp-card"><h3>가까운 음식점 ${Math.min(st.length, 30)}곳</h3><p class="src">상담 위치에서 가까운 순 · 반경 안 음식점 ${nf(f.n)}곳 중</p>
+  ${pg(7, '진입 판단 — 업종별 생존율', rpSurv(d))}
+  ${pg(8, '주변 음식점 목록 · 자료 출처', `<div class="rp-card"><h3>가까운 음식점 ${Math.min(st.length, 30)}곳</h3><p class="src">상담 위치에서 가까운 순 · 반경 안 음식점 ${nf(f.n)}곳 중</p>
     <div class="tw"><table class="rp-tbl"><thead><tr><th>상호</th><th>업종</th><th>세부</th><th>층</th><th class="num">거리</th></tr></thead><tbody>
     ${st.slice(0, 30).map(x => `<tr${OURS(x) ? ' class="hl"' : ''}><td>${esc(x.n)}${x.b ? ' ' + esc(x.b) : ''}</td><td>${esc(catNm(x.m))}</td><td>${esc(x.s || '')}</td><td>${fl(x)}</td><td class="num">${nf(x.d)}m</td></tr>`).join('')}
     </tbody></table></div></div>
-    <div class="rp-card" style="margin-top:12px"><p class="rp-note"><b>자료와 한계</b><br>· 인구·가구·종사자: 통계청 SGIS 인구총조사(집계구 단위, 1년 이상 늦게 반영). 인구가 아주 적은 집계구는 숫자가 가려져요.<br>· 지역 흐름: 시군구 인구 추이(SGIS 인구총조사), 전입·전출(통계청 국내인구이동통계, KOSIS), 산업구조(통계청 전국사업체조사).<br>· 상가 수·업종: 소상공인시장진흥공단 상가(상권)정보(분기 갱신, 폐업 반영이 늦을 수 있음).<br>· 개업·폐업: 행정안전부 인허가(일반·휴게음식점).<br>· 평균매출: 공정거래위원회 정보공개서(브랜드 전국 평균, 이 상권 실적 아님).<br>· 리뷰: 네이버 플레이스(영업관리 DB 매장만).<br>· 유동인구·카드 매출은 공개 자료가 없어 소상공인365 상세분석을 참고해 주세요.</p></div>`)}
+    <div class="rp-card" style="margin-top:12px"><p class="rp-note"><b>자료와 한계</b><br>· 인구·가구·종사자: 통계청 SGIS 인구총조사(집계구 단위, 1년 이상 늦게 반영). 인구가 아주 적은 집계구는 숫자가 가려져요.<br>· 지역 흐름: 시군구 인구 추이(SGIS 인구총조사), 전입·전출(통계청 국내인구이동통계, KOSIS), 산업구조(통계청 전국사업체조사).<br>· 상가 수·업종: 소상공인시장진흥공단 상가(상권)정보(분기 갱신, 폐업 반영이 늦을 수 있음).<br>· 개업·폐업·생존율: 행정안전부 인허가(일반·휴게음식점). 생존율은 2023년 11월 이후 개업분 기준.<br>· 평균매출: 공정거래위원회 정보공개서(브랜드 전국 평균, 이 상권 실적 아님).<br>· 리뷰: 네이버 플레이스(영업관리 DB 매장만).<br>· 유동인구·카드 매출은 공개 자료가 없어 소상공인365 상세분석을 참고해 주세요.</p></div>`)}
   </div>`;
 }
 $('ar-tabs').addEventListener('click', e => {
