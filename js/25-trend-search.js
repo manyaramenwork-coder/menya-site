@@ -1,4 +1,3 @@
-
 // v5.0: 트렌드 분석 — 검색 트렌드(네이버 데이터랩, Edge Function naver-trend) · 상권 · 원가(준비 중)
 // 디자인 분업 규칙: id 와 js- 로 시작하는 class 는 기능용(건드리지 말 것), tr- 로 시작하는 class 는 꾸밈용
 PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
@@ -62,8 +61,8 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
     return chartLoading;
   }
 
-  /* ---------- 메뉴: 분석 시스템 (트렌드 분석 · 상권 분석 · 식자재 분석) ---------- */
-  const AN_ITEMS = [['trend', '트렌드 분석'], ['area', '상권 분석'], ['cost', '식자재 분석']];
+  /* ---------- 메뉴: 분석 시스템 (트렌드 분석 · 주변 경쟁점 · 식자재 분석) ---------- */
+  const AN_ITEMS = [['trend', '트렌드 분석'], ['area', '주변 경쟁점'], ['cost', '식자재 분석']];
   const AN_TAB = { trend: 'search', area: 'area', cost: 'cost' };
   const renderSideTr = renderSide;
   renderSide = function(active){
@@ -90,7 +89,7 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
   /* ---------- 화면 뼈대 ---------- */
   function pageTrend(tab){
     tab = tab || 'search';
-    const PG = { search: { t: '트렌드 분석', e: 'TREND · NAVER SEARCH', p: '네이버 검색 관심도로 메뉴·브랜드 흐름을 확인하세요.' }, area: { t: '상권 분석', e: 'AREA · COMPETITION', p: '매장 주변 경쟁점과 업종 변화를 지도로 확인하세요.' }, cost: { t: '식자재 분석', e: 'COST · MARKET PRICE', p: '주요 식자재 시세 흐름을 확인하세요.' } }[tab] || {};
+    const PG = { search: { t: '트렌드 분석', e: 'TREND · NAVER SEARCH', p: '네이버 검색 관심도로 메뉴·브랜드 흐름을 확인하세요.' }, area: { t: '주변 경쟁점', e: 'NEARBY · COMPETITION', p: '매장 주변 경쟁점과 업종 변화를 지도로 확인하세요.' }, cost: { t: '식자재 분석', e: 'COST · MARKET PRICE', p: '주요 식자재 시세 흐름을 확인하세요.' } }[tab] || {};
     document.getElementById('main').innerHTML = `
     <div class="crumb">${ic('home')}<span>워크스페이스</span><span>/</span><span>분석 시스템</span><span>/</span><span>${PG.t}</span></div>
     <header class="page-hero compact"><div class="hero-copy"><div class="eyebrow">${PG.e}</div><h1>${PG.t}</h1><p>${PG.p}</p></div><div class="hero-image"><span>MENYAMATSURI</span></div></header>
@@ -106,7 +105,7 @@ PATHS.trend = 'M3 17l6-6 4 4 8-8 M14 7h7v7';
     const body = document.getElementById('tr-body');
     if (tab === 'area') {
       body.innerHTML = `
-      <section class="card"><div class="section-title"><strong>${ic('store')}상권 트렌드</strong></div>
+      <section class="card"><div class="section-title"><strong>${ic('store')}주변 경쟁점 추이</strong></div>
         <div class="tr-slot" id="tr-area-sum">요약 카드 자리 — 매장 반경 500m 안 일식·면 업소 수, 직전 대비 증감</div>
         <div class="tr-slot" id="tr-area-chart">그래프 자리 — 최근 4분기(또는 1년) 반경 500m 업소 수 추이<br><small>상권정보는 현재 영업 업소만 주기 때문에, 수집을 시작한 날부터 쌓여야 채워져요.</small></div>
         <div class="tr-slot" id="tr-area-list">목록 자리 — 신규 개업 · 폐업 업소</div>
