@@ -321,3 +321,14 @@
 }
 /* 로그인 전에는 상단바에 로고만 */
 body:not(.in-app) .top-title,body:not(.in-app) .top-search,body:not(.in-app) .top-ic,body:not(.in-app) .me-menu{display:none!important}
+/* 상권 리포트 보고서(#rp-body)는 원래 보고서 모양 그대로 — 테마의 카드 아이콘·둥근 모서리·색 변수 적용 안 함 */
+@media screen{
+  #rp-body{--bg:#f6f7f3;--ink:#232621;--sub:#6b6f68;--line:#e3e5de;--blue:#1f4e8c;--blue-soft:#e6eef8;--radius:14px}
+  #rp-body .stat{padding:12px 14px;min-height:0;border-radius:12px;box-shadow:none}
+  #rp-body .rp-cover .rp-kpi .stat{padding:10px 12px}
+  #rp-body .stat::before{content:none;display:none}
+  #rp-body .stat.alert b{color:var(--brand)}
+  #rp-body .rp-card,#rp-body .box,#rp-body .tbl-wrap,#rp-body .item,#rp-body .card{border-radius:12px;box-shadow:none}
+  #rp-body th{background:#fafbf8;color:var(--sub)}
+  #rp-body tbody tr:hover td{background:none}
+}
