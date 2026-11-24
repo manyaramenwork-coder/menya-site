@@ -27,8 +27,31 @@ const TITLES = { home: '홈 대시보드', area: '상권분석', ftc: '정보공
 const GROUP_IC = { '영업기획': 'plan', '매장 찾기': 'store', '리드 관리': 'users' };
 let navOpen = {}; try { navOpen = JSON.parse(localStorage.getItem('crm-nav') || '{}') || {}; } catch (e) {}
 
-/* 주소창에 화면 지정이 없으면 홈부터 */
-if (!location.hash || location.hash === '#') history.replaceState(null, '', '#home');
+/* 시작 화면 = 상권분석. 주소에 화면이 없거나(#map 같은 옛 주소 포함) 전체 매장 DB면 상권분석부터 */
+const START_VIEW = 'area';
+{ const h0 = location.hash.slice(1); if (!VIEWS.includes(h0) || h0 === 'db') history.replaceState(null, '', '#' + START_VIEW); }
+
+/* lead_stats는 무거워서(5초 안팎) 30초 동안 같은 결과를 같이 씀 */
+let statsP = null;
+function getStats(){
+  if (!statsP) { statsP = rpc('lead_stats'); statsP.then(() => setTimeout(() => { statsP = null; }, 30000), () => { statsP = null; }); }
+  return statsP;
+}
+
+/* 첫 화면을 lead_stats 기다리지 않고 바로 띄움 — 요약 숫자·필터는 뒤에서 채움 */
+boot = async function(){
+  const { data } = await SB.auth.getSession();
+  if (!data.session) { show('login'); return; }
+  show('app');
+  try {
+    const { data: me } = await SB.from('profiles').select('name, role').eq('id', data.session.user.id).maybeSingle();
+    $('me').textContent = me && me.name ? me.name : '';
+    state.admin = !!(me && me.role === 'admin');
+  } catch (e) {}
+  go(location.hash.slice(1) || START_VIEW);
+  getStats().then(s => { applyStats(s); fillFilters(s); if (state.view === 'home') { HM.stats = s; renderHome(); } })
+    .catch(e => { if (/권한/.test((e && e.message) || '')) show('noperm'); else toast(errMsg(e), true); });
+};
 
 /* ---------- 사이드 메뉴 ---------- */
 buildNav = function(){
@@ -110,9 +133,10 @@ async function loadHome(){
   const box = $('home-body');
   if (!HM.stats) box.innerHTML = '<div class="rp-empty muted">불러오는 중이에요…</div>';
   try {
-    const [s, l] = await Promise.all([rpc('lead_stats'), HM.cats ? Promise.resolve(null) : rpc('lead_list', { p: { limit: 1, offset: 0, sort: 'score' } }).catch(() => null)]);
+    const [s, l] = await Promise.all([getStats(), HM.cats ? Promise.resolve(null) : rpc('lead_list', { p: { limit: 1, offset: 0, sort: 'score' } }).catch(() => null)]);
     HM.stats = s; if (l && l.cats) HM.cats = l.cats;
     if (typeof setBadges === 'function') setBadges(s);
+    if (state.view !== 'home') return;
     renderHome();
   } catch (e) { box.innerHTML = `<div class="rp-empty muted">대시보드를 불러오지 못했어요.<br><small>${esc(errMsg(e))}</small></div>`; }
 }
