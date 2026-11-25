@@ -43,7 +43,7 @@
   const cl = x => x == null ? '' : x >= 0 ? 'dt-up' : 'dt-dn';
   const pctHtml = x => `<span class="${cl(x)}">${fp(x)}</span>`;
 
-  const DT = { store: 'sv', tab: 'goal', T: '', data: {}, dv: null, inp: {}, pick: [], edit: false, view: 'daily', curPpl: {} };
+  const DT = { store: 'sv', tab: 'goal', T: '', data: {}, dv: null, inp: {}, base: '', cmp: '', edit: false, view: 'daily', curPpl: {} };
 
   // ---------- 데이터 ----------
   const rpc = async (fn, args) => { const { data, error } = await window.SB.rpc(fn, args); if (error) throw error; return data; };
@@ -220,12 +220,29 @@
 
   function histHtml(M){
     const yms = Object.keys(M).sort(), cur = kst().slice(0, 7);
-    if (DT.pick.length < 2 || !M[DT.pick[0]] || !M[DT.pick[1]]) {
-      const done = yms.filter(k => k < cur && M[k].daily != null), b = done[done.length - 1] || yms[yms.length - 1];
-      DT.pick = [M[ymAdd(b, -12)] ? ymAdd(b, -12) : (done[done.length - 2] || b), b];
-    }
-    const [a, b] = DT.pick, A = M[a], Bm = M[b], g = pctOf(Bm.daily, A.daily);
-    const opt = sel => yms.filter(k => M[k].daily != null).slice().reverse().map(k => `<option value="${k}" ${k === sel ? 'selected' : ''}>${ymLab(k)}</option>`).join('');
+    const valid = yms.filter(k => M[k].daily != null);
+    if (!DT.base || !M[DT.base] || M[DT.base].daily == null) { const done = valid.filter(k => k < cur); DT.base = done[done.length - 1] || valid[valid.length - 1]; }
+    if (DT.cmp && (!M[DT.cmp] || M[DT.cmp].daily == null)) DT.cmp = '';
+    const b = DT.base, Bm = M[b], ly = ymAdd(b, -12), pm = ymAdd(b, -1);
+    const ys = k => `${k.slice(2, 4)}.${k.slice(5, 7)}`;
+    const opt = (sel, first) => (first ? `<option value="">${first}</option>` : '') + valid.slice().reverse().map(k => `<option value="${k}" ${k === sel ? 'selected' : ''}>${ymLab(k)}</option>`).join('');
+    const tile = (title, k, extra = '') => {
+      const o = M[k];
+      if (!o || o.daily == null) return `<div class="dt-cp na"><div class="h"><b>${title}</b><span>${ymLab(k)}</span>${extra}</div><div class="none">비교할 자료가 없어요</div></div>`;
+      const g = pctOf(Bm.daily, o.daily), gt = pctOf(Bm.total, o.total), dd = Bm.days - o.days;
+      return `<div class="dt-cp ${g >= 0 ? 'up' : 'dn'}"><div class="h"><b>${title}</b><span>${ymLab(k)}</span>${extra}</div>
+        <div class="big">${fp(g)}</div><div class="cap">일평균매출이 ${Math.abs(g * 100).toFixed(1)}% ${g >= 0 ? '신장' : '하락'}했어요</div>
+        <table><thead><tr><th></th><th>${ys(k)}</th><th>${ys(b)}</th><th>차이</th></tr></thead><tbody>
+        <tr><td>일평균</td><td>${won(o.daily)}</td><td>${won(Bm.daily)}</td><td>${pctHtml(g)}</td></tr>
+        <tr><td>월매출</td><td>${won(o.total)}</td><td>${won(Bm.total)}</td><td>${pctHtml(gt)}</td></tr>
+        <tr><td>영업일수</td><td>${o.days}일</td><td>${Bm.days}일</td><td>${dd > 0 ? '+' : ''}${dd}일</td></tr></tbody></table></div>`;
+    };
+    const pick = DT.cmp ? tile('직접 고른 달', DT.cmp, `<button class="x" onclick="dtCmp('')" aria-label="지우기">×</button>`)
+      : `<div class="dt-cp pickbox"><div class="h"><b>다른 달과 비교</b></div><div class="none"><select onchange="dtCmp(this.value)">${opt('', '달 고르기')}</select><small>필요할 때만 골라요</small></div></div>`;
+    const cmpHtml = `<div class="card"><div class="dt-ct"><h3>신장률 비교</h3>
+        <div class="dt-month"><button onclick="dtBaseMove(-1)" aria-label="이전 달">‹</button><span>기준 월 <select onchange="dtBase(this.value)">${opt(b)}</select></span><button onclick="dtBaseMove(1)" aria-label="다음 달">›</button></div></div>
+      <div class="dt-basebar"><b>${ymLab(b)}</b>${Bm.src === 'auto' && b === cur ? '<em>진행 중</em>' : ''}<span>일평균 <b>${won(Bm.daily)}원</b></span><span>월매출 <b>${won(Bm.total)}원</b></span><span>영업일수 <b>${Bm.days}일</b></span></div>
+      <div class="dt-cps">${tile('작년 동월', ly)}${tile('전월', pm)}${pick}</div></div>`;
     const y0 = +yms[0].slice(0, 4), y1 = Math.max(+yms[yms.length - 1].slice(0, 4), +cur.slice(0, 4));
     const can = !!(DT.data[STORES.find(s => s[0] === DT.store)[3]] || {}).can_edit;
     const v = DT.view;
@@ -243,7 +260,7 @@
             if (o.days) { s += o.total; n += o.days; }
           }
           if (o.src === 'auto' && k === cur) txt += '<small>진행 중</small>';
-          if (k === a || k === b) cls.push('sel');
+          if (k === b) cls.push('sel'); else if (k === ly || k === pm || k === DT.cmp) cls.push('ref');
         } else cls.push('na');
         cells += `<td class="${cls.join(' ')}" onclick="dtCell('${k}')">${txt}</td>`;
       }
@@ -251,13 +268,8 @@
       trs += `<tr><td><b>${y}</b></td>${cells}<td class="tot"><b>${v === 'days' ? yt : won(yt)}</b></td></tr>`;
     }
     const hint = DT.edit ? (v === 'days' ? '칸을 누르면 영업일수를 고쳐요 (자동 집계 달은 비우면 자동으로 돌아가요)' : v === 'total' ? '대표님 기입 달은 월매출을 고칠 수 있어요 (자동 집계 달은 매출 자료에서 계산)' : '고치려면 월매출 · 영업일수 보기로 바꿔 주세요')
-      : '칸을 차례로 누르면 비교 기준 → 비교 대상으로 골라져요';
-    return `<div class="card"><div class="dt-ct"><h3>신장률 비교</h3><span class="dt-tag">일평균매출 기준</span></div>
-      <div class="dt-vs"><div class="pick"><small>비교 기준</small><select onchange="dtPick(0,this.value)">${opt(a)}</select><em>일평균 ${won(A.daily)}원 · ${A.days}일</em></div><div class="arr">→</div>
-      <div class="pick"><small>비교 대상</small><select onchange="dtPick(1,this.value)">${opt(b)}</select><em>일평균 ${won(Bm.daily)}원 · ${Bm.days}일</em></div>
-      <div class="out ${g != null && g >= 0 ? 'up' : ''}"><b>${fp(g)}</b>${g == null ? '비교할 수 없어요' : `${ymLab(a)} → ${ymLab(b)} 일평균매출이 ${Math.abs(g * 100).toFixed(1)}% ${g >= 0 ? '신장' : '하락'}했어요`}</div></div>
-      <div class="dt-quick">빠른 선택: <button class="dmb sm" onclick="dtQuick('ly')">전년 동월</button><button class="dmb sm" onclick="dtQuick('pm')">전월</button>
-        <span>월매출로 보면 ${pctHtml(pctOf(Bm.total, A.total))}</span></div></div>
+      : '칸을 누르면 그 달이 기준 월이 돼요 · 빨간 칸 = 기준 월, 점선 칸 = 비교하는 달';
+    return cmpHtml + `
     <div class="card"><div class="dt-ct"><h3>월별 실적 · ${v === 'days' ? '영업일수' : v === 'total' ? '월매출' : '일평균매출'}</h3>
       <div class="dt-ctr">${can ? `<button class="dmb sm ${DT.edit ? 'pri' : ''}" onclick="dtEdit()">${DT.edit ? '고치기 끝' : '고치기'}</button>` : ''}${seg([['daily', '일평균'], ['total', '월매출'], ['days', '영업일수']], v, 'dtView')}</div></div>
       <div class="tbl-wrap"><table class="dt-t dt-mt ${DT.edit ? 'editing' : ''}"><thead><tr><th>연도</th>${[...Array(12)].map((_, i) => `<th>${i + 1}월</th>`).join('')}<th>${v === 'daily' ? '연 평균' : '연 합계'}</th></tr></thead><tbody>${trs}</tbody></table></div>
@@ -267,7 +279,7 @@
 
   // ---------- 동작 ----------
   const redraw = () => { bar(); body(); };
-  window.dtStore = k => { if (k === DT.store) return; DT.store = k; DT.pick = []; page(); };
+  window.dtStore = k => { if (k === DT.store) return; DT.store = k; DT.base = ''; DT.cmp = ''; page(); };
   window.dtTab = k => { DT.tab = k; redraw(); };
   window.dtMonth = k => { DT.T = ymAdd(DT.T, k); redraw(); };
   window.dtRound = k => { RM = k; try { localStorage.setItem('dt-round', k); } catch (e) {} redraw(); };
@@ -294,16 +306,14 @@
   };
   window.dtView = k => { DT.view = k; body(); };
   window.dtEdit = () => { DT.edit = !DT.edit; body(); };
-  window.dtPick = (i, k) => { DT.pick[i] = k; body(); };
-  window.dtQuick = k => { const b = DT.pick[1]; DT.pick[0] = ymAdd(b, k === 'ly' ? -12 : -1); if (!months()[DT.pick[0]]) toast('비교할 달 자료가 없어요.'); body(); };
+  window.dtBase = k => { if (k) { DT.base = k; body(); } };
+  window.dtBaseMove = k => { const M = months(), v = Object.keys(M).filter(x => M[x].daily != null).sort(), i = v.indexOf(DT.base) + k; if (i >= 0 && i < v.length) { DT.base = v[i]; body(); } };
+  window.dtCmp = k => { DT.cmp = k || ''; body(); };
   window.dtCell = async k => {
     const M = months(), o = M[k];
     if (!DT.edit) {
       if (!o || o.daily == null) return;
-      DT.pickNext = DT.pickNext ? 0 : 1;
-      if (DT.pickNext) DT.pick = [k, DT.pick[1]]; else DT.pick = [DT.pick[0], k];
-      if (DT.pick[0] > DT.pick[1]) DT.pick.reverse();
-      body(); return;
+      DT.base = k; body(); return;
     }
     const sid = STORES.find(s => s[0] === DT.store)[3], v = DT.view;
     try {
@@ -371,14 +381,24 @@
   .dt-lg span:before{content:'';display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px;background:#fff;border:1px solid #dfe3da}
   .dt-lg .a:before{background:#f3f9f4;border-color:#cfe6d5}.dt-lg span:last-child:before{display:none}
   .dt-hint{font-size:11px;color:var(--sub);margin-top:6px}
-  .dt-vs{display:grid;grid-template-columns:1fr 32px 1fr 1.3fr;gap:12px;align-items:center}
-  .dt-vs .pick{border:1px solid #dfe3da;border-radius:9px;padding:9px 14px;background:#fff}
-  .dt-vs .pick small{display:block;font-size:10.5px;color:var(--sub)}.dt-vs .pick select{border:0;background:transparent;font-weight:700;font-size:15px;padding:2px 0;outline:none;max-width:100%}
-  .dt-vs .pick em{display:block;font-style:normal;font-size:12px;color:#4d5547;margin-top:2px}
-  .dt-vs .arr{text-align:center;color:var(--sub);font-size:18px}
-  .dt-vs .out{border-radius:10px;padding:13px 16px;background:#eef3fb;color:#24427e;font-size:12.5px;line-height:1.6}.dt-vs .out.up{background:#fdeeee;color:#8a1d20}.dt-vs .out b{font-size:20px;display:block}
+  .dt-month select{border:0;background:transparent;font-weight:700;font-size:12.5px;outline:none;margin-left:4px}
+  .dt-basebar{display:flex;flex-wrap:wrap;align-items:center;gap:6px 18px;background:#f6f7f2;border-radius:9px;padding:11px 16px;margin-bottom:14px;font-size:12px;color:var(--sub)}
+  .dt-basebar>b{font-size:14px;color:var(--ink)}.dt-basebar span b{color:var(--ink);margin-left:3px;font-variant-numeric:tabular-nums}.dt-basebar em{font-style:normal;font-size:10.5px;background:#fff3cd;color:#8a6d00;border-radius:4px;padding:1px 6px}
+  .dt-cps{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  .dt-cp{border:1px solid var(--line);border-radius:11px;padding:14px 16px;background:#fff}
+  .dt-cp.up{background:#fffafa;border-color:#f3d6d6}.dt-cp.dn{background:#f8faff;border-color:#d7e1f4}
+  .dt-cp .h{display:flex;align-items:center;gap:8px;font-size:12px}.dt-cp .h span{color:var(--sub);font-size:11.5px}
+  .dt-cp .h .x{margin-left:auto;border:0;background:transparent;font-size:16px;color:var(--sub);cursor:pointer;line-height:1}
+  .dt-cp .big{font-size:24px;font-weight:800;letter-spacing:-.8px;margin:8px 0 0}.dt-cp.up .big{color:#c62429}.dt-cp.dn .big{color:#2f62c9}
+  .dt-cp .cap{font-size:11.5px;color:#4d5547;margin:2px 0 10px}
+  .dt-cp table{width:100%;border-collapse:collapse;font-size:11.5px;font-variant-numeric:tabular-nums}
+  .dt-cp th{font-weight:600;color:var(--sub);text-align:right;padding:4px 0;font-size:10.5px}.dt-cp td{text-align:right;padding:5px 0;border-top:1px solid #f0f1ec}
+  .dt-cp th:first-child,.dt-cp td:first-child{text-align:left;color:var(--sub)}
+  .dt-cp .none{color:var(--sub);font-size:12px;padding:22px 0 10px;text-align:center}
+  .dt-cp.pickbox{border-style:dashed;background:#fbfcf9}.dt-cp.pickbox select{border:1px solid #dfe3da;border-radius:8px;padding:8px 12px;background:#fff;font-weight:600;min-width:150px}.dt-cp.pickbox small{display:block;margin-top:8px;font-size:11px}
+  .dt-mt td.ref{outline:1.5px dashed #9aa58f;outline-offset:-3px}
   .dt-quick{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:11.5px;color:var(--sub);margin-top:12px}.dt-quick span{margin-left:8px}
-  @media(max-width:1100px){.dt-grid{grid-template-columns:repeat(2,1fr)}.dt-two{grid-template-columns:1fr}.dt-vs{grid-template-columns:1fr}.dt-vs .arr{display:none}.dt-rnd{margin-left:0}}
+  @media(max-width:1100px){.dt-cps{grid-template-columns:1fr}.dt-grid{grid-template-columns:repeat(2,1fr)}.dt-two{grid-template-columns:1fr}.dt-rnd{margin-left:0}}
   @media(max-width:600px){.dt-grid{grid-template-columns:1fr}.dt-fm{grid-template-columns:1fr}.dt-s2,.dt-s1,.dt-month{min-width:0;flex:1 1 100%}.dt-month{justify-content:space-between}}
   `;
   document.head.appendChild(css);
