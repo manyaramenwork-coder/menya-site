@@ -5,7 +5,7 @@ const TG_BANDS = ['20평 이하', '20평 초과', '미확인'];
 state.tg = { seg: '', band: '', hub: '', check: '', d: null, r: ['충청권', '충청북도', '청주시', ''], view: 'list', addHub: false };
 try { if (localStorage.getItem('crm-tg-view') === 'map') state.tg.view = 'map'; } catch (e) {}
 const TG_COL = { '분식·김밥': '#f08c00', '우동·소바': '#2a78d6', '덮밥': '#7a4fc9', '초밥·일식': '#1f9e89', '텐동': '#c9a100', '이자카야': '#8b5a2b', '기타 일식': '#8a8e86' };
-const TG_HUBC = { '대학가': '#7a4fc9', '오피스': '#2a78d6', '번화가': '#c62429' };
+const TG_HUBC = { '대학가': '#7a4fc9', '오피스': '#2a78d6', '번화가': '#c62429', '역세권': '#1f9e89' };
 document.head.insertAdjacentHTML('beforeend', `<style id="tg-css">
 #tg-map{height:max(480px,calc(100vh - 380px));border:1px solid var(--line,#e3e5df);border-radius:12px;overflow:hidden;margin-bottom:10px}
 .tgm{display:block;width:12px;height:12px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.25);cursor:pointer}
@@ -109,7 +109,7 @@ function tgRegions(regs){
   tgOpts('tg-r3', '시·군 전체', si ? m3 : new Map(), gu);
 }
 /* 대표님 보고용: 자료 출처·선정 기준·상권 기준·한계 (숫자는 지금 고른 지역 기준) */
-const tgGuess = h => /추정/.test(h.note || '');
+const tgGuess = h => /추정|확인 필요/.test(h.note || '');
 const tgDay = v => v ? String(v).slice(0, 10) : '-';
 function tgBasis(d){
   const m = d.meta || {}, b = d.bands || {}, all = Object.values(b).reduce((a, n) => a + n, 0), known = all - (b['미확인'] || 0);
@@ -126,8 +126,13 @@ function tgBasis(d){
     <li><b>체인</b>(기본으로 뺌): 같은 상호가 전국 3곳 이상이거나, 상호에 '○○점' 같은 지점명이 있거나, 직원이 체인으로 지정한 곳.</li>
     <li><b>평수</b>: 20평(66.1㎡)을 기준으로 이하·초과로 나눠요. 인허가 면적 ÷ 3.3058로 계산해요.</li></ul>
   <h4>3. 상권은 어떻게 봤나요</h4><ul>
-    <li><b>상권 기준점</b>(대학가·오피스·번화가)은 직원이 지도에 지정한 위치예요. 반경(예: 700m) 안 매장을 <b>직선거리</b>로 세요. 자동으로 판정한 상권이 아니에요.</li>
-    ${guess.length ? `<li class="warn">⚠ 표시된 기준점 ${guess.length}곳(${guess.map(h => esc(h.name)).join(', ')})은 처음에 넣은 <b>추정 좌표</b>예요. 지도에서 이름표를 누르고 '위치 옮기기'로 실제 위치(정문 등)를 찍어 주면 '확인됨'으로 바뀌어요.</li>` : '<li>기준점 위치는 모두 지도에서 확인한 위치예요.</li>'}
+    <li><b>상권 기준점</b>은 위치 하나와 반경이에요. 반경 안 매장을 <b>직선거리</b>로 세요. 기준점은 이렇게 만들었어요.
+      <br>· <b>대학가</b>(반경 700m): 전국 버스정류장 이름에 '○○대학교'가 들어간 정류장 위치. 정문·후문 정류장이 있으면 그곳, 없으면 주변 음식점이 가장 많은 정류장이에요.
+      <br>· <b>역세권</b>(반경 500m): 지하철역 위치(전국도시철도역사정보).
+      <br>· <b>번화가</b>(반경 400m): 시군구마다 반경 300m 안 음식점이 가장 많이 몰린 지점 최대 3곳.
+      <br>· <b>오피스</b>와 직원이 추가한 기준점: 직원이 지도에서 지정한 위치.
+      <br>칩에는 타겟이 3곳 이상인 기준점만, 많은 순으로 최대 25개까지 보여요.</li>
+    ${guess.length ? `<li class="warn">⚠ 표시된 기준점 ${guess.length}곳(${guess.slice(0, 8).map(h => esc(h.name)).join(', ')}${guess.length > 8 ? ' 등' : ''})은 자동으로 만들었거나 처음에 넣은 <b>추정 위치</b>예요. 지도에서 이름표를 누르고 '위치 옮기기'로 실제 위치(정문 등)를 찍어 주면 '확인됨'으로 바뀌어요.</li>` : '<li>기준점 위치는 모두 지도에서 확인한 위치예요.</li>'}
     <li><b>경쟁점 500m</b>: 매장마다 반경 500m 안 라멘·돈카츠 전문점 수예요. 매일 새벽 다시 계산해요 (마지막 ${tgDay(m.comp_at)}).</li></ul>
   <h4>4. 알아 둘 한계</h4><ul>
     <li>업종은 상호와 공공 분류로 <b>자동 판정</b>해서 일부 틀릴 수 있어요. 우편을 보내기 전에 N 플레이스로 한 번 확인하는 걸 권해요.</li>
