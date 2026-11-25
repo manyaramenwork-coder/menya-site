@@ -2,7 +2,7 @@
    area-report : 반경 상가(소상공인 상가정보)·시군구 비교·프랜차이즈 개폐업·공정위 평균매출·네이버 리뷰
    area-pop    : 주소 검색(SGIS) / 반경 인구·연령·가구·1인가구·종사자(SGIS 집계구) + 음식점 인허가 개업·폐업(개인 포함)
                  + 지역 흐름(시군구 인구 추이·산업구조) / { mig: 시군구코드 } 전입·전출(KOSIS)
-   종합 점수·등급은 아직 넣지 않음(우리 기준이 정해지면 추가) */
+   종합 점수·등급은 아직 넣지 않음(우리 기준이 정해지면 추가) · 상권 유형은 근거 개수로만 추정(rpType) */
 const RP = { place: null, r: 500, data: null, pop: null, popErr: '', mig: null, bld: null, busy: false, more: false, seq: 0 };
 try { const s = JSON.parse(localStorage.getItem('crm-rp') || 'null'); if (s && s.place) { RP.place = s.place; RP.r = s.r || 500; } } catch (e) {}
 const nf = n => (n == null || isNaN(n)) ? '-' : Number(n).toLocaleString();
@@ -344,6 +344,100 @@ function rpBld(d){
       </tbody></table></div></div></div>`;
   }).join('') + '<p class="rp-note" style="margin-top:8px">근린생활시설(1·2종)은 음식점·카페·학원 같은 동네 상가 건물이에요. 오래된 건물이 많으면 임대료가 낮은 대신 시설 보수가 필요할 수 있고, 최근 신축이 많으면 새 아파트·상가가 들어서는 성장 지역일 가능성이 높아요.</p>';
 }
+/* 상권 유형 판정(추정) — 이미 불러온 자료(인구·상가·교통·국민연금·건축물대장)를 시군구 평균과 견줘
+   유형별 근거가 몇 개 맞는지 셈. 자료가 없는 근거는 빼고 셈. 가장 많이 맞은 유형(절반 이상, 2개 이상)을 고름 */
+/* 상권 유형 화면 스타일 (이 기능 전용이라 여기서 넣음) */
+document.head.insertAdjacentHTML('beforeend', '<style id="rp-ty-css">.rp-ty-box{border:1px solid var(--line);border-radius:12px;padding:16px 20px;background:#f6f7f4}.rp-ty-box .nm{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}.rp-ty-box .nm>b{font-size:26px;letter-spacing:-.02em;line-height:1.25}.rp-ty-box .nm span{font-size:13px;color:var(--sub);display:inline-flex;align-items:center;gap:6px}.rp-ty-box p{margin:8px 0 0;font-size:14px;line-height:1.65}.rp-ty-dots{display:inline-flex;gap:3px}.rp-ty-dots i{width:8px;height:8px;border-radius:50%;background:#d6d8d2}.rp-ty-dots i.on{background:#1c211e}.rp-ty-hits{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}.rp-ty-hits span{font-size:12px;background:#fff;border:1px solid var(--line);border-radius:999px;padding:3px 10px}.rp-ty-comp{margin-top:12px}.rp-ty-comp .lb{display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px}.rp-ty-comp .lb span{color:var(--sub)}.rp-ty-comp .rp-ty-seg{display:flex;height:22px;border-radius:6px;overflow:hidden;background:#f0f1ec}.rp-ty-comp .rp-ty-seg i{display:flex;align-items:center;padding:0 8px;color:#fff;font-style:normal;font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden}.rp-ty-comp .rp-ty-seg.sm{height:8px;margin:6px 0 3px}.rp-ty-comp small{font-size:11.5px}.rp-ty-sum{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;margin-bottom:8px}.rp-cv-type{display:inline-flex;align-items:center;gap:8px;margin:12px 0 0 16px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.45);border-radius:999px;padding:4px 12px 4px 6px;font-size:13px}.rp-cv-type i{font-style:normal;font-size:11px;background:#fff;color:#1c211e;border-radius:999px;padding:1px 8px;font-weight:600}</style>');
+const TY = {
+  home:  { nm: '주거 상권', c: '#2f6f4e', bg: '#e8f4ec', desc: '아파트·주택 배후의 생활 상권이에요. 주민 고정 수요가 있어 매출이 꾸준한 편이고, 저녁·주말과 배달·포장 손님이 중심이에요. 평일 점심은 약할 수 있어요.' },
+  office:{ nm: '오피스 상권', c: '#2a78d6', bg: '#eaf2fc', desc: '사는 사람보다 일하는 사람이 많은 업무 상권이에요. 평일 점심 회전이 매출의 핵심이고, 주말·공휴일에는 손님이 크게 줄 수 있어요.' },
+  univ:  { nm: '대학가·청년 상권', c: '#7a4fc9', bg: '#f1ebfb', desc: '20대와 1인 가구가 많은 상권이에요. 가격에 민감하고 혼밥 손님이 많으며, 방학에는 매출이 줄 수 있어요.' },
+  night: { nm: '번화가·역세권 상권', c: '#c62429', bg: '#fbeceb', desc: '음식점·술집이 몰려 있어 밖에서 찾아오는 손님이 많은 상권이에요. 저녁·주말 수요가 크지만 임대료와 경쟁도 높은 편이에요.' },
+  ind:   { nm: '산업단지 상권', c: '#a06212', bg: '#fdf3e2', desc: '공장 근무자가 많은 상권이에요. 평일 점심과 퇴근 후 회식 수요가 크고, 주말은 약하며 구내식당과 경쟁해요.' },
+};
+function rpType(d){
+  const p = RP.pop, s = (p && p.sgg) || {}, T = p && p.transit, N = d.nps, B = (RP.bld && !RP.bld.err && (RP.bld.items || []).filter(x => x && x.n)) || [];
+  const ev = [];
+  const add = (ty, ok, label, v, ref) => { if (ok != null) ev.push({ ty, ok: !!ok, label, v, ref }); };   // ok == null → 자료 없음, 뺌
+  const lc = cd => { const r = (d.lcls || []).find(x => x.cd === cd); return r ? { a: pct(r.n, d.total), b: r.sgg != null && d.sggTotal ? pct(r.sgg, d.sggTotal) : null } : { a: 0, b: null }; };
+  const mc = re => { const r = (d.food.mcls || []).filter(x => re.test(x.nm)); const n = r.reduce((a, x) => a + x.n, 0), g = r.reduce((a, x) => a + (x.sgg || 0), 0); return { a: pct(n, d.food.n), b: d.sggFood && r.length && r.every(x => x.sgg != null) ? pct(g, d.sggFood) : null }; };
+  const pp = v => v == null ? '-' : v.toFixed(1) + '%', sg = v => '시군구 ' + pp(v);
+  if (p && p.pop) {
+    const tot = p.male.reduce((a, b) => a + b, 0) + p.female.reduce((a, b) => a + b, 0) || 1, sh = i => (p.male[i] + p.female[i]) / tot * 100;
+    const sa = s.age_share || [], kid = sh(0) + sh(1), kidS = sa.length ? sa[0] + sa[1] : null, y20 = sh(2), y20S = sa.length ? sa[2] : null;
+    const one = pct(p.one, p.households), oneS = pct(s.one, s.households);
+    const ws = p.workers / p.pop, wsS = s.pop ? s.workers / s.pop : null;
+    add('home', kidS == null ? null : kid >= kidS + 3, '0~19세 비중', pp(kid), sg(kidS) + ' +3%p 이상');
+    add('home', oneS == null ? null : one <= oneS, '1인 가구 비율', pp(one), sg(oneS) + ' 이하');
+    add('home', wsS == null ? null : ws <= wsS * 0.6, '종사자 ÷ 거주 인구', ws.toFixed(2) + '배', '시군구 ' + (wsS == null ? '-' : wsS.toFixed(2)) + '배의 60% 이하');
+    add('univ', y20S == null ? null : y20 >= y20S + 6, '20대 비중', pp(y20), sg(y20S) + ' +6%p 이상');
+    add('univ', oneS == null ? null : one >= oneS + 10, '1인 가구 비율', pp(one), sg(oneS) + ' +10%p 이상');
+    add('office', wsS == null ? null : ws >= Math.max(1, wsS * 1.5), '종사자 ÷ 거주 인구', ws.toFixed(2) + '배', '1배 이상 · 시군구의 1.5배 이상');
+  }
+  if (d.total) {
+    const e = lc('P1'), m = lc('M1'), f = lc('I2'), h = lc('I1'), pub = mc(/주점/);
+    add('home', e.b == null ? null : e.a >= e.b + 4, '상가 중 학원(교육) 비중', pp(e.a), sg(e.b) + ' +4%p 이상');
+    add('office', m.b == null ? null : m.a >= m.b + 3, '상가 중 사무실(과학·기술) 비중', pp(m.a), sg(m.b) + ' +3%p 이상');
+    add('night', f.b == null ? null : f.a >= f.b + 5, '상가 중 음식점 비중', pp(f.a), sg(f.b) + ' +5%p 이상');
+    add('night', pub.b == null ? null : pub.a >= pub.b + 3, '음식점 중 주점 비중', pp(pub.a), sg(pub.b) + ' +3%p 이상');
+    add('night', h.b == null ? null : h.a > h.b && h.a >= 1, '상가 중 숙박 비중', pp(h.a), sg(h.b) + ' 초과 · 1% 이상');
+    add('ind', pub.b == null ? null : pub.a >= pub.b + 3, '음식점 중 주점 비중(회식)', pp(pub.a), sg(pub.b) + ' +3%p 이상');
+  }
+  if (T) { const n0 = (T.rail_near || [])[0]; add('night', !!(n0 && n0.d <= 500), '가장 가까운 지하철역', n0 ? esc(n0.n) + '역 ' + nf(n0.d) + 'm' : '2km 안 없음', '500m 이내'); }
+  const K = p ? rpPerK(d) : null;
+  if (K && K.rw != null && K.sw) add('night', K.rw >= K.sw * 1.5, '거주+종사자 천 명당 음식점', k1(K.rw) + '곳', '시군구 ' + k1(K.sw) + '곳의 1.5배 이상');
+  if (N && N.ym && N.workers) {
+    const mf = (N.by_ind || []).filter(x => /제조업/.test(x.nm || '')).reduce((a, x) => a + x.workers, 0), mfp = pct(mf, N.workers);
+    add('ind', mfp >= 30, '직장인 중 제조업(국민연금)', pp(mfp), '30% 이상');
+    const uni = (N.top || []).find(x => /대학교|학교법인/.test(x.name || '') && x.workers >= 200);
+    add('univ', !!uni, '행정동 안 대학교(국민연금)', uni ? esc(uni.name) : '없음', '직원 200명 이상');
+    add('office', N.workers >= 10000 && mfp < 30, '행정동 사무직 직장인(국민연금)', nf(N.workers) + '명', '1만 명 이상 · 제조업 30% 미만');
+  }
+  if (B.length) {
+    const n = B.reduce((a, x) => a + x.n, 0), cnt = re => B.reduce((a, x) => a + (x.purps || []).filter(q => re.test(q.nm)).reduce((b, q) => b + q.n, 0), 0);
+    const hm = pct(cnt(/주택/), n), of = pct(cnt(/업무시설/), n), fc = pct(cnt(/공장|창고/), n), tl = pct(B.reduce((a, x) => a + (x.tall || 0), 0), n);
+    add('home', hm >= 50, '건물 중 주택 비중', pp(hm), '50% 이상');
+    add('office', of >= 8 || tl >= 15, '업무시설 · 10층 이상 건물 비중', pp(of) + ' · ' + pp(tl), '8% 또는 15% 이상');
+    add('ind', fc >= 20, '건물 중 공장·창고 비중', pp(fc), '20% 이상');
+  }
+  const rank = Object.keys(TY).map(k => { const e = ev.filter(x => x.ty === k), m = e.filter(x => x.ok).length; return { k, ...TY[k], m, n: e.length, r: e.length ? m / e.length : 0 }; })
+    .sort((a, b) => b.r - a.r || b.m - a.m);
+  const ok = x => x && x.m >= 2 && x.r >= 0.5;
+  const top = ok(rank[0]) ? rank[0] : null, sec = top && ok(rank[1]) ? rank[1] : null;
+  return { rank, top, sec, ev };
+}
+const tyName = R => R.top ? R.top.nm + (R.sec ? ' + ' + R.sec.nm.replace(' 상권', '') : '') : '혼합형 상권';
+const tyDots = x => `<span class="rp-ty-dots">${'<i class="on"></i>'.repeat(x.m)}${'<i></i>'.repeat(x.n - x.m)}</span>`;
+/* 1쪽 맨 위: 유형 + 설명 + 맞은 근거 + 거주·직장인 구성 */
+function rpTypeCard(d){
+  const H3 = '<h3>상권 유형 <span class="rp-tag">추정</span></h3>';
+  if (!RP.pop) return `<div class="rp-card">${H3}<p class="muted" style="margin:6px 0 0">${RP.popErr ? '인구 자료가 없어 판정할 수 없어요.' : '자료를 불러오는 중이에요…'}</p></div>`;
+  const R = rpType(d), t = R.top, p = RP.pop, s = p.sgg || {};
+  const hits = t ? R.ev.filter(e => e.ty === t.k && e.ok).concat(R.sec ? R.ev.filter(e => e.ty === R.sec.k && e.ok) : []) : [];
+  const desc = t ? t.desc + (R.sec ? ' ' + R.sec.nm.replace(' 상권', '') + ' 성격도 함께 보여요.' : '') : '어느 한 유형의 근거도 절반 이상 맞지 않았어요. 여러 성격이 섞인 상권이라 시간대별 수요가 고른 편일 수 있어요.';
+  const live = p.pop, work = p.workers, all = live + work || 1, sl = s.pop || 0, sw = s.workers || 0, sa = sl + sw || 1;
+  const comp = `<div class="rp-ty-comp"><div class="lb"><b>반경 안 거주·직장인 구성</b><span>거주 ${nf(live)}명 · 종사자 ${nf(work)}명</span></div>
+    <div class="rp-ty-seg"><i style="width:${live / all * 100}%;background:#2f6f4e">거주 ${Math.round(live / all * 100)}%</i><i style="width:${work / all * 100}%;background:#2a78d6">직장인 ${Math.round(work / all * 100)}%</i></div>
+    ${sl ? `<div class="rp-ty-seg sm"><i style="width:${sl / sa * 100}%;background:#9cc3ad"></i><i style="width:${sw / sa * 100}%;background:#9fc0ea"></i></div><small class="muted">${esc(s.name || '시군구')} 전체: 거주 ${Math.round(sl / sa * 100)}% · 직장인 ${Math.round(sw / sa * 100)}%</small>` : ''}</div>`;
+  return `<div class="rp-card">${H3}<p class="src">인구(통계청) · 상가(소상공인) · 교통 · 직장인(국민연금) · 건물(건축물대장)을 시군구 평균과 견줘 판정한 추정 · 판정 근거는 9쪽</p>
+    <div class="rp-ty-box" style="${t ? `background:${t.bg};border-color:${t.c}55` : ''}">
+      <div class="nm"><b style="${t ? 'color:' + t.c : ''}">${esc(tyName(R))}</b>${t ? `<span>근거 ${t.n}개 중 <b>${t.m}개</b> 해당 ${tyDots(t)}</span>` : ''}</div>
+      <p>${desc}</p>
+      ${hits.length ? `<div class="rp-ty-hits">${hits.map(e => `<span>${esc(e.label)} <b>${e.v}</b></span>`).join('')}</div>` : ''}
+    </div>${comp}</div>`;
+}
+/* 9쪽: 판정 근거 전체 */
+function rpTypeEv(d){
+  if (!RP.pop) return '';
+  const R = rpType(d), ord = R.rank.map(x => x.k);
+  const evs = R.ev.slice().sort((a, b) => ord.indexOf(a.ty) - ord.indexOf(b.ty) || b.ok - a.ok);
+  return `<div class="rp-card" style="margin-top:12px"><h3>상권 유형 판정 근거</h3><p class="src">유형마다 근거가 몇 개 맞는지 셈 · 자료가 없는 근거는 뺌 · 절반 이상, 2개 이상 맞은 유형 중 가장 높은 것으로 판정(2등도 같은 조건이면 함께 표시)</p>
+    <div class="rp-ty-sum">${R.rank.map(x => `<span><b style="color:${x.c}">${esc(x.nm.replace(' 상권', ''))}</b> ${x.n ? x.m + '/' + x.n : '자료 없음'}</span>`).join('')}</div>
+    <div class="tw"><table class="rp-tbl"><thead><tr><th>유형</th><th>근거</th><th class="num">이 상권</th><th>기준</th><th class="num">해당</th></tr></thead><tbody>
+    ${evs.map(e => `<tr${e.ok ? ' class="hl"' : ''}><td><span style="color:${TY[e.ty].c};font-weight:600">${esc(TY[e.ty].nm.replace(' 상권', ''))}</span></td><td>${esc(e.label)}</td><td class="num">${e.v}</td><td class="muted">${e.ref}</td><td class="num">${e.ok ? '<b>✓</b>' : '<span class="muted">–</span>'}</td></tr>`).join('')}
+    </tbody></table></div>
+    <p class="rp-note" style="margin-top:8px">기준선은 내부에서 정한 참고값이라 실제와 다를 수 있어요. 지하철 승하차·시간대 매출 자료는 아직 없어 빠져 있어요(365 상세분석 참고). 대학교는 국민연금 직원 200명 이상인 경우만 잡혀요.</p></div>`;
+}
 function rpShow(report){
   $('rp-body').hidden = !report; $('rp-map').hidden = report;
   $('rp-back').hidden = !report; $('rp-print').hidden = !report; $('rp-fresh').hidden = !report;
@@ -412,6 +506,7 @@ $('rp-go').addEventListener('click', () => rpLoad(false));
 $('rp-back').addEventListener('click', () => { rpShow(false); rpMapFrame(); });
 function rpSummary(d){
   const p = RP.pop, f = d.food, st = d.stores || [], ours = st.filter(OURS), c = d.center, out = [];
+  if (p) { const R = rpType(d); out.push(`상권 유형(추정) <b>${esc(tyName(R))}</b>${R.top ? ` — 근거 ${R.top.n}개 중 ${R.top.m}개 해당` : ''}.`); }
   if (p) {
     const s = p.sgg || {}, dif = p.avg_age && s.avg_age ? +(p.avg_age - s.avg_age).toFixed(1) : null;
     out.push(`반경 안 거주 인구 <b>${nf(p.pop)}명</b>, 평균 <b>${p.avg_age}세</b>${dif != null ? ` (${esc(s.name)}보다 ${Math.abs(dif)}세 ${dif < 0 ? '젊음' : '많음'})` : ''}.`);
@@ -451,7 +546,7 @@ function rpRender(d){
     <div class="rp-cv-hero"><img class="bg" src="report-cover.jpg" alt=""><i class="ov"></i>
       <div class="rp-cv-top"><img class="lg-l" src="report-logo-light.png" alt="멘야마쯔리"><img class="lg-d" src="report-logo-dark.png" alt="멘야마쯔리"><span>내부용 · ${esc(today)}</span></div>
       <div class="rp-cv-ttl"><small>MENYAMATSURI · STORE LOCATION REPORT</small><h1>상권 분석 보고서</h1>
-        <p class="rp-cv-addr">${esc(title)}</p><p class="rp-cv-sub">${esc([c.sido, c.sgg, c.dong].filter(Boolean).join(' '))} · 반경 ${rr}</p></div>
+        <p class="rp-cv-addr">${esc(title)}</p><p class="rp-cv-sub">${esc([c.sido, c.sgg, c.dong].filter(Boolean).join(' '))} · 반경 ${rr}</p>${p ? `<span class="rp-cv-type"><i>상권 유형 · 추정</i>${esc(tyName(rpType(d)))}</span>` : ''}</div>
     </div>
     <div class="rp-cv-body">
     <div class="rp-kpi">
@@ -463,11 +558,11 @@ function rpRender(d){
     </div>
     <div class="rp-sum"><h3>핵심 정리</h3><ul>${rpSummary(d).map(x => `<li>${x}</li>`).join('')}</ul>
       <p class="rp-note">종합 점수·등급은 넣지 않았어요. 아래 지표를 보고 판단해 주세요.</p></div>
-    <div class="rp-toc"><b>목차</b><ol><li>배후 인구 · 교통</li><li>직장인구 · 건물</li><li>지역 흐름</li><li>우리 메뉴 경쟁점</li><li>음식점 개업·폐업</li><li>업종 구성</li><li>매출 참고</li><li>진입 판단 — 업종별 생존율</li><li>주변 음식점 목록 · 자료 출처</li></ol></div>
+    <div class="rp-toc"><b>목차</b><ol><li>상권 유형 · 배후 인구 · 교통</li><li>직장인구 · 건물</li><li>지역 흐름</li><li>우리 메뉴 경쟁점</li><li>음식점 개업·폐업</li><li>업종 구성</li><li>매출 참고</li><li>진입 판단 — 업종별 생존율</li><li>주변 음식점 목록 · 자료 출처</li></ol></div>
     <p class="rp-cv-foot"><img src="report-logo-dark.png" alt="">자료 기준 ${esc(when)} · 통계청 · 소상공인시장진흥공단 · 행정안전부 · 국민연금공단 · 국토교통부 · 공정거래위원회 · 내부용</p>
     </div>
   </section>
-  ${pg(1, '배후 인구 · 교통', rpPop(c).replace(/^<div class="rp-card full">/, '<div class="rp-card">') + rpTransit())}
+  ${pg(1, '상권 유형 · 배후 인구 · 교통', rpTypeCard(d) + rpPop(c).replace(/^<div class="rp-card full">/, '<div class="rp-card" style="margin-top:18px">') + rpTransit())}
   ${pg(2, '직장인구 · 건물', rpWork(d) + rpBld(d))}
   ${pg(3, '지역 흐름 — 인구 추이 · 전입·전출 · 산업구조', rpRegion(c))}
   ${pg(4, '우리 메뉴 경쟁점', `<p class="src">일식 면 요리·돈가스·덮밥(소상공인 업종) 또는 상호에 라멘·우동·소바·돈카츠 등이 들어간 곳 · 가까운 순</p>
@@ -491,6 +586,7 @@ function rpRender(d){
     <div class="tw"><table class="rp-tbl"><thead><tr><th>상호</th><th>업종</th><th>세부</th><th>층</th><th class="num">거리</th></tr></thead><tbody>
     ${st.slice(0, 30).map(x => `<tr${OURS(x) ? ' class="hl"' : ''}><td>${esc(x.n)}${x.b ? ' ' + esc(x.b) : ''}</td><td>${esc(catNm(x.m))}</td><td>${esc(x.s || '')}</td><td>${fl(x)}</td><td class="num">${nf(x.d)}m</td></tr>`).join('')}
     </tbody></table></div></div>
+    ${rpTypeEv(d)}
     <div class="rp-card" style="margin-top:12px"><p class="rp-note"><b>자료와 한계</b><br>· 인구·가구·종사자: 통계청 SGIS 인구총조사(집계구 단위, 1년 이상 늦게 반영). 인구가 아주 적은 집계구는 숫자가 가려져요.<br>· 지역 흐름: 시군구 인구 추이(SGIS 인구총조사), 전입·전출(통계청 국내인구이동통계, KOSIS), 산업구조(통계청 전국사업체조사).<br>· 직장인·추정 연봉: 국민연금공단 가입 사업장 내역(월 갱신, 행정동 단위). 건물: 국토교통부 건축물대장(법정동 단위).<br>· 교통: 전국도시철도역사정보 표준데이터(+인천교통공사), 국토교통부 전국 버스정류장 위치정보(월 갱신). 직선거리 기준.<br>· 상가 수·업종: 소상공인시장진흥공단 상가(상권)정보(분기 갱신, 폐업 반영이 늦을 수 있음).<br>· 개업·폐업·생존율: 행정안전부 인허가(일반·휴게음식점). 생존율은 2023년 11월 이후 개업분 기준.<br>· 평균매출: 공정거래위원회 정보공개서(브랜드 전국 평균, 이 상권 실적 아님).<br>· 리뷰: 네이버 플레이스(영업관리 DB 매장만).<br>· 유동인구·카드 매출은 공개 자료가 없어 소상공인365 상세분석을 참고해 주세요.</p></div>`)}
   </div>`;
 }
