@@ -223,26 +223,8 @@
       </div>
     </section>
 
-    <!-- 샵인샵 타겟 -->
-    <section id="sec-target" class="sec" hidden>
-      <div class="sec-hd"><h1>샵인샵 타겟 <small id="tg-count"></small></h1><button class="btn" id="tg-copy">우편용 주소 복사</button></div>
-      <p class="muted">우동·돈까스·덮밥 등 우리 메뉴 매장 중 <b>대학가·오피스 기준점 반경 안</b>이거나 <b>반경 300m 안 매장이 40곳 이상</b>인 곳이에요. 평수는 인허가 데이터가 연결된 매장만 보여요.</p>
-      <div class="bar">
-        <select id="tg-region" aria-label="지역"><option value="">전체 지역</option></select>
-        <select id="tg-sort" aria-label="정렬"><option value="density">주변 매장 많은 순</option><option value="name">이름순</option><option value="area">평수 작은 순</option></select>
-        <label class="chk"><input type="checkbox" id="tg-own">우리 매장 제외</label>
-        <label class="chk"><input type="checkbox" id="tg-chain">체인 제외</label>
-        <label class="chk"><input type="checkbox" id="tg-area">10~20평만</label>
-      </div>
-      <div class="chips" id="tg-zone" role="group" aria-label="상권"></div>
-      <section class="stats" id="tg-stats" aria-label="타겟 요약"></section>
-      <div class="tbl-wrap">
-        <table>
-          <thead><tr><th>매장</th><th>지역</th><th>상권</th><th class="num">주변 매장</th><th class="num">평수</th><th>단계</th><th class="num">우편</th></tr></thead>
-          <tbody id="tg-rows"></tbody>
-        </table>
-      </div>
-    </section>
+    <!-- 샵인샵 타겟 (화면 내용은 js/09-target.js가 그림) -->
+    <section id="sec-target" class="sec" hidden></section>
 
     <!-- 수집 현황 (관리자) -->
     <section id="sec-ingest" class="sec" hidden>
@@ -311,7 +293,7 @@
 <script src="js/06-area-report.js?v=20261123"></script>
 <script src="js/07-script.js?v=20261123"></script>
 <script src="js/08-plan.js?v=20261123"></script>
-<script src="js/09-target.js?v=20261123"></script>
+<script src="js/09-target.js?v=20261125c"></script>
 <script src="js/10-ingest.js?v=20261123"></script>
 <script src="js/11-fav-log.js?v=20261123"></script>
 <script src="js/12-inbox-comm-listing.js?v=20261123"></script>
