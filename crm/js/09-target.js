@@ -21,6 +21,11 @@ document.head.insertAdjacentHTML('beforeend', `<style id="tg-css">
 .tg-ck{display:inline-flex;gap:4px;margin-top:4px}.tg-ck button{font-size:11.5px;padding:2px 8px;border:1px solid #d3d5dd;border-radius:999px;background:#fff;color:#555;cursor:pointer;line-height:1.5}
 .tg-ck button.on[data-v="적합"]{background:#2f6f4e;border-color:#2f6f4e;color:#fff}.tg-ck button.on[data-v="배달샵"],.tg-ck button.on[data-v="부적합"]{background:#a8431a;border-color:#a8431a;color:#fff}
 tr.tg-out .nm,tr.tg-out .sm{text-decoration:line-through;opacity:.55}
+#tg-batches{margin:0 0 12px}#tg-batches summary{cursor:pointer;font-size:14px}
+.tgb{border:1px solid var(--line,#e3e5df);border-radius:10px;padding:10px 12px;margin-top:10px;background:#fff}
+.tgb .t{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px}.tgb .t b{font-size:14px}.tgb .t .st{font-size:12px;border-radius:999px;padding:1px 9px;background:#eef0f4;color:#555}
+.tgb .t .st.sent{background:#e8f4ec;color:#1f7a43}.tgb .t .st.due{background:#fdf3e2;color:#a06212}.tgb .a{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.tgb .a button{font-size:12.5px;padding:4px 10px}.tgb .items{margin-top:10px}
 #tg-basis ul{margin:0;padding-left:18px;font-size:13px;line-height:1.7}#tg-basis .warn{color:#a8431a;font-weight:600}
 </style>`);
 /* 지역: 권역 → 시도 → 시·군 → 구 (청주시 흥덕구 → 청주시 / 흥덕구) */
@@ -31,8 +36,9 @@ const tgZoneOf = sido => (TG_ZONES.find(([, l]) => l.includes(sido)) || ['기타
 const tgSplit = sgg => { const i = (sgg || '').indexOf(' '); return i > 0 ? [sgg.slice(0, i), sgg.slice(i + 1)] : [sgg || '', '']; };
 $('sec-target').innerHTML = `
   <div class="sec-hd"><h1>샵인샵 타겟 <small id="tg-count"></small></h1>
-    <div class="row-btns"><div class="seg" role="group" aria-label="보기 방식"><button id="tg-v-list">목록</button><button id="tg-v-map">지도</button></div><button class="btn" id="tg-copy">우편용 주소 복사</button></div></div>
+    <div class="row-btns"><div class="seg" role="group" aria-label="보기 방식"><button id="tg-v-list">목록</button><button id="tg-v-map">지도</button></div><button class="btn" id="tg-copy">우편용 주소 복사</button><button class="btn pri" id="tg-mkbatch">＋ 우편 회차로 묶기</button></div></div>
   <p class="muted">홍보 이미지의 업종(분식·김밥, 우동·소바, 덮밥, 초밥·일식, 텐동, 이자카야) 매장이에요. 라멘·돈카츠 전문점은 <b>경쟁점</b>이라 목록에서 빼고, 매장마다 <b>반경 500m 안 경쟁점 수</b>로 보여 줘요. 횟집은 제외해요. 평수는 인허가 자료가 연결된 매장만 나오고, 나머지는 '미확인'이에요.</p>
+  <details class="box" id="tg-batches" open><summary><b>우편 회차</b> <span class="muted" id="tg-bsum">불러오는 중…</span></summary><div id="tg-blist"></div></details>
   <details class="box" id="tg-basis"><summary><b>이 자료는 어떻게 만들었나요?</b> <span class="muted">수집 · 선정 · 상권 기준</span></summary><div id="tg-basis-body"></div></details>
   <div class="bar">
     <select id="tg-r0" aria-label="권역"></select><select id="tg-r1" aria-label="시도"></select><select id="tg-r2" aria-label="시군"></select><select id="tg-r3" aria-label="구"></select>
@@ -66,6 +72,7 @@ async function loadTarget(){
       ex_own: $('tg-own').checked, ex_chain: $('tg-chain').checked, sort: $('tg-sort').value } });
     state.tg.d = d; renderTarget(); tgFit = true; if (state.tg.view === 'map') tgMap();
   } catch (e) { toast(errMsg(e), true); }
+  loadBatches();
 }
 function tgChips(el, keys, counts, cur, allLbl){
   const all = keys.reduce((a, k) => a + (counts[k] || 0), 0);
@@ -291,6 +298,78 @@ async function tgAddHub(lat, lng){
     toast(`'${name}' 기준점을 추가했어요`); tgPickHub(String(h.id));
   } catch (err) { toast(errMsg(err), true); }
 }
+/* ---------- 우편 회차: 목록 묶기 → 주소 복사 → 발송 완료(매장마다 우편 기록) → 1주 뒤 전화할 곳 ---------- */
+if (typeof KIND === 'object' && KIND) KIND.mail = '우편 발송';
+const TB = { list: [], open: null, items: {} };
+const tbDay = v => v ? new Date(v).toLocaleDateString('ko-KR', { month: 'numeric', day: 'numeric' }) : '';
+async function loadBatches(){
+  try { TB.list = await rpc('lead_mail_batch_list') || []; renderBatches(); }
+  catch (e) { $('tg-bsum').textContent = '불러오지 못했어요'; }
+}
+function renderBatches(){
+  const L = TB.list, sent = L.filter(b => b.sent_at), due = sent.filter(b => Date.now() - new Date(b.sent_at) >= 7 * 864e5 && b.called < b.n);
+  $('tg-bsum').textContent = L.length ? `${L.length}회차 · 발송 ${sent.length}${due.length ? ` · 전화할 회차 ${due.length}` : ''}` : '아직 없어요';
+  $('tg-blist').innerHTML = L.length ? L.map(b => {
+    const days = b.sent_at ? Math.floor((Date.now() - new Date(b.sent_at)) / 864e5) : null;
+    const st = !b.sent_at ? '<span class="st">발송 전</span>'
+      : (days >= 7 && b.called < b.n ? `<span class="st due">발송 ${tbDay(b.sent_at)} · ${days}일 지남 · 전화할 때예요</span>` : `<span class="st sent">발송 ${tbDay(b.sent_at)}</span>`);
+    const op = TB.open === b.id, it = TB.items[b.id];
+    return `<div class="tgb" data-id="${b.id}"><div class="t"><b>${esc(b.name)}</b><span>${nf(b.n)}곳</span>${st}${b.sent_at ? `<span class="muted" style="font-size:12px">전화 ${nf(b.called)}/${nf(b.n)}</span>` : ''}</div>
+      ${b.note ? `<div class="muted" style="font-size:12px;margin-top:2px">${esc(b.note)}</div>` : ''}
+      <div class="a"><button class="btn" data-b="open">${op ? '접기' : (b.sent_at ? '전화할 곳 보기' : '매장 보기')}</button><button class="btn" data-b="copy">주소 복사</button>
+        ${b.sent_at ? '' : '<button class="btn pri" data-b="send">발송 완료로 기록</button><button class="btn" data-b="del">삭제</button>'}</div>
+      ${op ? `<div class="items">${it ? tbItems(b, it) : '<span class="muted">불러오는 중…</span>'}</div>` : ''}</div>`;
+  }).join('') : '<p class="muted" style="margin:8px 0 0">위 목록을 거른 뒤 <b>＋ 우편 회차로 묶기</b>를 누르면, 그 매장들이 한 회차로 저장돼요. 발송하고 <b>발송 완료로 기록</b>을 누르면 매장마다 우편 기록이 남고, 1주 뒤 전화할 곳을 여기서 볼 수 있어요.</p>';
+}
+function tbItems(b, items){
+  return `<div class="tbl-wrap"><table><thead><tr><th>매장</th><th>업종</th><th>전화</th><th>${b.sent_at ? '발송 뒤 통화' : '단계'}</th></tr></thead><tbody>${items.map(r => `<tr data-id="${r.id}">
+    <td><div class="nm">${esc(r.name)}${r.branch ? ' ' + esc(r.branch) : ''}<a class="nv" href="${esc(naverLink(r))}" target="_blank" rel="noopener">N</a></div><div class="sm">${esc(r.addr_road || '')}</div></td>
+    <td>${esc(r.seg || '')}</td><td>${r.tel ? `<a href="tel:${esc(r.tel)}">${esc(tel(r.tel))}</a>` : '<span class="muted">없음</span>'}</td>
+    <td>${b.sent_at ? (r.called ? `<b>${tbDay(r.called)}</b> ${esc(RES[r.call_result] || r.call_result || '')}` : '<span style="color:#a06212">아직</span>') : `<span class="tag t-st">${esc(ST[r.stage] || r.stage || '')}</span>`}</td></tr>`).join('')}</tbody></table></div>
+    <p class="muted" style="font-size:12px;margin:6px 0 0">매장을 누르면 상세가 열려요. 통화 결과를 남기면 여기 '발송 뒤 통화'에 표시돼요.</p>`;
+}
+async function tbLoadItems(id){
+  try { const r = await rpc('lead_mail_batch_items', { p_id: id }); TB.items[id] = r.items || []; return TB.items[id]; }
+  catch (e) { toast(errMsg(e), true); return null; }
+}
+$('tg-blist').addEventListener('click', async e => {
+  const tr = e.target.closest('.items tr[data-id]');
+  if (tr && !e.target.closest('a')) { openLead(+tr.dataset.id); return; }
+  const btn = e.target.closest('button[data-b]'); if (!btn) return;
+  const id = +btn.closest('.tgb').dataset.id, b = TB.list.find(x => x.id === id); if (!b) return;
+  if (btn.dataset.b === 'open') { TB.open = TB.open === id ? null : id; renderBatches(); if (TB.open) { await tbLoadItems(id); renderBatches(); } }
+  if (btn.dataset.b === 'copy') {
+    const items = TB.items[id] || await tbLoadItems(id); if (!items) return;
+    const lines = ['상호\t업종\t주소\t전화'].concat(items.map(r => [r.name + (r.branch ? ' ' + r.branch : ''), r.seg || '', r.addr_road || '', r.tel ? tel(r.tel) : ''].join('\t')));
+    try { await navigator.clipboard.writeText(lines.join('\n')); toast(`'${b.name}' ${items.length}곳 주소를 복사했어요`); } catch (er) { toast('복사하지 못했어요. 브라우저 권한을 확인하세요', true); }
+  }
+  if (btn.dataset.b === 'send') {
+    if (!confirm(`'${b.name}' ${b.n}곳에 우편을 보냈다고 기록할까요?\n매장마다 '우편 발송' 기록이 남고, 되돌릴 수 없어요.`)) return;
+    try { await rpc('lead_mail_batch_send', { p_id: id }); toast('발송 완료로 기록했어요. 1주 뒤 전화할 곳이 표시돼요'); delete TB.items[id]; loadTarget(); }
+    catch (er) { toast(errMsg(er), true); }
+  }
+  if (btn.dataset.b === 'del') {
+    if (!confirm(`'${b.name}' 회차를 지울까요? (매장 데이터는 그대로예요)`)) return;
+    try { await rpc('lead_mail_batch_delete', { p_id: id }); toast('회차를 지웠어요'); loadBatches(); }
+    catch (er) { toast(errMsg(er), true); }
+  }
+});
+$('tg-mkbatch').addEventListener('click', async () => {
+  const d = state.tg.d || {}, rows = (d.rows || []).filter(r => r.sis_check !== '배달샵' && r.sis_check !== '부적합');
+  if (!rows.length) { toast('묶을 매장이 없어요. 목록을 먼저 걸러 주세요', true); return; }
+  const hub = (d.hubs || []).find(h => String(h.id) === String(state.tg.hub));
+  const now = new Date(), [, , si, gu] = state.tg.r;
+  const def = `${now.getFullYear()}.${now.getMonth() + 1} ${hub ? hub.name : [si, gu].filter(Boolean).join(' ') || '전체'}${state.tg.seg ? ' ' + state.tg.seg : ''}`;
+  const name = (prompt(`우편 회차 이름 (${rows.length}곳)`, def) || '').trim(); if (!name) return;
+  const note = (prompt('메모 (선택: 우편 내용, 함께 돌린 인스타 광고 등)', '') || '').trim();
+  try {
+    const r = await rpc('lead_mail_batch_create', { p: { name, note, ids: rows.map(x => x.id),
+      filter: { region: state.tg.r, hub: hub ? hub.name : '', seg: state.tg.seg, band: state.tg.band, check: state.tg.check } } });
+    toast(`'${name}' 회차에 ${r.n}곳을 담았어요`); TB.open = r.id; await loadBatches(); await tbLoadItems(r.id); renderBatches();
+    $('tg-batches').open = true; $('tg-batches').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } catch (e) { toast(errMsg(e), true); }
+});
+
 tgView(state.tg.view);
 ['tg-sort', 'tg-own', 'tg-chain'].forEach(id => $(id).addEventListener('change', loadTarget));
 $('tg-seg').addEventListener('click', e => { const b = e.target.closest('button[data-v]'); if (!b) return; state.tg.seg = b.dataset.v; state.tg.band = ''; loadTarget(); });
