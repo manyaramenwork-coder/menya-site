@@ -285,6 +285,29 @@ function rpSurv(d){
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">${box('best')}${box('stable')}${box('risk')}${box('avoid')}</div>
     <p class="rp-note" style="margin-top:8px">생존율은 2023년 11월부터 쌓인 인허가 자료라 아직 2년까지만 볼 수 있어요. 폐업 신고가 늦게 들어오는 경우가 있어 실제보다 조금 높게 나올 수 있어요.</p></div>`;
 }
+/* 교통 접근성 (지하철역·버스정류장 위치) */
+const lnNm = s => String(s || '').replace(/^서울\s*도시철도\s*/, '').replace(/^(\S+?)\s*(도시철도|지하철)\s*(\d+호선)$/, '$1$3').trim();
+const walk = m => Math.max(1, Math.round(m / 67));   // 도보 시속 4km
+function rpTransit(){
+  const T = RP.pop && RP.pop.transit, H3 = '<h3>교통 접근성 — 지하철역 · 버스정류장</h3>';
+  if (!RP.pop) return `<div class="rp-card" style="margin-top:12px">${H3}<p class="muted" style="margin:6px 0 0">불러오는 중…</p></div>`;
+  if (!T) return `<div class="rp-card" style="margin-top:12px">${H3}<p class="muted" style="margin:6px 0 0">교통 자료를 불러오지 못했어요.</p></div>`;
+  const rr = T.r >= 1000 ? '1km' : T.r + 'm', st = T.rail_near || [], n0 = st[0], b0 = T.bus_near;
+  const grade = !n0 || n0.d > 1000 ? ['역 멀음', '1km 안에 지하철역이 없어요 — 버스·차량 손님 위주', 'bad'] : n0.d <= 500 ? ['역세권', '가장 가까운 역까지 500m 이내', 'good'] : ['역 도보권', '가장 가까운 역까지 500m~1km', 'mid'];
+  const kpi = (v, l, e) => `<div class="stat"><b>${v}</b><span>${l}</span><em>${e || ''}</em></div>`;
+  return `<div class="rp-card" style="margin-top:12px">${H3}<p class="src">상담 위치에서 직선거리 · 도보 시간은 분당 67m(시속 4km)로 환산 · 지하철: 전국도시철도역사정보 표준데이터 · 버스: 국토교통부 전국 버스정류장 위치정보</p>
+    <div class="rp-kpi" style="margin:4px 0 12px">
+      ${kpi(n0 ? esc(n0.n) + '역' : '없음', '가장 가까운 지하철역', n0 ? nf(n0.d) + 'm · 도보 ' + walk(n0.d) + '분' : '2km 안에 없음')}
+      ${kpi(nf(T.rail_1k) + '곳', '1km 안 지하철역', '노선 ' + nf(T.lines_1k) + '개 · 반경 ' + rr + ' 안 ' + nf(T.rail_r) + '곳')}
+      ${kpi(b0 ? nf(b0.d) + 'm' : '-', '가장 가까운 버스정류장', b0 ? esc(b0.n) : '')}
+      ${kpi(nf(T.bus_300) + ' · ' + nf(T.bus_500), '버스정류장 수', '300m · 500m 안')}
+    </div>
+    <div class="rp-grid" style="grid-template-columns:2fr minmax(200px,1fr)"><div class="tw"><table class="rp-tbl"><thead><tr><th>가까운 지하철역</th><th>노선</th><th class="num">거리</th><th class="num">도보</th></tr></thead><tbody>
+      ${st.map((x, i) => `<tr${i === 0 ? ' class="hl"' : ''}><td>${esc(x.n)}</td><td>${esc(String(x.l || '').split(',').map(lnNm).join(' · '))}</td><td class="num">${nf(x.d)}m</td><td class="num">${walk(x.d)}분</td></tr>`).join('') || '<tr><td colspan="4" class="muted">2km 안에 지하철역이 없어요.</td></tr>'}
+    </tbody></table></div>
+    <div style="border-radius:10px;padding:14px 16px;background:${({ good: '#e8f4ec', mid: '#fdf3e2', bad: '#f8e9e7' })[grade[2]]};border:1px solid ${({ good: '#b9dcc4', mid: '#efd3a4', bad: '#e6c1bb' })[grade[2]]}"><b style="display:block;font-size:20px;color:${({ good: '#1f7a43', mid: '#a06212', bad: '#a8372a' })[grade[2]]}">${grade[0]}</b><span style="display:block;margin:4px 0 8px;font-size:13px">${grade[1]}</span><small class="muted" style="font-size:11.5px;line-height:1.5;display:block">참고: 역 500m 안이면 역세권, 1km 안이면 도보권으로 봤어요. 정류장 수는 방향별 정류장을 따로 센 숫자예요.</small></div></div>
+    <p class="rp-note" style="margin-top:8px">신분당선·공항철도와 일부 경전철(의정부·용인·김포골드 등)은 공개 역 자료에 아직 없어 빠져 있어요. 버스 자료에는 정류장 위치만 있고 지나가는 노선 수는 없어요.</p></div>`;
+}
 /* 직장인(국민연금 가입 사업장) · 건물(건축물대장) */
 const indNm = s => /BIZ_NO|미존재/.test(s || '') ? '업종 미분류' : String(s || '').replace(/\s+/g, ' ');
 const won = v => v == null || !isFinite(v) ? '-' : nf(Math.round(v / 10000)) + '만원';
@@ -397,6 +420,8 @@ function rpSummary(d){
   }
   out.push(`음식점 <b>${nf(f.n)}곳</b> — 100m ${nf(f.r100)} · 300m ${nf(f.r300)}${c.radius >= 500 ? ' · 500m ' + nf(f.r500) : ''}. 상가 중 음식점 비중 ${pf(pct(f.n, d.total))}(시군구 ${pf(d.sggTotal ? pct(d.sggFood, d.sggTotal) : null)}).`);
   out.push(`우리 메뉴(면·돈가스·덮밥) 경쟁점 300m 안 <b>${nf(ours.filter(s => s.d <= 300).length)}곳</b>, 반경 전체 <b>${nf(ours.length)}곳</b>${ours[0] ? ` — 가장 가까운 곳 ${esc(ours[0].n)} ${nf(ours[0].d)}m` : ''}.`);
+  const T = p && p.transit, t0 = T && (T.rail_near || [])[0];
+  if (T) out.push(`가장 가까운 지하철역 ${t0 ? `<b>${esc(t0.n)}역</b>(${esc(String(t0.l || '').split(',').map(lnNm).join('·'))}) <b>${nf(t0.d)}m</b>, 도보 ${walk(t0.d)}분` : '<b>2km 안에 없음</b>'} · 500m 안 버스정류장 <b>${nf(T.bus_500)}곳</b>.`);
   if (d.nps && d.nps.ym) out.push(`반경이 걸친 행정동 직장인 <b>${nf(d.nps.workers)}명</b>(국민연금 ${esc(d.nps.ym)}), 추정 평균연봉 <b>${won(annual(d.nps.ntc, d.nps.workers))}</b>.`);
   const K = rpPerK(d);
   if (K && K.r != null) out.push(`인구 천 명당 음식점 <b>${k1(K.r)}곳</b>(${esc((p.sgg || {}).name || '시군구')} ${k1(K.s)}곳)${K.s ? ` — 시군구 평균의 <b>${(K.r / K.s).toFixed(1)}배</b>` : ''}.`);
@@ -438,11 +463,11 @@ function rpRender(d){
     </div>
     <div class="rp-sum"><h3>핵심 정리</h3><ul>${rpSummary(d).map(x => `<li>${x}</li>`).join('')}</ul>
       <p class="rp-note">종합 점수·등급은 넣지 않았어요. 아래 지표를 보고 판단해 주세요.</p></div>
-    <div class="rp-toc"><b>목차</b><ol><li>배후 인구</li><li>직장인구 · 건물</li><li>지역 흐름</li><li>우리 메뉴 경쟁점</li><li>음식점 개업·폐업</li><li>업종 구성</li><li>매출 참고</li><li>진입 판단 — 업종별 생존율</li><li>주변 음식점 목록 · 자료 출처</li></ol></div>
+    <div class="rp-toc"><b>목차</b><ol><li>배후 인구 · 교통</li><li>직장인구 · 건물</li><li>지역 흐름</li><li>우리 메뉴 경쟁점</li><li>음식점 개업·폐업</li><li>업종 구성</li><li>매출 참고</li><li>진입 판단 — 업종별 생존율</li><li>주변 음식점 목록 · 자료 출처</li></ol></div>
     <p class="rp-cv-foot"><img src="report-logo-dark.png" alt="">자료 기준 ${esc(when)} · 통계청 · 소상공인시장진흥공단 · 행정안전부 · 국민연금공단 · 국토교통부 · 공정거래위원회 · 내부용</p>
     </div>
   </section>
-  ${pg(1, '배후 인구', rpPop(c).replace(/^<div class="rp-card full">/, '<div class="rp-card">'))}
+  ${pg(1, '배후 인구 · 교통', rpPop(c).replace(/^<div class="rp-card full">/, '<div class="rp-card">') + rpTransit())}
   ${pg(2, '직장인구 · 건물', rpWork(d) + rpBld(d))}
   ${pg(3, '지역 흐름 — 인구 추이 · 전입·전출 · 산업구조', rpRegion(c))}
   ${pg(4, '우리 메뉴 경쟁점', `<p class="src">일식 면 요리·돈가스·덮밥(소상공인 업종) 또는 상호에 라멘·우동·소바·돈카츠 등이 들어간 곳 · 가까운 순</p>
@@ -466,7 +491,7 @@ function rpRender(d){
     <div class="tw"><table class="rp-tbl"><thead><tr><th>상호</th><th>업종</th><th>세부</th><th>층</th><th class="num">거리</th></tr></thead><tbody>
     ${st.slice(0, 30).map(x => `<tr${OURS(x) ? ' class="hl"' : ''}><td>${esc(x.n)}${x.b ? ' ' + esc(x.b) : ''}</td><td>${esc(catNm(x.m))}</td><td>${esc(x.s || '')}</td><td>${fl(x)}</td><td class="num">${nf(x.d)}m</td></tr>`).join('')}
     </tbody></table></div></div>
-    <div class="rp-card" style="margin-top:12px"><p class="rp-note"><b>자료와 한계</b><br>· 인구·가구·종사자: 통계청 SGIS 인구총조사(집계구 단위, 1년 이상 늦게 반영). 인구가 아주 적은 집계구는 숫자가 가려져요.<br>· 지역 흐름: 시군구 인구 추이(SGIS 인구총조사), 전입·전출(통계청 국내인구이동통계, KOSIS), 산업구조(통계청 전국사업체조사).<br>· 직장인·추정 연봉: 국민연금공단 가입 사업장 내역(월 갱신, 행정동 단위). 건물: 국토교통부 건축물대장(법정동 단위).<br>· 상가 수·업종: 소상공인시장진흥공단 상가(상권)정보(분기 갱신, 폐업 반영이 늦을 수 있음).<br>· 개업·폐업·생존율: 행정안전부 인허가(일반·휴게음식점). 생존율은 2023년 11월 이후 개업분 기준.<br>· 평균매출: 공정거래위원회 정보공개서(브랜드 전국 평균, 이 상권 실적 아님).<br>· 리뷰: 네이버 플레이스(영업관리 DB 매장만).<br>· 유동인구·카드 매출은 공개 자료가 없어 소상공인365 상세분석을 참고해 주세요.</p></div>`)}
+    <div class="rp-card" style="margin-top:12px"><p class="rp-note"><b>자료와 한계</b><br>· 인구·가구·종사자: 통계청 SGIS 인구총조사(집계구 단위, 1년 이상 늦게 반영). 인구가 아주 적은 집계구는 숫자가 가려져요.<br>· 지역 흐름: 시군구 인구 추이(SGIS 인구총조사), 전입·전출(통계청 국내인구이동통계, KOSIS), 산업구조(통계청 전국사업체조사).<br>· 직장인·추정 연봉: 국민연금공단 가입 사업장 내역(월 갱신, 행정동 단위). 건물: 국토교통부 건축물대장(법정동 단위).<br>· 교통: 전국도시철도역사정보 표준데이터(+인천교통공사), 국토교통부 전국 버스정류장 위치정보(월 갱신). 직선거리 기준.<br>· 상가 수·업종: 소상공인시장진흥공단 상가(상권)정보(분기 갱신, 폐업 반영이 늦을 수 있음).<br>· 개업·폐업·생존율: 행정안전부 인허가(일반·휴게음식점). 생존율은 2023년 11월 이후 개업분 기준.<br>· 평균매출: 공정거래위원회 정보공개서(브랜드 전국 평균, 이 상권 실적 아님).<br>· 리뷰: 네이버 플레이스(영업관리 DB 매장만).<br>· 유동인구·카드 매출은 공개 자료가 없어 소상공인365 상세분석을 참고해 주세요.</p></div>`)}
   </div>`;
 }
 $('ar-tabs').addEventListener('click', e => {
@@ -479,5 +504,3 @@ $('ar-key-save').addEventListener('click', async () => {
   try { AR.keys = await rpc('sbiz_keys_set', { p }) || {}; toast('인증키를 저장했어요.'); $('ar-keys').open = false; $('ar-frame').innerHTML = ''; renderArea(); }
   catch (e) { toast(errMsg(e), true); }
 });
-
-
