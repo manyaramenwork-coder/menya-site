@@ -2,7 +2,7 @@
 /* 업종 = 홍보 이미지 6개 묶음(+기타 일식), 면적 = 20평 이하/초과/미확인, 경쟁점 = 반경 500m 라멘·돈카츠 수 (DB: sis_seg, sis_comp_*) */
 const TG_SEGS = ['분식·김밥', '우동·소바', '덮밥', '초밥·일식', '텐동', '이자카야', '기타 일식'];
 const TG_BANDS = ['20평 이하', '20평 초과', '미확인'];
-state.tg = { seg: '', band: '', hub: '', d: null, r: ['충청권', '충청북도', '청주시', ''], view: 'list', addHub: false };
+state.tg = { seg: '', band: '', hub: '', check: '', d: null, r: ['충청권', '충청북도', '청주시', ''], view: 'list', addHub: false };
 try { if (localStorage.getItem('crm-tg-view') === 'map') state.tg.view = 'map'; } catch (e) {}
 const TG_COL = { '분식·김밥': '#f08c00', '우동·소바': '#2a78d6', '덮밥': '#7a4fc9', '초밥·일식': '#1f9e89', '텐동': '#c9a100', '이자카야': '#8b5a2b', '기타 일식': '#8a8e86' };
 const TG_HUBC = { '대학가': '#7a4fc9', '오피스': '#2a78d6', '번화가': '#c62429' };
@@ -18,6 +18,9 @@ document.head.insertAdjacentHTML('beforeend', `<style id="tg-css">
 .tg-iw button,.tg-iw a{font-size:12px;padding:4px 9px;border:1px solid #ccd;border-radius:6px;background:#fff;color:inherit;text-decoration:none;cursor:pointer}
 #tg-addhub.on{background:#c62429;color:#fff;border-color:#c62429}
 #tg-basis{margin:0 0 12px}#tg-basis summary{cursor:pointer;font-size:14px}#tg-basis h4{margin:14px 0 4px;font-size:14px}
+.tg-ck{display:inline-flex;gap:4px;margin-top:4px}.tg-ck button{font-size:11.5px;padding:2px 8px;border:1px solid #d3d5dd;border-radius:999px;background:#fff;color:#555;cursor:pointer;line-height:1.5}
+.tg-ck button.on[data-v="적합"]{background:#2f6f4e;border-color:#2f6f4e;color:#fff}.tg-ck button.on[data-v="배달샵"],.tg-ck button.on[data-v="부적합"]{background:#a8431a;border-color:#a8431a;color:#fff}
+tr.tg-out .nm,tr.tg-out .sm{text-decoration:line-through;opacity:.55}
 #tg-basis ul{margin:0;padding-left:18px;font-size:13px;line-height:1.7}#tg-basis .warn{color:#a8431a;font-weight:600}
 </style>`);
 /* 지역: 권역 → 시도 → 시·군 → 구 (청주시 흥덕구 → 청주시 / 흥덕구) */
@@ -37,6 +40,7 @@ $('sec-target').innerHTML = `
     <label class="chk"><input type="checkbox" id="tg-own">우리 매장 제외</label>
     <label class="chk"><input type="checkbox" id="tg-chain" checked>체인 제외</label>
   </div>
+  <div class="chips" id="tg-check" role="group" aria-label="플레이스 확인"></div>
   <div class="chips" id="tg-hub" role="group" aria-label="상권 기준점"></div>
   <div class="chips" id="tg-seg" role="group" aria-label="업종"></div>
   <div class="chips" id="tg-band" role="group" aria-label="면적"></div>
@@ -58,7 +62,7 @@ async function loadTarget(){
   const sigungu = si ? (gu ? si + ' ' + gu : si) : '';
   try {
     const d = await rpc('lead_target_list', { p: { sido, sidos, sigungu, seg: state.tg.seg, band: state.tg.band,
-      hub: state.tg.hub, limit: (si || state.tg.hub) ? 3000 : 1000,
+      hub: state.tg.hub, check: state.tg.check, limit: (si || state.tg.hub) ? 3000 : 1000,
       ex_own: $('tg-own').checked, ex_chain: $('tg-chain').checked, sort: $('tg-sort').value } });
     state.tg.d = d; renderTarget(); tgFit = true; if (state.tg.view === 'map') tgMap();
   } catch (e) { toast(errMsg(e), true); }
@@ -102,12 +106,13 @@ const tgGuess = h => /추정/.test(h.note || '');
 const tgDay = v => v ? String(v).slice(0, 10) : '-';
 function tgBasis(d){
   const m = d.meta || {}, b = d.bands || {}, all = Object.values(b).reduce((a, n) => a + n, 0), known = all - (b['미확인'] || 0);
-  const guess = (d.hubs || []).filter(tgGuess);
+  const guess = (d.hubs || []).filter(tgGuess), c = d.checks || {};
   $('tg-basis-body').innerHTML = `
   <h4>1. 어디서 모았나요</h4><ul>
     <li><b>매장 목록</b>: 소상공인시장진흥공단 「상가(상권)정보」 공공데이터. 마지막 반영 <b>${tgDay(m.src_date)}</b>. 분기마다 갱신돼서 최근 폐업한 곳이 늦게 빠질 수 있어요.</li>
     <li><b>평수</b>: 행정안전부 「인허가(일반·휴게음식점)」에 신고된 시설 면적. 상호·주소로 연결된 매장만 나와요. 지금 지역 ${nf(all)}곳 중 <b>${nf(known)}곳 확인</b> (인허가 수집 ${tgDay(m.lic_at)}).</li>
-    <li><b>업종 확인</b>: 네이버 플레이스 업종명. 지금 지역에서 ${nf(m.naver_n || 0)}곳이 확인돼 있어요.</li></ul>
+    <li><b>업종 확인</b>: 네이버 플레이스 업종명. 지금 지역에서 ${nf(m.naver_n || 0)}곳이 확인돼 있어요.</li>
+    <li><b>직원 확인</b>: 직원이 N 플레이스로 메뉴·배달 여부를 보고 [적합 / 배달샵 / 부적합]을 누른 결과예요. 지금 지역 적합 ${nf(c['적합'] || 0)}곳, 배달샵 ${nf(c['배달샵'] || 0)}곳, 부적합 ${nf(c['부적합'] || 0)}곳, 아직 확인 전 ${nf(c['미확인'] || 0)}곳. 배달샵·부적합은 우편 목록에서 빠져요.</li></ul>
   <h4>2. 어떤 매장을 골랐나요</h4><ul>
     <li>홍보 이미지의 <b>6개 업종</b>(분식·김밥, 우동·소바, 덮밥, 초밥·일식, 텐동, 이자카야)만 골라요. 판단 순서는 <b>상호 단어</b>(우동·텐동·이자카야 등) → <b>네이버 업종명</b> → <b>공공데이터 업종 분류</b>예요.</li>
     <li><b>빼는 곳</b>: 폐업, 연락 거부로 표시한 곳, 횟집, 일식 요소가 없는 일반 호프·포차. 라멘·돈카츠 전문점은 목록에서 빼고 <b>경쟁점</b>으로 따로 보여 줘요.</li>
@@ -121,6 +126,23 @@ function tgBasis(d){
     <li>업종은 상호와 공공 분류로 <b>자동 판정</b>해서 일부 틀릴 수 있어요. 우편을 보내기 전에 N 플레이스로 한 번 확인하는 걸 권해요.</li>
     <li>실제 매출·유동인구 자료는 들어 있지 않아요. 상권분석 메뉴의 상권 리포트·소상공인365에서 따로 봐야 해요.</li></ul>`;
 }
+/* 플레이스 확인: 적합 / 배달샵 / 부적합 (다시 누르면 취소) */
+const TG_CK = ['적합', '배달샵', '부적합'];
+const tgCkBtns = r => `<div class="tg-ck" data-id="${r.id}">${TG_CK.map(v => `<button data-v="${v}" class="${r.sis_check === v ? 'on' : ''}">${v === '적합' ? '✓ 적합' : v}</button>`).join('')}</div>`;
+async function tgSetCheck(id, v){
+  const d = state.tg.d || {}, r = (d.rows || []).find(x => String(x.id) === String(id));
+  const nv = r && r.sis_check === v ? null : v;
+  try {
+    await rpc('lead_sis_check', { p_id: +id, p_val: nv });
+    if (r) {
+      const ck = d.checks || (d.checks = {}), k = x => x || '미확인';
+      ck[k(r.sis_check)] = Math.max(0, (ck[k(r.sis_check)] || 0) - 1); ck[k(nv)] = (ck[k(nv)] || 0) + 1;
+      r.sis_check = nv;
+    }
+    renderTarget(); if (TM.iw) TM.iw.close();
+    toast(nv ? `'${r ? r.name : '매장'}' ${nv}(으)로 표시했어요` : '확인 표시를 지웠어요');
+  } catch (err) { toast(errMsg(err), true); }
+}
 function renderTarget(){
   const d = state.tg.d || {}, rows = d.rows || [], regs = d.regions || [];
   tgRegions(regs);
@@ -128,6 +150,8 @@ function renderTarget(){
   $('tg-hub').innerHTML = hubs.length ? `<button data-v="" class="${!state.tg.hub ? 'on' : ''}">상권 전체</button>` +
     hubs.map(h => `<button data-v="${h.id}" class="${String(state.tg.hub) === String(h.id) ? 'on' : ''}" title="${esc(h.kind || '')} · 반경 ${h.radius_m}m"><i style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${TG_HUBC[h.kind] || '#555'};margin-right:4px"></i>${esc(h.name)}${tgGuess(h) ? ' ⚠' : ''} <small>${nf(h.n)}</small></button>`).join('') : '';
   tgBasis(d);
+  const ck = d.checks || {}, ckBtn = (v, l, n) => `<button data-v="${v}" class="${state.tg.check === v ? 'on' : ''}">${l} <small>${nf(n || 0)}</small></button>`;
+  $('tg-check').innerHTML = ckBtn('', '우편 대상', (ck['미확인'] || 0) + (ck['적합'] || 0)) + ckBtn('미확인', '확인 전', ck['미확인']) + ckBtn('적합', '✓ 적합', ck['적합']) + ckBtn('제외', '제외한 곳', (ck['배달샵'] || 0) + (ck['부적합'] || 0));
   tgChips('tg-seg', TG_SEGS, d.segs || {}, state.tg.seg, '업종 전체');
   tgChips('tg-band', TG_BANDS, d.bands || {}, state.tg.band, '면적 전체');
   const b = d.bands || {};
@@ -136,8 +160,8 @@ function renderTarget(){
     ['평수 미확인', (b['미확인'] || 0) + '곳'], ['경쟁점 근처', (d.near_comp || 0) + '곳'], ['체인', (d.chain || 0) + '곳']
   ].map(([l, v]) => `<div class="stat"><b>${esc(v)}</b><span>${esc(l)}</span></div>`).join('');
   $('tg-count').textContent = (d.total || 0).toLocaleString() + '곳';
-  $('tg-rows').innerHTML = rows.length ? rows.map(r => `<tr data-id="${r.id}">
-    <td><div class="nm">${esc(r.name)}${r.branch ? ' ' + esc(r.branch) : ''}${r.is_own ? ' <span class="tag t-B">우리 매장</span>' : ''}${!r.is_own && r.is_chain ? ' <span class="tag t-C">체인</span>' : ''}<a class="nv" href="${esc(naverLink(r))}" target="_blank" rel="noopener" title="네이버 플레이스">N ${r.naver_url ? '플레이스' : '검색'}</a></div><div class="sm">${esc(r.addr_road || '')}${r.tel ? ' · ' + esc(tel(r.tel)) : ''}</div></td>
+  $('tg-rows').innerHTML = rows.length ? rows.map(r => `<tr data-id="${r.id}" class="${r.sis_check === '배달샵' || r.sis_check === '부적합' ? 'tg-out' : ''}">
+    <td><div class="nm">${esc(r.name)}${r.branch ? ' ' + esc(r.branch) : ''}${r.is_own ? ' <span class="tag t-B">우리 매장</span>' : ''}${!r.is_own && r.is_chain ? ' <span class="tag t-C">체인</span>' : ''}<a class="nv" href="${esc(naverLink(r))}" target="_blank" rel="noopener" title="네이버 플레이스">N ${r.naver_url ? '플레이스' : '검색'}</a></div><div class="sm">${esc(r.addr_road || '')}${r.tel ? ' · ' + esc(tel(r.tel)) : ''}</div>${tgCkBtns(r)}</td>
     <td>${esc(r.seg || '')}<div class="sm">${esc(r.naver_category || r.cat || '')}</div></td>
     <td>${esc([r.sigungu, r.dong].filter(Boolean).join(' '))}</td>
     <td>${r.hub_name ? esc(r.hub_name) + `<div class="sm">${esc(r.hub_kind || '')} · ${Number(r.dist_m || 0).toLocaleString()}m</div>` : '<span class="muted">-</span>'}</td>
@@ -153,6 +177,7 @@ function renderTarget(){
 }));
 /* 상권(기준점)은 구 경계에 걸쳐 있어서, 고르면 구 선택은 '전체'로 풂 */
 function tgPickHub(v){ state.tg.hub = v; if (v) state.tg.r[3] = ''; loadTarget(); }
+$('tg-check').addEventListener('click', e => { const b = e.target.closest('button[data-v]'); if (!b) return; state.tg.check = b.dataset.v; loadTarget(); });
 $('tg-hub').addEventListener('click', e => { const b = e.target.closest('button[data-v]'); if (!b) return; tgPickHub(b.dataset.v); });
 function tgView(v){
   state.tg.view = v; try { localStorage.setItem('crm-tg-view', v); } catch (e) {}
@@ -209,7 +234,7 @@ async function tgMap(){
     const m = new naver.maps.Marker({ map: TM.map, position: P(r.lat, r.lng), zIndex: 200, icon: { content: `<i class="tgm" style="background:${TG_COL[r.seg] || '#888'}"></i>`, anchor: new naver.maps.Point(8, 8) } });
     naver.maps.Event.addListener(m, 'click', () => {
       const comp = [r.comp_ramen ? '라멘 ' + r.comp_ramen : '', r.comp_katsu ? '돈카츠 ' + r.comp_katsu : ''].filter(Boolean).join(' · ') || '없음';
-      TM.iw.setContent(`<div class="tg-iw"><b>${esc(r.name)}${r.branch ? ' ' + esc(r.branch) : ''}</b><br><span style="color:${TG_COL[r.seg] || '#888'};font-weight:700">${esc(r.seg || '')}</span> · ${r.pyeong == null ? '평수 미확인' : r.pyeong + '평'}<br>500m 경쟁점: ${esc(comp)}<br><span style="color:#888">${esc(r.addr_road || '')}</span><div class="a"><button data-a="lead" data-id="${r.id}">매장 상세</button><a href="${esc(naverLink(r))}" target="_blank" rel="noopener">N 플레이스</a></div></div>`);
+      TM.iw.setContent(`<div class="tg-iw"><b>${esc(r.name)}${r.branch ? ' ' + esc(r.branch) : ''}</b><br><span style="color:${TG_COL[r.seg] || '#888'};font-weight:700">${esc(r.seg || '')}</span> · ${r.pyeong == null ? '평수 미확인' : r.pyeong + '평'}<br>500m 경쟁점: ${esc(comp)}<br><span style="color:#888">${esc(r.addr_road || '')}</span>${tgCkBtns(r)}<div class="a"><button data-a="lead" data-id="${r.id}">매장 상세</button><a href="${esc(naverLink(r))}" target="_blank" rel="noopener">N 플레이스</a></div></div>`);
       TM.iw.open(TM.map, m);
     });
     TM.objs.push(m);
@@ -226,6 +251,7 @@ async function tgMap(){
   }
 }
 document.addEventListener('click', async e => {
+  const cb = e.target.closest('.tg-iw .tg-ck button'); if (cb) { tgSetCheck(cb.parentNode.dataset.id, cb.dataset.v); return; }
   const b = e.target.closest('.tg-iw [data-a]'); if (!b) return;
   const id = b.dataset.id;
   if (b.dataset.a === 'lead') { TM.iw.close(); openLead(+id); }
@@ -269,9 +295,11 @@ tgView(state.tg.view);
 ['tg-sort', 'tg-own', 'tg-chain'].forEach(id => $(id).addEventListener('change', loadTarget));
 $('tg-seg').addEventListener('click', e => { const b = e.target.closest('button[data-v]'); if (!b) return; state.tg.seg = b.dataset.v; state.tg.band = ''; loadTarget(); });
 $('tg-band').addEventListener('click', e => { const b = e.target.closest('button[data-v]'); if (!b) return; state.tg.band = b.dataset.v; loadTarget(); });
-$('tg-rows').addEventListener('click', e => { if (e.target.closest('a')) return; const tr = e.target.closest('tr[data-id]'); if (tr) openLead(+tr.dataset.id); });
+$('tg-rows').addEventListener('click', e => {
+  const cb = e.target.closest('.tg-ck button'); if (cb) { tgSetCheck(cb.parentNode.dataset.id, cb.dataset.v); return; }
+  if (e.target.closest('a')) return; const tr = e.target.closest('tr[data-id]'); if (tr) openLead(+tr.dataset.id); });
 $('tg-copy').addEventListener('click', async () => {
-  const rows = (state.tg.d && state.tg.d.rows) || [];
+  const rows = ((state.tg.d && state.tg.d.rows) || []).filter(r => r.sis_check !== '배달샵' && r.sis_check !== '부적합');
   if (!rows.length) { toast('복사할 매장이 없어요', true); return; }
   const lines = ['상호\t업종\t주소\t전화'].concat(rows.map(r => [r.name + (r.branch ? ' ' + r.branch : ''), r.seg || '', r.addr_road || '', r.tel ? tel(r.tel) : ''].join('\t')));
   try { await navigator.clipboard.writeText(lines.join('\n')); toast(`${rows.length}곳 주소를 복사했어요. 엑셀에 붙여 넣으세요`); }
