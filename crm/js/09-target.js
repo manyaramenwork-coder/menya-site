@@ -129,7 +129,7 @@ $('tg-hub').addEventListener('click', e => { const b = e.target.closest('button[
 function tgView(v){
   state.tg.view = v; try { localStorage.setItem('crm-tg-view', v); } catch (e) {}
   $('tg-v-list').classList.toggle('on', v === 'list'); $('tg-v-map').classList.toggle('on', v === 'map');
-  $('tg-mapbox').hidden = v !== 'map'; $('tg-tbl').hidden = v === 'map';
+  $('tg-mapbox').hidden = v !== 'map';   // 지도에서도 아래에 매장 목록은 그대로 보여 줌
   if (v === 'map' && state.tg.d) { tgFit = true; tgMap(); }
 }
 $('tg-v-list').addEventListener('click', () => tgView('list'));
