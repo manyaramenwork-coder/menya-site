@@ -17,6 +17,8 @@ document.head.insertAdjacentHTML('beforeend', `<style id="tg-css">
 .tg-iw{padding:10px 12px;font-size:13px;line-height:1.55;min-width:190px}.tg-iw b{font-size:14px}.tg-iw .a{display:flex;gap:6px;margin-top:8px}
 .tg-iw button,.tg-iw a{font-size:12px;padding:4px 9px;border:1px solid #ccd;border-radius:6px;background:#fff;color:inherit;text-decoration:none;cursor:pointer}
 #tg-addhub.on{background:#c62429;color:#fff;border-color:#c62429}
+#tg-basis{margin:0 0 12px}#tg-basis summary{cursor:pointer;font-size:14px}#tg-basis h4{margin:14px 0 4px;font-size:14px}
+#tg-basis ul{margin:0;padding-left:18px;font-size:13px;line-height:1.7}#tg-basis .warn{color:#a8431a;font-weight:600}
 </style>`);
 /* 지역: 권역 → 시도 → 시·군 → 구 (청주시 흥덕구 → 청주시 / 흥덕구) */
 const TG_ZONES = [['수도권', ['서울특별시', '경기도', '인천광역시']], ['충청권', ['대전광역시', '세종특별자치시', '충청북도', '충청남도']],
@@ -28,6 +30,7 @@ $('sec-target').innerHTML = `
   <div class="sec-hd"><h1>샵인샵 타겟 <small id="tg-count"></small></h1>
     <div class="row-btns"><div class="seg" role="group" aria-label="보기 방식"><button id="tg-v-list">목록</button><button id="tg-v-map">지도</button></div><button class="btn" id="tg-copy">우편용 주소 복사</button></div></div>
   <p class="muted">홍보 이미지의 업종(분식·김밥, 우동·소바, 덮밥, 초밥·일식, 텐동, 이자카야) 매장이에요. 라멘·돈카츠 전문점은 <b>경쟁점</b>이라 목록에서 빼고, 매장마다 <b>반경 500m 안 경쟁점 수</b>로 보여 줘요. 횟집은 제외해요. 평수는 인허가 자료가 연결된 매장만 나오고, 나머지는 '미확인'이에요.</p>
+  <details class="box" id="tg-basis"><summary><b>이 자료는 어떻게 만들었나요?</b> <span class="muted">수집 · 선정 · 상권 기준</span></summary><div id="tg-basis-body"></div></details>
   <div class="bar">
     <select id="tg-r0" aria-label="권역"></select><select id="tg-r1" aria-label="시도"></select><select id="tg-r2" aria-label="시군"></select><select id="tg-r3" aria-label="구"></select>
     <select id="tg-sort" aria-label="정렬"><option value="comp">경쟁점 적은 순</option><option value="name">이름순</option><option value="area">평수 작은 순</option><option value="density">주변 매장 많은 순</option></select>
@@ -94,12 +97,37 @@ function tgRegions(regs){
   tgOpts('tg-r2', '시도 전체', sido ? m2 : new Map(), si);
   tgOpts('tg-r3', '시·군 전체', si ? m3 : new Map(), gu);
 }
+/* 대표님 보고용: 자료 출처·선정 기준·상권 기준·한계 (숫자는 지금 고른 지역 기준) */
+const tgGuess = h => /추정/.test(h.note || '');
+const tgDay = v => v ? String(v).slice(0, 10) : '-';
+function tgBasis(d){
+  const m = d.meta || {}, b = d.bands || {}, all = Object.values(b).reduce((a, n) => a + n, 0), known = all - (b['미확인'] || 0);
+  const guess = (d.hubs || []).filter(tgGuess);
+  $('tg-basis-body').innerHTML = `
+  <h4>1. 어디서 모았나요</h4><ul>
+    <li><b>매장 목록</b>: 소상공인시장진흥공단 「상가(상권)정보」 공공데이터. 마지막 반영 <b>${tgDay(m.src_date)}</b>. 분기마다 갱신돼서 최근 폐업한 곳이 늦게 빠질 수 있어요.</li>
+    <li><b>평수</b>: 행정안전부 「인허가(일반·휴게음식점)」에 신고된 시설 면적. 상호·주소로 연결된 매장만 나와요. 지금 지역 ${nf(all)}곳 중 <b>${nf(known)}곳 확인</b> (인허가 수집 ${tgDay(m.lic_at)}).</li>
+    <li><b>업종 확인</b>: 네이버 플레이스 업종명. 지금 지역에서 ${nf(m.naver_n || 0)}곳이 확인돼 있어요.</li></ul>
+  <h4>2. 어떤 매장을 골랐나요</h4><ul>
+    <li>홍보 이미지의 <b>6개 업종</b>(분식·김밥, 우동·소바, 덮밥, 초밥·일식, 텐동, 이자카야)만 골라요. 판단 순서는 <b>상호 단어</b>(우동·텐동·이자카야 등) → <b>네이버 업종명</b> → <b>공공데이터 업종 분류</b>예요.</li>
+    <li><b>빼는 곳</b>: 폐업, 연락 거부로 표시한 곳, 횟집, 일식 요소가 없는 일반 호프·포차. 라멘·돈카츠 전문점은 목록에서 빼고 <b>경쟁점</b>으로 따로 보여 줘요.</li>
+    <li><b>체인</b>(기본으로 뺌): 같은 상호가 전국 3곳 이상이거나, 상호에 '○○점' 같은 지점명이 있거나, 직원이 체인으로 지정한 곳.</li>
+    <li><b>평수</b>: 20평(66.1㎡)을 기준으로 이하·초과로 나눠요. 인허가 면적 ÷ 3.3058로 계산해요.</li></ul>
+  <h4>3. 상권은 어떻게 봤나요</h4><ul>
+    <li><b>상권 기준점</b>(대학가·오피스·번화가)은 직원이 지도에 지정한 위치예요. 반경(예: 700m) 안 매장을 <b>직선거리</b>로 세요. 자동으로 판정한 상권이 아니에요.</li>
+    ${guess.length ? `<li class="warn">⚠ 표시된 기준점 ${guess.length}곳(${guess.map(h => esc(h.name)).join(', ')})은 처음에 넣은 <b>추정 좌표</b>예요. 지도에서 이름표를 누르고 '위치 옮기기'로 실제 위치(정문 등)를 찍어 주면 '확인됨'으로 바뀌어요.</li>` : '<li>기준점 위치는 모두 지도에서 확인한 위치예요.</li>'}
+    <li><b>경쟁점 500m</b>: 매장마다 반경 500m 안 라멘·돈카츠 전문점 수예요. 매일 새벽 다시 계산해요 (마지막 ${tgDay(m.comp_at)}).</li></ul>
+  <h4>4. 알아 둘 한계</h4><ul>
+    <li>업종은 상호와 공공 분류로 <b>자동 판정</b>해서 일부 틀릴 수 있어요. 우편을 보내기 전에 N 플레이스로 한 번 확인하는 걸 권해요.</li>
+    <li>실제 매출·유동인구 자료는 들어 있지 않아요. 상권분석 메뉴의 상권 리포트·소상공인365에서 따로 봐야 해요.</li></ul>`;
+}
 function renderTarget(){
   const d = state.tg.d || {}, rows = d.rows || [], regs = d.regions || [];
   tgRegions(regs);
   const hubs = d.hubs || [];
   $('tg-hub').innerHTML = hubs.length ? `<button data-v="" class="${!state.tg.hub ? 'on' : ''}">상권 전체</button>` +
-    hubs.map(h => `<button data-v="${h.id}" class="${String(state.tg.hub) === String(h.id) ? 'on' : ''}" title="${esc(h.kind || '')} · 반경 ${h.radius_m}m"><i style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${TG_HUBC[h.kind] || '#555'};margin-right:4px"></i>${esc(h.name)} <small>${nf(h.n)}</small></button>`).join('') : '';
+    hubs.map(h => `<button data-v="${h.id}" class="${String(state.tg.hub) === String(h.id) ? 'on' : ''}" title="${esc(h.kind || '')} · 반경 ${h.radius_m}m"><i style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${TG_HUBC[h.kind] || '#555'};margin-right:4px"></i>${esc(h.name)}${tgGuess(h) ? ' ⚠' : ''} <small>${nf(h.n)}</small></button>`).join('') : '';
+  tgBasis(d);
   tgChips('tg-seg', TG_SEGS, d.segs || {}, state.tg.seg, '업종 전체');
   tgChips('tg-band', TG_BANDS, d.bands || {}, state.tg.band, '면적 전체');
   const b = d.bands || {};
@@ -155,7 +183,8 @@ async function tgMap(){
     TM.iw = new naver.maps.InfoWindow({ content: '', borderColor: '#ccd', borderWidth: 1, anchorSize: new naver.maps.Size(10, 8), disableAnchor: false });
     naver.maps.Event.addListener(TM.map, 'click', e => {
       TM.iw.close();
-      if (state.tg.addHub) tgAddHub(e.coord.lat(), e.coord.lng());
+      if (state.tg.moveHub) tgMoveHub(e.coord.lat(), e.coord.lng());
+      else if (state.tg.addHub) tgAddHub(e.coord.lat(), e.coord.lng());
     });
   }
   TM.objs.forEach(o => o.setMap(null)); TM.objs = []; TM.iw.close();
@@ -166,7 +195,7 @@ async function tgMap(){
     TM.objs.push(new naver.maps.Circle({ map: TM.map, center: P(h.lat, h.lng), radius: h.radius_m, strokeColor: c, strokeOpacity: .9, strokeWeight: on ? 3 : 2, strokeStyle: 'shortdash', fillColor: c, fillOpacity: on ? .08 : .03, clickable: false }));
     const m = new naver.maps.Marker({ map: TM.map, position: P(h.lat, h.lng), zIndex: 300, icon: { content: `<span class="tgh" style="border-color:${c};color:${c}">${esc(h.name)} ${nf(h.n)}</span>`, anchor: new naver.maps.Point(0, 0) } });
     naver.maps.Event.addListener(m, 'click', () => {
-      TM.iw.setContent(`<div class="tg-iw"><b>${esc(h.name)}</b><br>${esc(h.kind || '')} 기준점 · 반경 ${nf(h.radius_m)}m · 타겟 ${nf(h.n)}곳<div class="a"><button data-a="hub" data-id="${h.id}">${on ? '전체 보기' : '이 상권만 보기'}</button><button data-a="hoff" data-id="${h.id}">기준점 숨기기</button></div></div>`);
+      TM.iw.setContent(`<div class="tg-iw"><b>${esc(h.name)}</b><br>${esc(h.kind || '')} 기준점 · 반경 ${nf(h.radius_m)}m · 타겟 ${nf(h.n)}곳<br>${tgGuess(h) ? '<span style="color:#a8431a">⚠ 위치 추정치 — 확인 필요</span>' : '<span style="color:#2f6f4e">✓ 위치 확인됨</span>'}<div class="a"><button data-a="hub" data-id="${h.id}">${on ? '전체 보기' : '이 상권만 보기'}</button><button data-a="hmove" data-id="${h.id}">위치 옮기기</button><button data-a="hoff" data-id="${h.id}">숨기기</button></div></div>`);
       TM.iw.open(TM.map, m);
     });
     TM.objs.push(m);
@@ -201,6 +230,11 @@ document.addEventListener('click', async e => {
   const id = b.dataset.id;
   if (b.dataset.a === 'lead') { TM.iw.close(); openLead(+id); }
   if (b.dataset.a === 'hub') { TM.iw.close(); tgPickHub(String(state.tg.hub) === id ? '' : id); }
+  if (b.dataset.a === 'hmove') {
+    const h = ((state.tg.d && state.tg.d.hubs) || []).find(x => String(x.id) === id); if (!h) return;
+    TM.iw.close(); tgAddMode(false); state.tg.moveHub = h;
+    $('tg-maphint').textContent = `'${h.name}'의 실제 위치(예: 정문)를 지도에서 누르세요.`;
+  }
   if (b.dataset.a === 'hoff') {
     if (!confirm('이 기준점을 목록과 지도에서 숨길까요? (매장 데이터는 그대로예요)')) return;
     try { await rpc('lead_hub_off', { p_id: +id }); TM.iw.close(); if (String(state.tg.hub) === id) state.tg.hub = ''; toast('기준점을 숨겼어요'); loadTarget(); }
@@ -212,7 +246,13 @@ function tgAddMode(on){
   $('tg-addhub').textContent = on ? '추가 취소' : '＋ 기준점 추가';
   $('tg-maphint').textContent = on ? '기준점으로 삼을 곳(예: ○○대학교 정문)을 지도에서 누르세요.' : '핀을 누르면 매장 정보가 보여요. 동그라미(기준점)를 누르면 그 상권만 걸러져요.';
 }
-$('tg-addhub').addEventListener('click', () => tgAddMode(!state.tg.addHub));
+$('tg-addhub').addEventListener('click', () => { state.tg.moveHub = null; tgAddMode(!state.tg.addHub); });
+async function tgMoveHub(lat, lng){
+  const h = state.tg.moveHub; state.tg.moveHub = null; tgAddMode(false);
+  if (!confirm(`'${h.name}' 위치를 여기로 옮길까요?`)) return;
+  try { await rpc('lead_hub_save', { p: { id: h.id, name: h.name, lat, lng } }); toast(`'${h.name}' 위치를 확인했어요`); tgPickHub(String(h.id)); }
+  catch (err) { toast(errMsg(err), true); }
+}
 async function tgAddHub(lat, lng){
   tgAddMode(false);
   const name = (prompt('기준점 이름 (예: 충북대 정문, 성안길)') || '').trim(); if (!name) return;
