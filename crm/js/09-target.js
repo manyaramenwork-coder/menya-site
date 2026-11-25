@@ -123,7 +123,9 @@ function renderTarget(){
   state.tg.r = state.tg.r.map((v, j) => j < i ? v : j === i ? $(id).value : '');
   state.tg.hub = ''; loadTarget();
 }));
-$('tg-hub').addEventListener('click', e => { const b = e.target.closest('button[data-v]'); if (!b) return; state.tg.hub = b.dataset.v; loadTarget(); });
+/* 상권(기준점)은 구 경계에 걸쳐 있어서, 고르면 구 선택은 '전체'로 풂 */
+function tgPickHub(v){ state.tg.hub = v; if (v) state.tg.r[3] = ''; loadTarget(); }
+$('tg-hub').addEventListener('click', e => { const b = e.target.closest('button[data-v]'); if (!b) return; tgPickHub(b.dataset.v); });
 function tgView(v){
   state.tg.view = v; try { localStorage.setItem('crm-tg-view', v); } catch (e) {}
   $('tg-v-list').classList.toggle('on', v === 'list'); $('tg-v-map').classList.toggle('on', v === 'map');
@@ -198,7 +200,7 @@ document.addEventListener('click', async e => {
   const b = e.target.closest('.tg-iw [data-a]'); if (!b) return;
   const id = b.dataset.id;
   if (b.dataset.a === 'lead') { TM.iw.close(); openLead(+id); }
-  if (b.dataset.a === 'hub') { TM.iw.close(); state.tg.hub = String(state.tg.hub) === id ? '' : id; loadTarget(); }
+  if (b.dataset.a === 'hub') { TM.iw.close(); tgPickHub(String(state.tg.hub) === id ? '' : id); }
   if (b.dataset.a === 'hoff') {
     if (!confirm('이 기준점을 목록과 지도에서 숨길까요? (매장 데이터는 그대로예요)')) return;
     try { await rpc('lead_hub_off', { p_id: +id }); TM.iw.close(); if (String(state.tg.hub) === id) state.tg.hub = ''; toast('기준점을 숨겼어요'); loadTarget(); }
@@ -220,7 +222,7 @@ async function tgAddHub(lat, lng){
   const [, sido, si, gu] = state.tg.r;
   try {
     const h = await rpc('lead_hub_save', { p: { name, kind, lat, lng, radius_m: Math.min(Math.max(rad, 100), 3000), sido, sigungu: si ? (gu ? si + ' ' + gu : si) : '' } });
-    toast(`'${name}' 기준점을 추가했어요`); state.tg.hub = String(h.id); loadTarget();
+    toast(`'${name}' 기준점을 추가했어요`); tgPickHub(String(h.id));
   } catch (err) { toast(errMsg(err), true); }
 }
 tgView(state.tg.view);
