@@ -10,7 +10,7 @@ function spark(series){
   const pts = v.map((y, i) => `${(i * st).toFixed(1)},${(h - 2 - (y / mx) * (h - 4)).toFixed(1)}`).join(' ');
   return `<svg class="spark" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" aria-hidden="true"><polyline points="${pts}" fill="none" stroke="var(--blue)" stroke-width="2" stroke-linejoin="round"/></svg>`;
 }
-const won = v => v ? (v >= 100000 ? (v / 100000).toFixed(1).replace(/\.0$/, '') + '억' : Math.round(v / 10).toLocaleString() + '만') : '-'; // 공정위 평균매출 단위: 천원 (100,000천원 = 1억)
+const ftWon = v => v ? (v >= 100000 ? (v / 100000).toFixed(1).replace(/\.0$/, '') + '억' : Math.round(v / 10).toLocaleString() + '만') : '-'; // 공정위 평균매출 단위: 천원 (100,000천원 = 1억)
 
 // 업종 여러 개 선택 (비어 있으면 전체). 묶음: 식사 업종만(기본) / 우리 관련 / 전체
 const FT_NOMEAL = ['커피', '음료 (커피 외)', '제과제빵', '아이스크림/빙수'];
@@ -48,7 +48,7 @@ function renderFtc(){
     <td class="num">${r.net === null || r.net === undefined ? '<span class="muted">-</span>' : r.net > 0 ? `<span class="up">+${r.net.toLocaleString()}</span>` : r.net < 0 ? `<span class="dn">${r.net.toLocaleString()}</span>` : '0'}</td>
     <td class="num">${r.crate !== null && r.crate !== undefined && r.crate >= 10 ? `<span class="dn"><b>${r.crate}%</b></span>` : pc(r.crate)}</td>
     <td class="num">${pc(r.cagr)}</td>
-    <td class="num">${won(r.sales)}</td>
+    <td class="num">${ftWon(r.sales)}</td>
     <td class="num">${r.crm ? r.crm.toLocaleString() + (r.cj ? ` <small class="muted">(${r.cj})</small>` : '') : '<span class="muted">-</span>'}</td>
     <td>${rTag(r.st)}</td></tr>`).join('')
     : `<tr><td colspan="${10 + ys.length}" class="muted" style="text-align:center;padding:40px">조건에 맞는 브랜드가 없어요.</td></tr>`;
@@ -224,7 +224,7 @@ function renderBrand(d){
   const corps = [...new Set(f.map(x => x.corp).filter(Boolean))];
   const snaps = d.snaps || [], regs = d.regions || [], mx = Math.max(1, ...regs.map(x => x.n));
   const ftcTbl = f.length ? `<div class="tbl-wrap"><table class="bp-tbl"><thead><tr>${corps.length > 1 ? '<th>법인</th>' : ''}<th>연도</th><th class="num">가맹점</th><th class="num">신규</th><th class="num">종료</th><th class="num">해지</th><th class="num">평균 매출</th></tr></thead><tbody>` +
-    f.map(x => `<tr>${corps.length > 1 ? `<td>${esc(x.corp || '')}</td>` : ''}<td>${x.yr}</td><td class="num"><b>${fmt(x.n)}</b></td><td class="num">${fmt(x.new)}</td><td class="num">${fmt(x.end)}</td><td class="num">${fmt(x.cncl)}</td><td class="num">${won(x.sales)}</td></tr>`).join('') +
+    f.map(x => `<tr>${corps.length > 1 ? `<td>${esc(x.corp || '')}</td>` : ''}<td>${x.yr}</td><td class="num"><b>${fmt(x.n)}</b></td><td class="num">${fmt(x.new)}</td><td class="num">${fmt(x.end)}</td><td class="num">${fmt(x.cncl)}</td><td class="num">${ftWon(x.sales)}</td></tr>`).join('') +
     '</tbody></table></div><p class="muted" style="margin:6px 0 0">연도는 숫자의 기준 시점(그해 말)이에요. 공정위 통계는 1년 늦게 올라와서 최신 연도는 원문에서 확인하세요. 평균 매출은 가맹점 1곳당 연간 금액이에요.</p>'
     : '<p class="muted" style="margin:0">정보공개서에서 이 이름의 브랜드를 찾지 못했어요. 신생 브랜드이거나, 같은 이름을 쓰는 개인 매장일 수 있어요.</p>';
   $('panel').innerHTML = `<div class="panel-hd"><div><h2 id="p-name">${esc(name)}</h2><div class="sm">${esc(corps.join(' · ') || '정보공개서 미등록')}${f.length ? ' · ' + esc(f[f.length - 1].ind || '') : ''}</div></div><button class="x" aria-label="닫기" data-x>×</button></div>
