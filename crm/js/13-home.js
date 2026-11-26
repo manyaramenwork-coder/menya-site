@@ -23,11 +23,11 @@ const ico = (k, s) => `<svg width="${s || 20}" height="${s || 20}" viewBox="0 0 
 if (!VIEWS.includes('home')) VIEWS.unshift('home');
 BNAV[0] = ['home', '홈'];
 const HM = { stats: null, cats: null, tab: 'cat' };
-const TITLES = { home: '홈 대시보드', area: '상권분석', ftc: '정보공개서 분석', naver: '급성장 브랜드', script: '영업 스크립트', db: '전체 매장 DB', target: '샵인샵 타겟', listing: '양도 매물', inbox: '신청함', comm: '커뮤니티 리드', fav: '관심 매장', log: '연락 기록', ingest: '수집 현황' };
+const TITLES = { home: '홈 대시보드', area: '상권분석', ftc: '정보공개서 분석', naver: '급성장 브랜드', script: '영업 스크립트', db: '전체 매장 원본', target: '샵인샵 타겟', listing: '양도 매물', inbox: '신청함', comm: '커뮤니티 리드', fav: '관심 매장', log: '연락 기록', ingest: '수집 현황' };
 const GROUP_IC = { '영업기획': 'plan', '매장 찾기': 'store', '리드 관리': 'users' };
 let navOpen = {}; try { navOpen = JSON.parse(localStorage.getItem('crm-nav') || '{}') || {}; } catch (e) {}
 
-/* 시작 화면 = 상권분석. 주소에 화면이 없거나(#map 같은 옛 주소 포함) 전체 매장 DB면 상권분석부터 */
+/* 시작 화면 = 상권분석. 주소에 화면이 없거나(#map 같은 옛 주소 포함) 전체 매장 원본이면 상권분석부터 */
 const START_VIEW = 'area';
 { const h0 = location.hash.slice(1); if (!VIEWS.includes(h0) || h0 === 'db') history.replaceState(null, '', '#' + START_VIEW); }
 
@@ -67,7 +67,7 @@ buildNav = function(){
     `<div class="side-sys">샵인샵 영업관리 시스템</div>` +
     `<a href="#home" data-v="home" class="top-item${v === 'home' ? ' on' : ''}">${ico('home')}<span>홈 대시보드</span></a>` +
     NAV_GROUPS.map(([g, items]) => grp(g, items, GROUP_IC[g] || 'plan')).join('') +
-    (state.admin ? grp('관리', [['ingest', '수집 현황']], 'gear') : '') +
+    grp('관리', [DB_ITEM].concat(state.admin ? [['ingest', '수집 현황']] : []), 'gear') +
     `<div class="side-foot"><a href="https://menyamatsuri.work/" class="ext">${ico('out', 18)}<span>매장관리로 돌아가기</span></a></div>`;
   const inMore = !BNAV.some(([k]) => k === v);
   $('bnav').innerHTML = BNAV.map(([k, l]) => {
@@ -159,7 +159,7 @@ function heroArt(){
 function renderHome(){
   const s = HM.stats || {}, st = s.stages || {};
   const kpi = (icon, label, val, unit, sub, tone) => `<div class="kpi ${tone || ''}"><span class="kpi-ic">${ico(icon, 22)}</span><span class="kpi-l">${label}</span><b>${nfm(val)}<small>${unit}</small></b><span class="kpi-s">${sub}</span></div>`;
-  const quick = [['area', 'pin', '상권 리포트 만들기'], ['db', 'db', '매장 DB 조회'], ['target', 'target', '샵인샵 타겟 보기'], ['script', 'script', '영업 스크립트']];
+  const quick = [['area', 'pin', '상권 리포트 만들기'], ['log', 'log', '연락 기록'], ['target', 'target', '샵인샵 타겟 보기'], ['script', 'script', '영업 스크립트']];
   const bar = (label, a, b, note) => { const p = rate(a, b); return `<div class="pb"><div class="pb-t"><span>${label} <small>${note}</small></span><b>${b ? p + '%' : '-'}</b></div><div class="pb-b"><i style="width:${Math.min(100, p)}%"></i></div></div>`; };
   const alerts = [
     [s.inbox_new, '신청함에 연락 안 한 신청', 'inbox', 'hot'],
@@ -177,7 +177,7 @@ function renderHome(){
   $('home-body').innerHTML = `
   <div class="hm-top">
     <div class="hero"><div class="hero-t"><span class="pill">샵인샵 영업 통합관리</span><h2>데이터로 찾는<br><em>최적의 샵인샵 매장</em>,<br>멘야마쯔리와 함께</h2><p>상권분석부터 매장 수집, 연락 기록까지<br>한 곳에서 관리하는 샵인샵 영업 전용 화면이에요.</p></div>${heroArt()}</div>
-    ${kpi('store', '전체 매장 수', s.total, '곳', '수집된 타겟 매장')}
+    ${kpi('store', '전체 매장 수', s.total, '곳', '공공데이터로 모은 원본')}
     ${kpi('phone', '이번 주 통화', s.calls_week, '건', `연결 ${nfm(s.connected_week)}건`)}
     ${kpi('heart', '이번 주 신규 관심', s.interested_week, '곳', `미팅 진행 ${nfm(s.meetings)}곳`)}
     ${kpi('check', '계약', s.contracts, '건', '누적 계약', 'ok')}
