@@ -16,19 +16,21 @@ const IC = {
 };
 const svg = k => `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[k]}</svg>`;
 // 메뉴 묶음: 영업기획(분석·계획) → 매장 찾기(수집) → 리드 관리(연락·기록)
+// 전체 매장 원본(공공데이터를 그대로 모은 것)은 영업 DB가 아니라서 '관리'에 둠
+const DB_ITEM = ['db', '전체 매장 원본', '공공데이터로 모은 매장 전체 검색'];
 const NAV_GROUPS = [
   ['영업기획', [['area', '상권분석', '소상공인365 상권·입지 분석'], ['ftc', '정보공개서 분석', '공정위 가맹점 수 변화'], ['naver', '급성장 브랜드', '인허가 최근 개업·폐업 추이'], ['script', '영업 스크립트', '통화하면서 보는 문구']]],
-  ['매장 찾기', [['db', '전체 매장 DB', '목록·보드로 전체 검색'], ['target', '샵인샵 타겟', '우리 메뉴·상권 기준 우편 대상'], ['listing', '양도 매물', '어사이드로 들어온 매물']]],
+  ['매장 찾기', [['target', '샵인샵 타겟', '우리 메뉴·상권 기준 우편 대상'], ['listing', '양도 매물', '어사이드로 들어온 매물']]],
   ['리드 관리', [['inbox', '신청함', '랜딩 신청'], ['comm', '커뮤니티 리드', '카페 글·댓글·쪽지 준 분'], ['fav', '관심 매장', '담아 둔 매장'], ['log', '연락 기록', '통화·방문 기록']]]
 ];
 const NAV = NAV_GROUPS.flatMap(g => g[1].map(([k, l]) => [k, l]));
-const BNAV = [['fav', '관심'], ['db', '매장'], ['log', '기록'], ['inbox', '신청함'], ['more', '더보기']];
+const BNAV = [['fav', '관심'], ['target', '타겟'], ['log', '기록'], ['inbox', '신청함'], ['more', '더보기']];
 state.badge = {};
 function buildNav(){
   const b = state.badge;
   const link = ([k, l]) => `<a href="#${k}" data-v="${k}" class="${state.view === k ? 'on' : ''}" ${state.view === k ? 'aria-current="page"' : ''}>${svg(k)}<span>${l}</span>${b[k] ? `<em>${b[k]}</em>` : ''}</a>`;
   $('side').innerHTML = NAV_GROUPS.map(([g, items]) => `<div class="side-grp">${g}</div>` + items.map(link).join('')).join('') +
-    (state.admin ? '<div class="side-gap"></div>' + link(['ingest', '수집 현황']) : '') +
+    '<div class="side-gap"></div><div class="side-grp">관리</div>' + link(DB_ITEM) + (state.admin ? link(['ingest', '수집 현황']) : '') +
     '<div class="side-gap"></div><a href="https://menyamatsuri.work/" class="ext">매장관리로 돌아가기</a>';
   const inMore = !BNAV.some(([k]) => k === state.view);
   $('bnav').innerHTML = BNAV.map(([k, l]) => {
@@ -51,7 +53,7 @@ function openMore(){
   const inBar = BNAV.map(([k]) => k);
   const btn = ([k, t, d]) => `<button data-v="${k}">${svg(k)}<span><b>${t}</b><small>${d}</small></span>${state.badge[k] ? `<em>${state.badge[k]}</em>` : ''}</button>`;
   const groups = NAV_GROUPS.map(([g, items]) => [g, items.filter(([k]) => !inBar.includes(k))]).filter(([, items]) => items.length);
-  if (state.admin) groups.push(['관리자', [['ingest', '수집 현황', '지역 수집 진행·실패 확인']]]);
+  groups.push(['관리', [DB_ITEM].concat(state.admin ? [['ingest', '수집 현황', '지역 수집 진행·실패 확인']] : [])]);
   $('more-sheet').innerHTML = '<div class="sheet-hd">더보기</div>' + groups.map(([g, items]) => `<div class="sheet-grp">${g}</div>` + items.map(btn).join('')).join('') +
     `<a href="https://menyamatsuri.work/">매장관리로 돌아가기</a><button data-v="logout" class="lo">로그아웃</button>`;
   $('more-sheet').hidden = false; $('scrim').hidden = false;
