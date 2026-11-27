@@ -81,6 +81,14 @@
         if (active === 'perm-set') { us.classList.add('open'); sub.classList.add('open'); sub.querySelectorAll('a').forEach(a => a.classList.toggle('on', a.classList.contains('js-perm'))); }
       }
     }
+    // 매장 사원: 직영점 관리(시프트 관리·출결 관리)를 연락망 아래에 — 자기 매장만, 보기·댓글 (2026-11-27)
+    if (myRole() === 'staff' && !nav.querySelector('.js-dm-staff')) {
+      const on = ['dm-shift', 'hr-att'].includes(active);
+      const org = [...nav.querySelectorAll(':scope > .cat')].find(b => label(b) === '연락망');
+      const html = `<button class="cat js-dm js-dm-staff ${on ? 'open' : ''}" onclick="const o=this.classList.toggle('open');this.nextElementSibling.classList.toggle('open',o)">${ic('store')}직영점 관리${ic('chevron').replace('class="icon"', 'class="icon ar"')}</button>
+        <div class="sub js-dm js-dm-staff ${on ? 'open' : ''}">${[['dm-shift', '시프트 관리'], ['hr-att', '출결 관리']].map(([k, t]) => `<a role="button" tabindex="0" class="${active === k ? 'on' : ''}" onclick="go('${k}')">${t}</a>`).join('')}</div>`;
+      if (org) org.insertAdjacentHTML('afterend', html); else nav.insertAdjacentHTML('beforeend', html);
+    }
     if (isAdm() || !PM.mine) return;
     nav.querySelectorAll('.sub a').forEach(a => { const k = SUB[a.textContent.trim()]; if (k && !mmCan(k)) a.remove(); });
     nav.querySelectorAll('.cat').forEach(b => {
@@ -97,6 +105,7 @@
     const uid = (typeof SESSION !== 'undefined' && SESSION.user && (SESSION.user.uid || SESSION.user.id)) || '';
     if (uid !== PM.uid) { PM.uid = uid; PM.mine = null; }
     if (!PM.mine && !isAdm()) loadMine();
+    document.documentElement.classList.toggle('mm-role-staff', myRole() === 'staff');
     try { applyMenu(active); } catch (e) { console.warn('권한 메뉴 실패', e); }
     return r;
   };
@@ -171,6 +180,8 @@
   .pm-t tbody tr:not(.pm-g):hover td{background:#fafbf7}
   .pm-soon{margin-left:8px;font-size:10.5px;padding:1px 6px;border-radius:5px;background:#f5efe0;color:#8a6d2b;vertical-align:1px}
   .pm-foot{font-size:11px;color:#a0a796;margin-top:10px;text-align:right}
+  /* 매장 사원에게는 시프트 화면의 휴무 카운터(슈퍼바이저 포함) 숨김 */
+  html.mm-role-staff #sh-body .dm-shlay > div > section:nth-child(2){display:none!important}
   @media(max-width:760px){.pm-top{flex-direction:column}.pm-top .btn{width:100%}.pm-t .pm-c{width:64px;padding:8px 4px}.pm-t th{padding:8px 6px}}`;
   document.head.appendChild(st);
 
