@@ -68,6 +68,8 @@
     const day = {};   // 날짜별 [포스, 배달순]
     if (idx >= 0) SALES.rows.forEach(r => { if (r[1] !== idx) return; (day[r[0]] || (day[r[0]] = [0, 0]))[0] += r[5] || 0; });
     if (sid === DV_STORE && DT.dv) (DT.dv.days || []).forEach(x => { const o = day[x.d] || (day[x.d] = [0, 0]); o[1] += (x.sales || 0) + (x.pick || 0) - (x.usedCall || 0) - (x.usedOther || 0); });
+    // 오늘은 아직 영업 중이라 집계에서 뺌 → 당월은 전날까지 (2026-11-27)
+    const cut = kst(); Object.keys(day).forEach(d => { if (d >= cut) delete day[d]; });
     const M = {};
     Object.keys(day).forEach(d => {
       const ym = d.slice(0, 7), o = M[ym] || (M[ym] = { autoTotal: 0, autoDays: 0, last: '' });
