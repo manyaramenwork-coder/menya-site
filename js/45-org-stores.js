@@ -541,6 +541,14 @@
     try { SH.d = await rpc('shift_data', { p_store:+DM.cur, p_ym:SH.ym }); }
     catch (e) { B.innerHTML = storeTabs(false, 'dmShPick') + loading('불러오지 못했어요: ' + esc(errMsg(e))); return; }
     SH.map = {}; SH.d.cells.forEach(([d, s, c]) => { (SH.map[d] = SH.map[d] || {})[s] = c; });
+    // 첫 주에 걸친 지난달 날짜(예: 12월 1주차의 11/30 월)도 흐리게 보여주려고 지난달 시프트를 같이 읽어 옴 (보기 전용)
+    SH.prev = null;
+    if (firstIdx(SH.ym) > 0) {
+      try { const pym = ymAdd(SH.ym, -1), pd = await rpc('shift_data', { p_store:+DM.cur, p_ym:pym }), pm = {};
+        (pd.cells || []).forEach(([d, s, c]) => { (pm[d] = pm[d] || {})[s] = c; });
+        SH.prev = { ym:pym, n:dim(pym), roster:pd.roster || [], map:pm };
+      } catch (e) { SH.prev = null; }
+    }
     if (resetWeek) { const t = today(); SH.week = t.slice(0,7) === SH.ym ? weekOf(+t.slice(8,10)) : 0; SH.cw = SH.week; SH.sel = null; }
     shDraw(); shSeen();
   }
@@ -578,7 +586,7 @@
         <section class="card" id="sh-cmt">${cmtHtml()}</section>
       </aside></div>`;
   }
-  function wkRange(w){ const ds = weeks()[w].filter(inM); const [, m] = SH.ym.split('-'); return `${+m}/${ds[0]} ~ ${+m}/${ds[ds.length - 1]}`; }
+  function wkRange(w){ const all = weeks()[w], ds = all.filter(inM); const [, m] = SH.ym.split('-'); const s0 = all[0] < 1 && SH.prev ? `${+SH.prev.ym.slice(5)}/${SH.prev.n + all[0]}` : `${+m}/${ds[0]}`; return `${s0} ~ ${+m}/${ds[ds.length - 1]}`; }
   function flowBtns(){
     const d = SH.d;
     if (d.status === 0) return d.can_edit ? `<button class="dmb dark" onclick="dmShStatus(1)">한 달 제출</button>` : '';
@@ -589,6 +597,7 @@
   function weekHtml(){
     const d = SH.d, days = weeks()[SH.week];
     return `<div class="dm-week">${days.map((x, i) => {
+      if (!inM(x) && x < 1 && SH.prev) return prevCol(x, i);
       if (!inM(x)) return `<div class="dm-col out"><div class="ch"><div class="dd"><span>${WD[i]} · 다른 달</span></div></div></div>`;
       const [l, dn] = cnt2(x), hasC = d.comments.some(c => c.day === x && !c.parent && !c.deleted);
       const ppl = d.roster.filter(p => active(p, x));
@@ -597,6 +606,16 @@
           <div class="n"><span>런치 <b>${l}</b></span><span>디너 <b>${dn}</b></span></div></div>
         <div class="sls">${ppl.map(p => { const c = v(x, p.id); return `<div class="sl ${cOf(c)} ${SH.focus === p.id ? 'hl' : ''} ${SH.focus && SH.focus !== p.id ? 'dim' : ''}" style="--pc:${colorOf(p.id)}"><b title="${esc(p.name)}${p.from ? ' (' + esc(p.from) + ')' : ''}">${esc(p.name)}</b>${d.can_edit ? `<select aria-label="${esc(p.name)} ${x}일 근무" onchange="dmShSet(${x},${p.id},this.value)">${optHtml(c, p)}</select>` : `<span class="ro">${labOf(p, c)}</span>`}</div>`; }).join('') || '<div class="dm-ek">근무자 없음</div>'}</div></div>`;
     }).join('')}</div>`;
+  }
+  // 지난달 날짜 칸 (흐리게 · 보기 전용)
+  function prevCol(x, i){
+    const P = SH.prev, pd = P.n + x, pmn = +P.ym.slice(5), pv = sid => (P.map[pd] || {})[sid] || 'N';
+    const ppl = P.roster.filter(p => (p.active || []).includes(pd));
+    let l = 0, dn = 0; ppl.forEach(p => { const c = pv(p.id); if (c === 'F') { l++; dn++; } else if (c === 'L' || c === 'H' || c === 'LW') l++; else if (c === 'D' || c === 'DW') dn++; });
+    return `<div class="dm-col prevm ${i >= 5 ? 'we' : ''}" title="${pmn}월 ${pd}일 · 지난달 시프트 (보기 전용 · 고치려면 ${pmn}월로 이동)">
+      <div class="ch ${i === 5 ? 'sat' : i === 6 ? 'sun' : ''}" onclick="dmShMonth(-1)"><div class="dd"><b>${pmn}/${pd}</b><span>${WD[i]} · 지난달</span></div>
+        <div class="n"><span>런치 <b>${l}</b></span><span>디너 <b>${dn}</b></span></div></div>
+      <div class="sls">${ppl.map(p => { const c = pv(p.id); return `<div class="sl ${cOf(c)} ${SH.focus === p.id ? 'hl' : ''} ${SH.focus && SH.focus !== p.id ? 'dim' : ''}" style="--pc:${colorOf(p.id)}"><b title="${esc(p.name)}">${esc(p.name)}</b><span class="ro">${labOf(p, c)}</span></div>`; }).join('') || '<div class="dm-ek">근무자 없음</div>'}</div></div>`;
   }
   function monthHtml(){
     const d = SH.d, cls = i => i === 5 ? 'sat' : i === 6 ? 'sun' : '';
@@ -974,7 +993,7 @@
   .dm-who{display:flex;flex-wrap:wrap;gap:5px;margin:0 0 12px;align-items:center}.dm-who>span{font-size:11px;color:#8a9181;margin-right:2px}
   .dm-who button{border:1px solid #dfe3d9;background:#fff;border-radius:999px;padding:4px 11px;font-size:12px;color:#4a5244;cursor:pointer;white-space:nowrap}.dm-who button.on{background:#2d3726;border-color:#2d3726;color:#fff}.dm-who i{display:inline-block;width:4px;height:11px;border-radius:2px;margin-right:5px;vertical-align:-1px}
   .dm-week{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
-  .dm-col{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff}.dm-col.we{background:#fcfcf9}.dm-col.out{opacity:.35}.dm-col.sel{box-shadow:0 0 0 2px #c62429}
+  .dm-col{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff}.dm-col.we{background:#fcfcf9}.dm-col.out{opacity:.35}.dm-col.prevm{opacity:.5}.dm-col.prevm .ch{cursor:pointer}.dm-col.sel{box-shadow:0 0 0 2px #c62429}
   .dm-col.flash,.md.flash{animation:dmfl 1.6s}@keyframes dmfl{0%,40%{box-shadow:0 0 0 3px #f2c14e}100%{box-shadow:none}}
   .dm-col .ch{padding:9px 9px 8px;border-bottom:1px solid var(--line);cursor:pointer;background:#fafaf7}.dm-col .ch:hover{background:#f3f4ee}
   .dm-col .dd{display:flex;align-items:baseline;gap:5px}.dm-col .dd b{font-size:17px;line-height:1}.dm-col .dd span{font-size:12px;color:#6b7364}.dm-col .dd i{margin-left:auto;font-style:normal;font-size:11px}
