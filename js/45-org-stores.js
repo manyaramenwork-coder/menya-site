@@ -573,8 +573,8 @@
         <section class="card" id="sh-sched"><div class="dm-bar">
           <div class="dm-tabs"><button class="${SH.view === 'week' ? 'on' : ''}" onclick="dmShView('week')">주간 보기</button><button class="${SH.view === 'month' ? 'on' : ''}" onclick="dmShView('month')">월간 요약</button></div>
           ${SH.view === 'week' ? `<div class="dm-wnav"><button onclick="dmShWk(-1)" ${SH.week === 0 ? 'disabled' : ''} aria-label="이전 주">‹</button><b>${SH.week + 1}주차 · ${wkRange(SH.week)}</b><button onclick="dmShWk(1)" ${SH.week >= weeks().length - 1 ? 'disabled' : ''} aria-label="다음 주">›</button></div><button class="dmb sm" onclick="dmShShot(this)" title="이번 주 시프트를 이미지로 만들어 카톡 등으로 보내요">📷 이미지로 공유</button>` : ''}
-          <span class="dm-hint">${SH.view === 'week' ? (d.can_edit ? '기본은 출근 · 이름 옆 화살표로 휴무·월차·런치·디너·반휴를 골라요 · 런치·디너는 근무 0.5일, 런치만·디너만(반휴)은 근무 0.5일·휴무 0.5일 · 날짜를 누르면 그날 전체' : '보기 전용이에요') : '표시 없음 = 풀타임 · 런 = 런치만 · 디 = 디너만 · 취소선 = 휴무 · 날짜를 누르면 그날 근무를 고칠 수 있어요'}</span></div>
-          ${SH.view === 'week' ? `<div class="dm-who"><span>직원 강조</span>${['전체', ...d.roster.map(p => p.id)].map(id => { const p = d.roster.find(x => x.id === id); return `<button class="${(SH.focus || '전체') === id ? 'on' : ''}" onclick="dmShFocus(${id === '전체' ? 'null' : id})">${p ? `<i style="background:${colorOf(p.id)}"></i>${esc(p.name)}` : '전체'}</button>`; }).join('')}</div>` : ''}
+          <span class="dm-hint">${SH.view === 'week' ? (d.can_edit ? '기본은 출근 · 이름 옆 화살표로 휴무·월차·런치·디너·반휴를 골라요 · 런치·디너는 근무 0.5일, 런치만·디너만(반휴)은 근무 0.5일·휴무 0.5일 · 날짜를 누르면 그날 전체' : '보기 전용이에요') : (d.can_edit ? '이름 옆 화살표로 하루씩 바로 고쳐요 · 날짜 숫자를 누르면 그날 전체를 한 번에 고쳐요' : '표시 없음 = 풀타임 · 런 = 런치만 · 디 = 디너만 · 취소선 = 휴무')}</span></div>
+          ${d.roster.length ? `<div class="dm-who"><span>직원 강조</span>${['전체', ...d.roster.map(p => p.id)].map(id => { const p = d.roster.find(x => x.id === id); return `<button class="${(SH.focus || '전체') === id ? 'on' : ''}" onclick="dmShFocus(${id === '전체' ? 'null' : id})">${p ? `<i style="background:${colorOf(p.id)}"></i>${esc(p.name)}` : '전체'}</button>`; }).join('')}</div>` : ''}
           <div id="sh-view">${SH.view === 'week' ? weekHtml() : monthHtml()}</div>
           <div class="dm-tools">${d.can_edit ? `${SH.view === 'week' ? `<button class="dmb" onclick="dmShCopy()" ${SH.week >= weeks().length - 1 ? 'disabled' : ''}>이번 주 → 다음 주에 복사</button>` : ''}<button class="dmb" onclick="dmShRefill()">직원 현황 기준으로 다시 채우기</button>` : ''}
             <span style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap">${flowBtns()}</span></div>
@@ -626,15 +626,22 @@
     const cell = x => {
       if (!inM(x)) return '<div class="md2 empty"></div>';
       const [l, dn] = cnt2(x), i = wdi(x), hasC = d.comments.some(c => c.day === x && !c.parent && !c.deleted), off = [];
+      const fc = p => SH.focus ? (SH.focus === p.id ? ' hl' : ' dim') : '';
       const rows = d.roster.filter(p => active(p, x)).map(p => {
         const c = cOf(v(x, p.id)), nm = esc(p.name);
-        if (c === 'O' || c === 'V') { off.push(nm + (c === 'V' ? '<small>(월차)</small>' : '')); return `<div class="r x" style="--pc:${colorOf(p.id)}"><b>${nm}</b></div>`; }
-        if (c === 'N') return `<div class="r na"><b>${nm}</b><span>-</span></div>`;
+        // 고칠 수 있으면 주간 보기처럼 칸마다 바로 고침 (2026-11-27)
+        if (d.can_edit) {
+          if (c === 'O' || c === 'V') off.push(nm + (c === 'V' ? '<small>(월차)</small>' : ''));
+          else if ((c === 'L' || c === 'D') && !isPt(p)) off.push(nm + '<small>(반휴)</small>');
+          return `<div class="sl ms ${c}${fc(p)}" style="--pc:${colorOf(p.id)}" onclick="event.stopPropagation()"><b title="${nm}">${nm}</b><select aria-label="${nm} ${x}일 근무" onchange="dmShSet(${x},${p.id},this.value)">${codesOf(p, v(x, p.id)).map(([k, t]) => `<option value="${k}" ${c === k ? 'selected' : ''}>${t.replace(/\(.*\)/, '')}</option>`).join('')}</select></div>`;
+        }
+        if (c === 'O' || c === 'V') { off.push(nm + (c === 'V' ? '<small>(월차)</small>' : '')); return `<div class="r x${fc(p)}" style="--pc:${colorOf(p.id)}"><b>${nm}</b></div>`; }
+        if (c === 'N') return `<div class="r na${fc(p)}"><b>${nm}</b><span>-</span></div>`;
         if ((c === 'L' || c === 'D') && !isPt(p)) off.push(nm + '<small>(반휴)</small>');
-        return `<div class="r" style="--pc:${colorOf(p.id)}"><b>${nm}</b>${c === 'L' || c === 'LW' ? '<i class="L">런</i>' : c === 'D' || c === 'DW' ? '<i class="D">디</i>' : ''}</div>`;
+        return `<div class="r${fc(p)}" style="--pc:${colorOf(p.id)}"><b>${nm}</b>${c === 'L' || c === 'LW' ? '<i class="L">런</i>' : c === 'D' || c === 'DW' ? '<i class="D">디</i>' : ''}</div>`;
       }).join('');
-      return `<div class="md2 ${isWe(x) ? 'we' : ''} ${SH.sel === x ? 'sel' : ''}" id="shm${x}" onclick="dmShDay(${x})">
-        <div class="mc"><div class="dd"><b class="${cls(i)}">${x}</b><span class="${cls(i)}">${WD[i]}</span>${hasC ? '<i>💬</i>' : ''}</div><div class="n"><span>런치<b>${l}</b></span><span>디너<b>${dn}</b></span></div></div>
+      return `<div class="md2 ${isWe(x) ? 'we' : ''} ${SH.sel === x ? 'sel' : ''} ${d.can_edit ? 'ed' : ''}" id="shm${x}" ${d.can_edit ? '' : `onclick="dmShDay(${x})"`}>
+        <div class="mc" ${d.can_edit ? `onclick="dmShDay(${x})" title="이 날짜 한 번에 고치기 · 댓글"` : ''}><div class="dd"><b class="${cls(i)}">${x}</b><span class="${cls(i)}">${WD[i]}</span>${hasC ? '<i>💬</i>' : ''}</div><div class="n"><span>런치<b>${l}</b></span><span>디너<b>${dn}</b></span></div></div>
         <div class="rs">${rows || '<div class="r na"><b>근무자 없음</b></div>'}</div>
         <div class="of ${off.length ? '' : 'none'}"><em>휴무</em>${off.join(', ') || '없음'}</div></div>`;
     };
@@ -823,6 +830,10 @@
   .pr-info{background:#f6f7f2;border-radius:10px;padding:10px 14px;margin:-4px 0 14px;font-size:12px;color:#6b7364}
   .sh-prac .dm-shtop{border-color:#f2c14e}
   .sh-prac #sh-sched{outline:3px dashed #f2c14e;outline-offset:-3px;background:#fff8dc}
+  .md2 .r.dim,.md2 .sl.dim{opacity:.22}.md2 .r.hl{box-shadow:0 0 0 2px var(--pc);font-weight:700}
+  .md2.ed{cursor:default}.md2.ed .mc{cursor:pointer}.md2.ed .mc:hover{background:#f0f2ea}
+  .md2 .sl.ms{height:24px;font-size:11.5px;gap:3px;border-radius:5px}.md2 .sl.ms:before{width:3px}
+  .md2 .sl.ms b{flex:1}.md2 .sl.ms select{font-size:10.5px;padding:2px 13px 2px 4px;max-width:58px;background-position:right 3px center}
   .sh-prac .dm-col,.sh-prac .md2{background:#fff3c4;border-color:#f0cf6a}
   .sh-prac .dm-col .ch{background:#ffe38f;border-bottom-color:#f0cf6a}.sh-prac .dm-col .ch:hover{background:#ffdb70}
   .sh-prac .sl{background:#fffaf0}.sh-prac .sl.N{background:none}
