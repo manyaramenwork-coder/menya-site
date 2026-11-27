@@ -40,7 +40,8 @@
   // 왼쪽 메뉴 묶음(카테고리) 이름 → 권한
   const CAT = { '대시보드': 'dash', '공지사항': 'notice_view', '상신·결재': 'appr', '연락망': 'org_view', '가맹점 현황': 'fran',
     '매출 관리': 'sales', '제때 관리': 'jette', '본사 발주·재고': 'inv_view', '본사 창고 관리': 'inv_view', '분석 시스템': 'analysis',
-    '매뉴얼 관리': 'manual_view', '브랜드 채널': 'channel', '회사·조직 설정': 'org_set' };
+    '매뉴얼 관리': 'manual_view', '브랜드 채널': 'channel', '회사·조직 설정': 'org_set',
+    '공급가 · 원가': 'analysis', '발주 관리': 'inv_view' };   // 준비중 메뉴: 공급가·원가는 분석 권한(관리자·본사)만
   // 하위 메뉴 이름 → 권한
   const SUB = { '결재함': 'appr_sign', '직원 현황': 'staff_view', '시프트 관리': 'shift_view', '출결 관리': 'att',
     '입·출고 등록': 'inv_edit', '월말 재고조사': 'inv_edit', '거래처 현황': 'vendor', '계정 현황': 'acct' };
