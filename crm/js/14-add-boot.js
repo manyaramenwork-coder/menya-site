@@ -26,4 +26,11 @@ function openAdd(srcDefault){
   };
 }
 
+/* 앱을 새로 열면 항상 홈 대시보드부터. 새로고침(F5)일 때만 보던 화면을 그대로 둠 */
+{
+  let reload = false;
+  try { reload = (performance.getEntriesByType('navigation')[0] || {}).type === 'reload'; } catch (e) {}
+  if (!reload || !VIEWS.includes(location.hash.slice(1))) history.replaceState(null, '', '#home');
+}
+
 boot();
