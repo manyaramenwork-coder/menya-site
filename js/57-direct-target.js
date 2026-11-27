@@ -223,28 +223,40 @@
   function histHtml(M){
     const yms = Object.keys(M).sort(), cur = kst().slice(0, 7);
     const valid = yms.filter(k => M[k].daily != null);
-    if (!DT.base || !M[DT.base] || M[DT.base].daily == null) { const done = valid.filter(k => k < cur); DT.base = done[done.length - 1] || valid[valid.length - 1]; }
-    if (DT.cmp && (!M[DT.cmp] || M[DT.cmp].daily == null)) DT.cmp = '';
-    const b = DT.base, Bm = M[b], ly = ymAdd(b, -12), pm = ymAdd(b, -1);
     const ys = k => `${k.slice(2, 4)}.${k.slice(5, 7)}`;
     const opt = (sel, first) => (first ? `<option value="">${first}</option>` : '') + valid.slice().reverse().map(k => `<option value="${k}" ${k === sel ? 'selected' : ''}>${ymLab(k)}</option>`).join('');
-    const tile = (title, k, extra = '') => {
-      const o = M[k];
-      if (!o || o.daily == null) return `<div class="dt-cp na"><div class="h"><b>${title}</b><span>${ymLab(k)}</span>${extra}</div><div class="none">비교할 자료가 없어요</div></div>`;
-      const g = pctOf(Bm.daily, o.daily), gt = pctOf(Bm.total, o.total), dd = Bm.days - o.days;
-      return `<div class="dt-cp ${g >= 0 ? 'up' : 'dn'}"><div class="h"><b>${title}</b><span>${ymLab(k)}</span>${extra}</div>
+    // 신장률 비교 카드 — i '' = 기본(지난달), '2' = 참고용(기본: 작년 다음 달 → 다음 달 목표 흐름 보기) (2026-11-27)
+    const fix = (i, def) => {
+      const K = 'base' + i, C = 'cmp' + i;
+      if (!DT[K] || !M[DT[K]] || M[DT[K]].daily == null) DT[K] = def;
+      if (DT[C] && (!M[DT[C]] || M[DT[C]].daily == null)) DT[C] = '';
+    };
+    const done = valid.filter(k => k < cur);
+    fix('', done[done.length - 1] || valid[valid.length - 1]);
+    const ny = ymAdd(cur, -11);
+    fix('2', M[ny] && M[ny].daily != null ? ny : (done[done.length - 1] || valid[valid.length - 1]));
+    const cmpCard = (i, title) => {
+      const b = DT['base' + i], Bm = M[b], cmp = DT['cmp' + i], q = `'${i}'`;
+      const tile = (tt, k, extra = '') => {
+        const o = M[k];
+        if (!o || o.daily == null) return `<div class="dt-cp na"><div class="h"><b>${tt}</b><span>${ymLab(k)}</span>${extra}</div><div class="none">비교할 자료가 없어요</div></div>`;
+        const g = pctOf(Bm.daily, o.daily), gt = pctOf(Bm.total, o.total), dd = Bm.days - o.days;
+        return `<div class="dt-cp ${g >= 0 ? 'up' : 'dn'}"><div class="h"><b>${tt}</b><span>${ymLab(k)}</span>${extra}</div>
         <div class="big">${fp(g)}</div><div class="cap">일평균매출이 ${Math.abs(g * 100).toFixed(1)}% ${g >= 0 ? '신장' : '하락'}했어요</div>
         <table><thead><tr><th></th><th>${ys(k)}</th><th>${ys(b)}</th><th>차이</th></tr></thead><tbody>
         <tr><td>일평균</td><td>${won(o.daily)}</td><td>${won(Bm.daily)}</td><td>${pctHtml(g)}</td></tr>
         <tr><td>월매출</td><td>${won(o.total)}</td><td>${won(Bm.total)}</td><td>${pctHtml(gt)}</td></tr>
         <tr><td>영업일수</td><td>${o.days}일</td><td>${Bm.days}일</td><td>${dd > 0 ? '+' : ''}${dd}일</td></tr></tbody></table></div>`;
-    };
-    const pick = DT.cmp ? tile('직접 고른 달', DT.cmp, `<button class="x" onclick="dtCmp('')" aria-label="지우기">×</button>`)
-      : `<div class="dt-cp pickbox"><div class="h"><b>다른 달과 비교</b></div><div class="none"><select onchange="dtCmp(this.value)">${opt('', '달 고르기')}</select><small>필요할 때만 골라요</small></div></div>`;
-    const cmpHtml = `<div class="card"><div class="dt-ct"><h3>신장률 비교</h3>
-        <div class="dt-month"><button onclick="dtBaseMove(-1)" aria-label="이전 달">‹</button><span>기준 월 <select onchange="dtBase(this.value)">${opt(b)}</select></span><button onclick="dtBaseMove(1)" aria-label="다음 달">›</button></div></div>
+      };
+      const pick = cmp ? tile('직접 고른 달', cmp, `<button class="x" onclick="dtCmp('',${q})" aria-label="지우기">×</button>`)
+        : `<div class="dt-cp pickbox"><div class="h"><b>다른 달과 비교</b></div><div class="none"><select onchange="dtCmp(this.value,${q})">${opt('', '달 고르기')}</select><small>필요할 때만 골라요</small></div></div>`;
+      return `<div class="card"><div class="dt-ct"><h3>${title}</h3>
+        <div class="dt-month"><button onclick="dtBaseMove(-1,${q})" aria-label="이전 달">‹</button><span>기준 월 <select onchange="dtBase(this.value,${q})">${opt(b)}</select></span><button onclick="dtBaseMove(1,${q})" aria-label="다음 달">›</button></div></div>
       <div class="dt-basebar"><b>${ymLab(b)}</b>${Bm.src === 'auto' && b === cur ? '<em>진행 중</em>' : ''}<span>일평균 <b>${won(Bm.daily)}원</b></span><span>월매출 <b>${won(Bm.total)}원</b></span><span>영업일수 <b>${Bm.days}일</b></span></div>
-      <div class="dt-cps">${tile('작년 동월', ly)}${tile('전월', pm)}${pick}</div></div>`;
+      <div class="dt-cps">${tile('작년 동월', ymAdd(b, -12))}${tile('전월', ymAdd(b, -1))}${pick}</div></div>`;
+    };
+    const b = DT.base, ly = ymAdd(b, -12), pm = ymAdd(b, -1);
+    const cmpHtml = cmpCard('', '신장률 비교') + cmpCard('2', '신장률 비교 <small>참고 · 처음엔 작년 다음 달로 열려요</small>');
     const y0 = +yms[0].slice(0, 4), y1 = Math.max(+yms[yms.length - 1].slice(0, 4), +cur.slice(0, 4));
     const can = !!(DT.data[STORES.find(s => s[0] === DT.store)[3]] || {}).can_edit;
     const v = DT.view;
@@ -281,7 +293,7 @@
 
   // ---------- 동작 ----------
   const redraw = () => { bar(); body(); };
-  window.dtStore = k => { if (k === DT.store) return; DT.store = k; DT.base = ''; DT.cmp = ''; page(); };
+  window.dtStore = k => { if (k === DT.store) return; DT.store = k; DT.base = ''; DT.cmp = ''; DT.base2 = ''; DT.cmp2 = ''; page(); };
   window.dtTab = k => { DT.tab = k; redraw(); };
   window.dtMonth = k => { DT.T = ymAdd(DT.T, k); redraw(); };
   window.dtRound = k => { RM = k; try { localStorage.setItem('dt-round', k); } catch (e) {} redraw(); };
@@ -308,9 +320,9 @@
   };
   window.dtView = k => { DT.view = k; body(); };
   window.dtEdit = () => { DT.edit = !DT.edit; body(); };
-  window.dtBase = k => { if (k) { DT.base = k; body(); } };
-  window.dtBaseMove = k => { const M = months(), v = Object.keys(M).filter(x => M[x].daily != null).sort(), i = v.indexOf(DT.base) + k; if (i >= 0 && i < v.length) { DT.base = v[i]; body(); } };
-  window.dtCmp = k => { DT.cmp = k || ''; body(); };
+  window.dtBase = (k, i = '') => { if (k) { DT['base' + i] = k; body(); } };
+  window.dtBaseMove = (k, s = '') => { const M = months(), v = Object.keys(M).filter(x => M[x].daily != null).sort(), i = v.indexOf(DT['base' + s]) + k; if (i >= 0 && i < v.length) { DT['base' + s] = v[i]; body(); } };
+  window.dtCmp = (k, i = '') => { DT['cmp' + i] = k || ''; body(); };
   window.dtCell = async k => {
     const M = months(), o = M[k];
     if (!DT.edit) {
