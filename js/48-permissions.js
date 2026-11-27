@@ -116,7 +116,10 @@
       if (!isAdm()) { toast('관리자만 볼 수 있어요.'); return goPm('dash'); }
       closeSide(); window.__curPage = p; renderSide(p); window.scrollTo(0, 0); pagePerm(); return;
     }
-    if (PAGE[p] && !mmCan(PAGE[p])) { toast('이 메뉴를 볼 권한이 없어요. 관리자에게 문의해주세요.'); return goPm('dash'); }
+    // 대시보드 표시 여부 (매장 사원은 대시보드에서 본사 공지만 보이게 — 아래 스타일)
+    document.documentElement.classList.toggle('mm-role-staff', myRole() === 'staff');
+    document.documentElement.classList.toggle('mm-on-dash', p === 'dash');
+    if (PAGE[p] && !mmCan(PAGE[p])) { toast('이 메뉴를 볼 권한이 없어요. 관리자에게 문의해주세요.'); document.documentElement.classList.add('mm-on-dash'); return goPm('dash'); }
     return goPm(p, t);
   };
 
@@ -182,6 +185,9 @@
   .pm-foot{font-size:11px;color:#a0a796;margin-top:10px;text-align:right}
   /* 매장 사원에게는 시프트 화면의 휴무 카운터(슈퍼바이저 포함) 숨김 */
   html.mm-role-staff #sh-body .dm-shlay > div > section:nth-child(2){display:none!important}
+  /* 매장 사원 대시보드: 본사 공지만 (매출·발주·공급 현황 숨김) */
+  html.mm-role-staff.mm-on-dash #main > :not(.crumb):not(.page-hero):not(#nt-dash-sec):not(.page-footer){display:none!important}
+  html.mm-role-staff.mm-on-dash #nt-dash-sec .sec-n{display:none}
   @media(max-width:760px){.pm-top{flex-direction:column}.pm-top .btn{width:100%}.pm-t .pm-c{width:64px;padding:8px 4px}.pm-t th{padding:8px 6px}}`;
   document.head.appendChild(st);
 
