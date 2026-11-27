@@ -566,7 +566,9 @@
       <div class="dm-shtop"><div class="dm-mnav"><button onclick="dmShMonth(-1)" aria-label="이전 달">‹</button><b>${y}년 ${+m}월</b><button onclick="dmShMonth(1)" aria-label="다음 달">›</button></div>
         <span class="dm-chip ${['tmp','sub','ok'][d.status]}">${st}</span>
         <div class="dm-bep"><span>예상 매출(BEP)</span><input id="sh-bep" inputmode="numeric" value="${d.bep ? Number(d.bep).toLocaleString('ko-KR') : ''}" placeholder="입력" ${d.can_edit ? '' : 'disabled'} oninput="this.value=this.value.replace(/[^0-9]/g,'').replace(/\\B(?=(\\d{3})+(?!\\d))/g,',')" onchange="dmShBep(this.value)"><em>적정 인건비 <b id="sh-labor">${d.bep ? Math.round(d.bep * .3).toLocaleString('ko-KR') + '원' : '-'}</b> (30%)</em></div>
-        <div class="dm-avg">하루 평균 런치 <b>${(tl / n).toFixed(1)}</b> · 디너 <b>${(td / n).toFixed(1)}</b>명</div></div>
+        <div class="dm-avg">하루 평균 런치 <b>${(tl / n).toFixed(1)}</b> · 디너 <b>${(td / n).toFixed(1)}</b>명</div>
+        ${d.can_edit && !d.practice ? `<button class="dmb pr-btn" onclick="dmShPrac('start')" title="지금 상태를 보관해 두고 마음껏 고쳐 봐요">🧪 연습 모드</button>` : ''}</div>
+      ${pracHtml()}
       <div class="dm-shlay"><div>
         <section class="card" id="sh-sched"><div class="dm-bar">
           <div class="dm-tabs"><button class="${SH.view === 'week' ? 'on' : ''}" onclick="dmShView('week')">주간 보기</button><button class="${SH.view === 'month' ? 'on' : ''}" onclick="dmShView('month')">월간 요약</button></div>
@@ -589,6 +591,7 @@
   function wkRange(w){ const all = weeks()[w], ds = all.filter(inM); const [, m] = SH.ym.split('-'); const s0 = all[0] < 1 && SH.prev ? `${+SH.prev.ym.slice(5)}/${SH.prev.n + all[0]}` : `${+m}/${ds[0]}`; return `${s0} ~ ${+m}/${ds[ds.length - 1]}`; }
   function flowBtns(){
     const d = SH.d;
+    if (d.practice) return '<span class="dm-hint">연습 중에는 제출·확정할 수 없어요</span>';
     if (d.status === 0) return d.can_edit ? `<button class="dmb dark" onclick="dmShStatus(1)">한 달 제출</button>` : '';
     if (d.status === 1) return d.can_confirm ? `<button class="dmb" onclick="dmShStatus(0)">수정 요청</button><button class="dmb pri" onclick="dmShStatus(2)">확정</button>` : '<span class="dm-hint">본사 확인을 기다리는 중이에요</span>';
     return d.can_confirm ? `<button class="dmb" onclick="dmShStatus(0)">확정 해제</button>` : '';
@@ -785,6 +788,46 @@
     if (!confirm('직원 현황 기준으로 이번 달을 다시 채울까요? 휴무·반휴무·월차로 바꿔 둔 칸도 모두 기본값으로 돌아가요.')) return;
     try { await rpc('shift_refill', { p_store:+DM.cur, p_ym:SH.ym }); toast('다시 채웠어요.'); await shLoad(false); } catch (e) { toast('처리하지 못했어요: ' + errMsg(e)); }
   };
+  // ---------- 연습 모드 (2026-11-27) ----------
+  //  켜면 그 순간 상태를 서버에 보관 → 마음껏 고침 → [원래대로] 보관본으로 복구 / [이대로 적용] 확정 (+ [적용 취소] 한 번)
+  //  연습 중 직원(고칠 수 없는 사람)에게는 서버가 연습 전 시프트를 보냄 (shift_data)
+  function pracHtml(){
+    const d = SH.d;
+    document.getElementById('sh-body')?.classList.toggle('sh-prac', !!(d.practice && d.can_edit));
+    if (d.practice && d.can_edit) return `<div class="pr-bar"><span class="ic">🧪</span><div><b>연습 중이에요 · ${esc(d.practice.at || '')} 시작${d.practice.by ? ` (${esc(d.practice.by)})` : ''}</b>
+      <p>마음껏 고쳐 보세요. 직원들에게는 연습 전 시프트가 그대로 보여요. 연습 중에는 '한 달 제출'을 할 수 없어요.</p></div>
+      <div class="acts"><button class="dmb" onclick="dmShPrac('revert')">↩ 원래대로</button><button class="dmb pri" onclick="dmShPrac('apply')">✓ 이대로 적용</button></div></div>`;
+    if (d.practice) return `<div class="pr-info">ℹ️ 시프트를 고치는 중이에요. 확정되면 바뀐 시프트가 보여요. (지금은 이전 시프트)</div>`;
+    if (d.undo && d.can_edit) return `<div class="pr-undo">✓ 연습한 내용을 적용했어요${d.undo.at ? ` (${esc(d.undo.at)})` : ''}. 마음이 바뀌면 연습 전으로 되돌릴 수 있어요. <button class="dmb" onclick="dmShPrac('undo')">적용 취소</button></div>`;
+    return '';
+  }
+  window.dmShPrac = async act => {
+    const msg = { start: '연습 모드를 켤까요?\n지금 상태를 보관해 두고, 끝날 때 [원래대로]를 누르면 이 상태로 돌아와요.',
+      revert: '연습 전 상태로 되돌릴까요?\n연습하며 고친 내용은 모두 사라져요.',
+      apply: '연습한 내용을 이대로 적용할까요?\n직원들에게도 바뀐 시프트가 보여요.',
+      undo: '적용을 취소하고 연습 전 상태로 되돌릴까요?' }[act];
+    if (!confirm(msg)) return;
+    try {
+      await rpc('shift_practice', { p_store:+DM.cur, p_ym:SH.ym, p_act:act });
+      toast({ start:'연습 모드를 켰어요. 마음껏 고쳐 보세요.', revert:'연습 전 상태로 되돌렸어요.', apply:'연습한 내용을 적용했어요.', undo:'적용을 취소했어요.' }[act]);
+      await shLoad(false);
+    } catch (e) { toast('처리하지 못했어요: ' + errMsg(e)); }
+  };
+  { const st = document.createElement('style'); st.textContent = `
+  .pr-btn{margin-left:auto}
+  .pr-bar{display:flex;align-items:center;gap:12px;background:#fff8e1;border:2px solid #f2c14e;border-radius:12px;padding:12px 16px;margin:-4px 0 14px}
+  .pr-bar .ic{font-size:20px}.pr-bar b{font-size:14px}.pr-bar p{margin:2px 0 0;font-size:12px;color:#6b5a1e}
+  .pr-bar .acts{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+  .pr-undo{display:flex;align-items:center;gap:10px;background:#eef5ef;border:1px solid #cfe6d5;border-radius:12px;padding:10px 16px;margin:-4px 0 14px;font-size:12.5px;color:#2d5a3a}
+  .pr-undo .dmb{margin-left:auto}
+  .pr-info{background:#f6f7f2;border-radius:10px;padding:10px 14px;margin:-4px 0 14px;font-size:12px;color:#6b7364}
+  .sh-prac .dm-shtop{border-color:#f2c14e}
+  .sh-prac #sh-sched{outline:3px dashed #f2c14e;outline-offset:-3px;background:#fff8dc}
+  .sh-prac .dm-col,.sh-prac .md2{background:#fff3c4;border-color:#f0cf6a}
+  .sh-prac .dm-col .ch{background:#ffe38f;border-bottom-color:#f0cf6a}.sh-prac .dm-col .ch:hover{background:#ffdb70}
+  .sh-prac .sl{background:#fffaf0}.sh-prac .sl.N{background:none}
+  .sh-prac .dm-shtop{background:#fff8dc}
+  @media(max-width:760px){.pr-bar{flex-wrap:wrap}.pr-bar .acts{margin-left:0;width:100%}.pr-bar .acts .dmb{flex:1}.pr-btn{margin-left:0}}`; document.head.appendChild(st); }
   window.dmShStatus = async s => {
     const msg = { 1:'본사에 제출할까요?', 2:'이번 달 시프트를 확정할까요? 확정하면 매장에서는 고칠 수 없어요.', 0: SH.d.status === 2 ? '확정을 풀까요?' : '수정 요청을 보낼까요? 사유는 댓글로 남겨 주세요.' }[s];
     if (!confirm(msg)) return;
