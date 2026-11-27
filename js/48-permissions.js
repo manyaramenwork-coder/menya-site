@@ -90,6 +90,8 @@
         <div class="sub js-dm js-dm-staff ${on ? 'open' : ''}">${[['dm-shift', '시프트 관리'], ['hr-att', '출결 관리']].map(([k, t]) => `<a role="button" tabindex="0" class="${active === k ? 'on' : ''}" onclick="go('${k}')">${t}</a>`).join('')}</div>`;
       if (org) org.insertAdjacentHTML('afterend', html); else nav.insertAdjacentHTML('beforeend', html);
     }
+    // 매장 관리자: 매출 관리에서는 직영점 매출 조회만 (2026-11-27)
+    if (myRole() === 'store') nav.querySelectorAll('.sub a').forEach(a => { if (a.textContent.trim() === '가맹점 매출 조회') a.remove(); });
     if (isAdm() || !PM.mine) return;
     nav.querySelectorAll('.sub a').forEach(a => { const k = SUB[a.textContent.trim()]; if (k && !mmCan(k)) a.remove(); });
     nav.querySelectorAll('.cat').forEach(b => {
@@ -104,7 +106,7 @@
   renderSide = function(active){
     const r = renderSidePm.apply(this, arguments);
     const uid = (typeof SESSION !== 'undefined' && SESSION.user && (SESSION.user.uid || SESSION.user.id)) || '';
-    if (uid !== PM.uid) { PM.uid = uid; PM.mine = null; }
+    if (uid !== PM.uid) { PM.uid = uid; PM.mine = null; PM.direct = null; }
     if (!PM.mine && !isAdm()) loadMine();
     document.documentElement.classList.toggle('mm-role-staff', myRole() === 'staff');
     try { applyMenu(active); } catch (e) { console.warn('권한 메뉴 실패', e); }
@@ -120,9 +122,25 @@
     // 대시보드 표시 여부 (매장 사원은 대시보드에서 본사 공지만 보이게 — 아래 스타일)
     document.documentElement.classList.toggle('mm-role-staff', myRole() === 'staff');
     document.documentElement.classList.toggle('mm-on-dash', p === 'dash');
+    if (p === 'sales-report' && myRole() === 'store') { toast('매장 관리자는 직영점 매출 조회만 볼 수 있어요.'); return go('direct-sales'); }
     if (PAGE[p] && !mmCan(PAGE[p])) { toast('이 메뉴를 볼 권한이 없어요. 관리자에게 문의해주세요.'); document.documentElement.classList.add('mm-on-dash'); return goPm('dash'); }
     return goPm(p, t);
   };
+
+  // 매장 관리자: 제때 관리는 직영점(자기 매장) 자료만 (2026-11-27)
+  //  - 조회할 때마다 받은 자료에서 직영점 이름이 들어간 매장만 남김 (직영점 목록은 dm_boot — 매장 관리자는 자기 매장만 받음)
+  if (typeof window.jtFetch === 'function') {
+    const jtBase = window.jtFetch;
+    window.jtFetch = async function(){
+      const r = await jtBase.apply(this, arguments);
+      if (myRole() === 'store') {
+        if (!PM.direct) { try { const { data } = await SB.rpc('dm_boot'); PM.direct = ((data && data.direct) || []).map(s => String(s.name || '').replace(/점$/, '').trim()).filter(Boolean); } catch (e) { PM.direct = []; } }
+        const ok = n => PM.direct.some(k => String(n || '').includes(k));
+        ROWS = ROWS.filter(x => ok(x.store)); ALLROWS = ROWS; STORES = STORES.filter(ok);
+      }
+      return r;
+    };
+  }
 
   /* ---------- 등급·권한 설정 화면 ---------- */
   function pagePerm(){
