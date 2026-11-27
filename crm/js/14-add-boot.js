@@ -37,7 +37,10 @@ document.head.insertAdjacentHTML('beforeend', `<style id="nice-css">
 /* 복사할 주소: 도로명·지번 주소 → (지도에서 옮긴 경우 덧붙은 표시 제거) → 분석 결과의 시군구+동 */
 function niceAddr(){
   const p = RP.place; if (!p) return '';
-  const clean = v => String(v || '').replace(/\s*\(위치 조정\)\s*$/, '').trim();
+  // 나이스 검색이 잘 찾게: '(위치 조정)' 표시 제거, 시도 이름 빼기, '천안시서북구'처럼 붙은 시·구 띄우기
+  const clean = v => String(v || '').replace(/\s*\(위치 조정\)\s*$/, '')
+    .replace(/^(서울|부산|대구|인천|광주|대전|울산|세종|경기|강원|충청북|충청남|충북|충남|전라북|전라남|전북|전남|경상북|경상남|경북|경남|제주|전남광주)[가-힣]*\s+/, '')
+    .replace(/([가-힣]+시)([가-힣]+[구군])(?=\s|$)/, '$1 $2').replace(/\s+/g, ' ').trim();
   const a = clean(p.addr);
   if (a) return a;
   const c = RP.data && RP.data.center;
@@ -70,7 +73,7 @@ document.addEventListener('click', e => {
   window.open(NICE_FLOWPOP, '_blank', 'noopener');
   if (!addr) toast('주소가 없는 위치라 복사하지 못했어요. 나이스비즈맵 검색창에 동 이름을 직접 넣어 주세요.', true);
   else if (!copied) toast(`복사가 안 됐어요. 나이스비즈맵 검색창에 직접 입력해 주세요: ${addr}`, true);
-  else toast(`'${addr}' 주소를 복사했어요. 나이스비즈맵 검색창에 붙여넣기(Ctrl+V) → 첫 번째 결과 → 지도 [+] 두 번 → 분석지점 선택`);
+  else toast(`'${addr}' 주소를 복사했어요. 나이스비즈맵 검색창에 붙여넣기(Ctrl+V) → 검색 결과에서 맞는 주소 선택 → 지도 [+] 두 번 → 분석지점 선택`);
 });
 
 /* 앱을 새로 열면 항상 홈 대시보드부터. 새로고침(F5)일 때만 보던 화면을 그대로 둠 */
